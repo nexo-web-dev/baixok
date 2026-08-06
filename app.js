@@ -62,7 +62,29 @@ const PHOTO_PRESETS = [
   { label: "Massa", src: "images/produto-massa.png" },
   { label: "Drink", src: "images/produto-drinks.png" }
 ];
-const MENU_URL = "https://nexo-dev-web.github.io/baixok/";
+/* Endereco publicado do cardapio, usado nos QR codes das mesas.
+ *
+ * Vazio = descobre sozinho, a partir de onde o painel esta aberto. Era uma
+ * constante fixa apontando para o GitHub Pages, entao o QR gerado no painel
+ * publicado no Netlify mandava o cliente para o endereco antigo. Toda vez que
+ * o sistema mudasse de endereco seria preciso lembrar de editar esta linha —
+ * e reimprimir os QR ja colados nas mesas.
+ *
+ * So preencha se o cardapio morar num dominio diferente do painel (por
+ * exemplo cardapio.baixok.com.br servido a parte). */
+const MENU_URL = "";
+
+function menuUrl() {
+  if (MENU_URL) return MENU_URL;
+  const endereco = new URL(location.href);
+  endereco.search = "";
+  endereco.hash = "";
+  /* Tira o nome da pagina do painel e deixa a pasta. Cobre as tres formas:
+   * /admin.html (arquivo), /admin (URL amigavel do Netlify) e /admin/. */
+  endereco.pathname = endereco.pathname.replace(/(admin|telao)(\.html)?\/?$/i, "");
+  if (!endereco.pathname.endsWith("/")) endereco.pathname += "/";
+  return endereco.toString();
+}
 
 let currentCategory = "todos";
 let fulfillmentMode = "retirada";
@@ -1365,7 +1387,7 @@ function renderTablesGrid() {
   }).join("");
 }
 function tableMenuUrl(number) {
-  return `${MENU_URL}?mesa=${number}`;
+  return `${menuUrl()}?mesa=${number}`;
 }
 function openTableQr(number) {
   const url = tableMenuUrl(number);
@@ -1373,6 +1395,16 @@ function openTableQr(number) {
   document.getElementById("qr-image").src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=0&data=${encodeURIComponent(url)}`;
   document.getElementById("qr-url").textContent = url;
   document.getElementById("qr-print").href = `https://api.qrserver.com/v1/create-qr-code/?size=800x800&margin=20&data=${encodeURIComponent(url)}`;
+  /* Aviso antes de imprimir. Sem servidor de sincronia cada aparelho guarda a
+   * sua propria copia: o cliente faz o pedido no celular dele e ele nao chega
+   * na cozinha. QR code impresso, plastificado e colado na mesa e caro de
+   * refazer — melhor descobrir aqui do que depois de 8 mesas prontas. */
+  const alerta = document.getElementById("qr-alerta");
+  if (alerta) {
+    alerta.classList.toggle("hidden", sync.on);
+    alerta.textContent = sync.on ? "" :
+      "Este endereco nao tem servidor de sincronia: o pedido feito pelo celular do cliente NAO chega na cozinha. Nao imprima ainda.";
+  }
   document.getElementById("qr-modal").classList.remove("hidden");
 }
 function closeTableQr(event) {

@@ -82,9 +82,18 @@ Cada mesa tem um QR code fixo que aponta para `.../index.html?mesa=N`. O fluxo:
 3. Cada pedido enviado vai para a fila da cozinha e soma na comanda da mesa.
 4. Atendente fecha a conta, a nota sai no balcao e o QR trava ate a proxima abertura.
 
-O QR e gerado na aba Mesas, botao **QR** no card. Ele aponta para o endereco publicado
-em `MENU_URL` (em `app.js`) - se publicar em outro endereco, ajuste essa constante
-antes de imprimir os codigos.
+O QR e gerado na aba Mesas, botao **QR** no card. **O endereco sai sozinho de onde o
+painel esta aberto**: gerado em `https://baixo-k.netlify.app/admin`, o QR aponta para
+`https://baixo-k.netlify.app/?mesa=1`. Mudou de endereco, gere de novo — nao ha
+constante para lembrar de editar.
+
+So preencha `MENU_URL` (em `app.js`) se o cardapio morar num dominio diferente do
+painel, tipo `cardapio.baixok.com.br` servido a parte.
+
+> **Antes de imprimir, confira se o modal do QR nao esta com o aviso vermelho.** Ele
+> aparece quando aquele endereco nao tem servidor de sincronia — e ai o pedido feito
+> pelo celular do cliente nao chega na cozinha. Publicar so os arquivos estaticos
+> (Netlify, GitHub Pages, Vercel sem funcao) cai nesse caso.
 
 ## Area de entrega
 
