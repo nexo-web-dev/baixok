@@ -36,6 +36,18 @@ function carregarEnvArquivo(caminho) {
 carregarEnvArquivo(path.join(__dirname, ".env.local"));
 carregarEnvArquivo(path.join(__dirname, ".env"));
 
+/* Chamada a servico de fora (Supabase e Mapbox).
+ *
+ * O certificado TLS E conferido. Estava com `rejectUnauthorized: false`, o que
+ * desliga essa conferencia: qualquer um no meio do caminho — wifi aberto,
+ * roteador comprometido, DNS envenenado — podia apresentar um certificado
+ * falso e o servidor aceitaria sem reclamar. Por esse cano passa a
+ * SUPABASE_SERVICE_ROLE_KEY, que e credencial de administrador do banco: ler
+ * essa chave e ter o banco inteiro, com ou sem senha do painel.
+ *
+ * Se algum dia for preciso apontar para um servico local com certificado
+ * proprio, use TLS_INSEGURO=1 — explicito, e so em teste. */
+const TLS_INSEGURO = process.env.TLS_INSEGURO === "1";
 function requestExterno(rawUrl, { method = "GET", headers = {}, body = null, responseType = "text" } = {}) {
   return new Promise((resolve, reject) => {
     const alvo = new URL(rawUrl);
@@ -43,7 +55,7 @@ function requestExterno(rawUrl, { method = "GET", headers = {}, body = null, res
     const req = cliente.request(alvo, {
       method,
       headers,
-      rejectUnauthorized: false
+      rejectUnauthorized: !TLS_INSEGURO
     }, res => {
       const chunks = [];
       res.on("data", chunk => chunks.push(chunk));
@@ -212,26 +224,91 @@ function faixaDaDistancia(km, zones) {
   return [...(zones || [])].sort((a, b) => a.km - b.km).find(zone => km <= Number(zone.km)) || null;
 }
 
-async function geocodificar(texto) {
+/* Caixa em volta da loja, com folga sobre a maior faixa cadastrada.
+ * Serve de filtro duro na busca: `proximity` sozinho e so uma inclinacao, e a
+ * Mapbox despreza ela quando o texto casa melhor em outra cidade. Medido com
+ * a API de verdade: "Rua Barao de Tefe, 75" — que existe na Saude, a 500 m
+ * daqui — voltava a de Sao Paulo em primeiro, e a taxa dava 363 km. O pedido
+ * era recusado por um endereco que o entregador faz a pe. */
+function caixaDaArea() {
+  const loja = state.delivery || {};
+  if (loja.lng == null || loja.lat == null) return null;
+  const raios = (loja.zones || []).map(z => Number(z.km) || 0);
+  const folga = Math.max(5, ...raios) * 1.6;
+  const grausLat = folga / 111;
+  const grausLng = folga / (111 * Math.cos((loja.lat * Math.PI) / 180));
+  return [
+    loja.lng - grausLng, loja.lat - grausLat,
+    loja.lng + grausLng, loja.lat + grausLat
+  ].map(n => n.toFixed(6)).join(",");
+}
+
+/* — CEP —
+ * A Mapbox nao conhece CEP brasileiro completo. Medido com a API de verdade:
+ * "20081-262", "20220-460", "22010-000" e ate "01310-100" (Avenida Paulista)
+ * devolvem zero resultado, e "20081262" sem hifen casa com Piquete, no
+ * interior de Sao Paulo. So o prefixo de 5 digitos funciona, e ele aponta
+ * para a cidade inteira.
+ *
+ * O ViaCEP e o servico dos Correios, gratuito e sem cadastro. Traduzimos o CEP
+ * para rua e bairro antes de mandar para a Mapbox. So sai daqui o CEP: nenhum
+ * dado do cliente vai junto. */
+const CEP = /^\s*(\d{5})-?(\d{3})\s*$/;
+async function enderecoDoCep(texto) {
+  const casou = CEP.exec(String(texto));
+  if (!casou) return null;
+  try {
+    const resposta = await requestExterno(`https://viacep.com.br/ws/${casou[1]}${casou[2]}/json/`, {
+      method: "GET",
+      headers: { Accept: "application/json" }
+    });
+    if (resposta.status !== 200) return null;
+    const dados = JSON.parse(resposta.body || "{}");
+    if (dados.erro || !dados.logradouro) return null;
+    return [dados.logradouro, dados.bairro, dados.localidade, dados.uf].filter(Boolean).join(", ");
+  } catch {
+    return null;                       // ViaCEP fora do ar nao pode derrubar o pedido
+  }
+}
+
+/* limitarNaArea: liga o bbox. Vale para endereco de cliente, onde tudo que
+ * esta longe demais e ruido. Nao vale para a busca do endereco da propria
+ * loja no painel, que pode estar corrigindo um ponto errado. */
+async function geocodificar(texto, { limitarNaArea = false } = {}) {
   const token = tokenMapbox();
   if (!token) throw new Error("Mapbox nao configurado no servidor");
   const loja = state.delivery || {};
+  const busca = (await enderecoDoCep(texto)) || String(texto);
   const params = new URLSearchParams({
-    q: String(texto).slice(0, 256),
+    q: busca.slice(0, 256),
     access_token: token,
     country: "br",
     language: "pt",
     limit: "5",
-    types: "address,street,place,neighborhood"
+    /* Esta e a v6. "street" so existe aqui; "poi" so existe na v5 do widget, e
+     * aqui devolve 422 — ponto de referencia mudou para a Search Box API, que
+     * e outro endpoint. O widget usa a intersecao das duas listas; aqui
+     * podemos ser mais generosos, porque ser mais permissivo do lado que
+     * confere nunca recusa o que o cliente escolheu. */
+    types: "address,street,postcode,place,neighborhood"
   });
-  // proximity puxa os resultados para perto da loja: "Rua Sacadura Cabral" existe em varias cidades
+  // proximity ordena por perto da loja; bbox corta o que esta longe demais
   if (loja.lng != null && loja.lat != null) params.set("proximity", `${loja.lng},${loja.lat}`);
+  if (limitarNaArea) {
+    const caixa = caixaDaArea();
+    if (caixa) params.set("bbox", caixa);
+  }
 
   const resposta = await requestExterno(`${MAPBOX_API}/search/geocode/v6/forward?${params}`, {
     method: "GET",
     headers: { Accept: "application/json" }
   });
-  if (resposta.status < 200 || resposta.status >= 300) throw new Error(`Mapbox respondeu ${resposta.status}`);
+  if (resposta.status < 200 || resposta.status >= 300) {
+    // a mensagem da Mapbox junto: so "422" nao diz qual parametro ela recusou
+    let motivo = "";
+    try { motivo = JSON.parse(resposta.body || "{}").message || ""; } catch {}
+    throw new Error(`Mapbox respondeu ${resposta.status}${motivo ? `: ${motivo}` : ""}`);
+  }
   const dados = JSON.parse(resposta.body || "{}");
   return (dados.features || []).map(f => ({
     id: f.properties?.mapbox_id || "",
@@ -846,7 +923,7 @@ async function registrarPedido(corpo) {
   let entrega = { taxa: 0, km: null, zona: null };
   const ehEntrega = pedido.fulfillment === "entrega";
   if (ehEntrega && (state.delivery?.zones || []).length) {
-    const achados = await geocodificar(pedido.place || "");
+    const achados = await geocodificar(pedido.place || "", { limitarNaArea: true });
     if (!achados.length) throw new Error("nao encontramos esse endereco");
     const calculo = taxaParaEndereco(pedido.place, achados[0]);
     if (!calculo.dentro) throw new Error(`endereco fora da area de entrega (${calculo.km} km da loja)`);
@@ -957,7 +1034,9 @@ const server = http.createServer(async (req, res) => {
     const q = (url.parse(req.url, true).query.q || "").toString().trim();
     if (q.length < 3) return sendJson(res, 200, { resultados: [] });
     try {
-      return sendJson(res, 200, { resultados: await geocodificar(q) });
+      // ?escopo=loja e a busca do endereco da propria loja, no painel: sem bbox
+      const escopo = (url.parse(req.url, true).query.escopo || "").toString();
+      return sendJson(res, 200, { resultados: await geocodificar(q, { limitarNaArea: escopo !== "loja" }) });
     } catch (error) {
       return sendJson(res, 502, { erro: error.message });
     }
@@ -980,7 +1059,7 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, taxaParaEndereco(q, { lng, lat }));
     }
     try {
-      const achados = await geocodificar(q);
+      const achados = await geocodificar(q, { limitarNaArea: true });
       if (!achados.length) return sendJson(res, 404, { erro: "endereco nao encontrado" });
       return sendJson(res, 200, taxaParaEndereco(q, achados[0]));
     } catch (error) {

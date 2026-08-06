@@ -637,7 +637,16 @@ function criarGeocoder(seletor, { token, origem, loja, zones, placeholder, limit
   if (typeof MapboxGeocoder === "undefined" || !token) return null;
   const opcoes = {
     accessToken: token,
-    types: "address,postcode,poi",
+    /* As duas APIs da Mapbox tem vocabularios de tipo diferentes, e cada uma
+     * responde 422 para o tipo da outra:
+     *   "street" existe na v6 (servidor), nao na v5 (este widget)
+     *   "poi"    existe na v5, nao na v6
+     * Esta e a intersecao, que vale nas duas. Ela precisa valer nas duas
+     * porque quem oferece a sugestao e o widget, mas quem refaz a conta na
+     * hora de fechar o pedido e o servidor: se o widget oferecesse um tipo que
+     * o servidor nao encontra, o cliente escolheria o endereco e levaria "nao
+     * encontramos esse endereco" no ultimo passo. */
+    types: "address,postcode,place,neighborhood",
     countries: "br",
     language: "pt-BR",
     limit: 5,
@@ -1798,7 +1807,8 @@ function buscarLojaNoMapa(termo) {
   if (termo.trim().length < 3) return (alvo.innerHTML = "");
   buscaLojaTimer = setTimeout(async () => {
     try {
-      const { resultados = [], erro } = await (await fetch(`/api/entrega/buscar?q=${encodeURIComponent(termo)}`)).json();
+      // escopo=loja: a busca do endereco da propria loja nao usa o bbox da area
+      const { resultados = [], erro } = await (await fetch(`/api/entrega/buscar?escopo=loja&q=${encodeURIComponent(termo)}`)).json();
       if (erro) return (alvo.innerHTML = `<p class="form-error">${escapeHtml(erro)}</p>`);
       alvo.innerHTML = resultados.map(r => `
         <button type="button" class="sugestao" data-lng="${r.lng}" data-lat="${r.lat}"

@@ -110,9 +110,38 @@ livremente e sem taxa automatica — foi assim que o sistema sempre funcionou.
 
 1. Crie a conta em `account.mapbox.com`.
 2. Copie o **Default public token**, o que comeca com `pk.`.
-3. Guarde em `data/mapbox.txt` ou na variavel `MAPBOX_TOKEN`.
+3. Guarde em `MAPBOX_TOKEN`, no `.env.local` (fora do git).
 4. Reinicie o servidor e abra a aba **Area de entrega** no painel.
 5. Busque o endereco da loja e crie as faixas de raio.
+
+### O que a API real ensinou
+
+Coisas medidas contra a Mapbox de verdade, com enderecos do Rio. Ficam aqui porque
+nenhuma delas aparece lendo so a documentacao.
+
+**As duas APIs tem vocabularios diferentes e cada uma recusa o tipo da outra com 422.**
+O widget do navegador roda na **v5**, o servidor na **v6**. `street` so existe na v6;
+`poi` so existe na v5. O widget usa a intersecao, `address,postcode,place,neighborhood`
+— precisa valer nos dois lados, senao o cliente escolhe um endereco que o servidor nao
+consegue reencontrar na hora de fechar o pedido.
+
+**Ponto de referencia nao funciona.** "Museu do Amanha" fica a 600 m da loja e a v6 nao
+o encontra: POI mudou para a Search Box API, que e outro endpoint. Na v6 a busca casa
+com a rua de nome mais parecido.
+
+**`proximity` sozinho nao segura.** Ele e so uma inclinacao, e a Mapbox a despreza
+quando o texto casa melhor em outra cidade. "Rua Barao de Tefe, 75" — que existe na
+Saude, a 500 m daqui — voltava a de **Sao Paulo** em primeiro, e a taxa dava 363 km: o
+pedido era recusado por um endereco que o entregador faz a pe. O `bbox` em volta da
+area resolveu, e passou a dar 0,1 km.
+
+**A Mapbox nao conhece CEP brasileiro completo.** `20081-262`, `20220-460`, `22010-000`
+e ate `01310-100` (Avenida Paulista) devolvem zero. Sem hifen, `20081262` casa com
+Piquete, no interior de Sao Paulo. So o prefixo de 5 digitos funciona, e aponta para a
+cidade inteira. Por isso o CEP passa antes pelo **ViaCEP**, o servico dos Correios, que
+e gratuito e sem cadastro: ele vira rua e bairro, e ai sim a Mapbox encontra. So o CEP
+sai daqui — nenhum dado do cliente vai junto. Se o ViaCEP estiver fora do ar, a busca
+segue com o texto cru.
 
 ### Sobre o token
 
