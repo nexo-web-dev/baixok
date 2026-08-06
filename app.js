@@ -704,8 +704,12 @@ async function montarBuscaEndereco() {
   if (geocoderCliente || !document.getElementById("endereco-widget")) return;
   const { token, origem } = await statusEntrega();
   const loja = getDelivery();
+  /* origem = o proprio site, e nao api.mapbox.com. A busca passa pelo nosso
+   * servidor, que resolve CEP pelo ViaCEP e aplica o mesmo bbox que ele usa
+   * para conferir o pedido. Sem isso o cliente digitava o CEP e nao vinha
+   * nada, porque a Mapbox nao conhece CEP brasileiro completo. */
   const geocoder = criarGeocoder("#endereco-widget", {
-    token, origem, loja, zones: loja.zones,
+    token, origem: location.origin, loja, zones: loja.zones,
     placeholder: "Ex: Rua Sacadura Cabral, 10 ou 20081-262",
     limitarNaArea: true
   });
@@ -788,6 +792,19 @@ async function cotarEndereco(endereco, lng, lat) {
       aviso.textContent = `Esse endereco esta a ${dados.km} km da loja, fora da area de entrega.`;
     }
     aviso.classList.toggle("hidden", !dados.configurado);
+    /* Pedir o numero assim que um endereco e escolhido.
+     * Busca por CEP devolve a rua, nunca a casa: sem este campo o entregador
+     * receberia "Rua Sacadura Cabral" e nada mais. Vai separado do endereco
+     * porque a distancia e medida pelo ponto que a Mapbox devolveu — juntar
+     * "apto 302" no texto so atrapalharia a geocodificacao. */
+    const numero = document.getElementById("numero-label");
+    if (numero && dados.configurado) {
+      numero.classList.remove("hidden");
+      // "Rua da Gamboa 100" ja veio com numero; CEP nao vem
+      const jaTemNumero = /\d/.test(String(endereco).split(",")[0]);
+      const campo = document.getElementById("customer-numero");
+      if (campo) campo.placeholder = jaTemNumero ? "Complemento: apto 302, fundos, bloco B" : "Numero e complemento: 45 / apto 302";
+    }
   } catch {
     cotacaoEntrega = null;
     aviso.classList.add("hidden");
@@ -970,6 +987,11 @@ function createOrder(order) {
   saveDb(data);
   return data.orders[0];
 }
+/* Endereco como o entregador precisa ler: rua e, logo em seguida, o numero.
+ * Guardados separados porque a distancia e medida pelo ponto geocodificado. */
+const enderecoCompleto = order =>
+  [order.place, order.complemento].filter(Boolean).join(" — ");
+
 function orderWhatsappText(order) {
   const items = order.items.map(item => `- ${item.qty}x ${item.name} | R$ ${money(Number(item.price || 0) * Number(item.qty || 1))}`).join("\n");
   return [
@@ -978,6 +1000,7 @@ function orderWhatsappText(order) {
     `Cliente: ${order.customer}`,
     order.phone ? `Telefone: ${order.phone}` : "",
     `Endereco: ${order.place}`,
+    order.complemento ? `Numero/complemento: ${order.complemento}` : "",
     `Pagamento: ${order.payment}`,
     "",
     "Itens:",
@@ -1010,10 +1033,14 @@ async function sendOrder() {
   if (fulfillmentMode === "entrega" && cotacaoEntrega?.minimo && cartSubtotal() - couponDiscount() < cotacaoEntrega.minimo) {
     return alert(`O pedido minimo para entrega nessa faixa e R$ ${money(cotacaoEntrega.minimo)}.`);
   }
+  const complemento = document.getElementById("customer-numero")?.value.trim() || "";
+  if (fulfillmentMode === "entrega" && cotacaoEntrega?.dentro && !complemento && !/\d/.test(placeValue.split(",")[0])) {
+    return alert("Informe o numero da casa ou apartamento. Sem ele o entregador nao acha o endereco.");
+  }
   const coupon = activeCoupon();
   const discount = couponDiscount();
   const draft = {
-    customer, phone, place, payment, note, channel: "cardapio", fulfillment: fulfillmentMode,
+    customer, phone, place, complemento, payment, note, channel: "cardapio", fulfillment: fulfillmentMode,
     items: rows, subtotal: cartSubtotal(), coupon: coupon?.code || "", discount, total: cartTotal()
   };
   let order;
@@ -1032,7 +1059,11 @@ async function sendOrder() {
   if (fulfillmentMode === "entrega") openDeliveryWhatsapp(order);
   clearCart();
   closeCart();
-  ["customer-name", "customer-phone", "customer-place", "order-note"].forEach(id => document.getElementById(id).value = "");
+  ["customer-name", "customer-phone", "customer-place", "customer-numero", "order-note"].forEach(id => {
+    const campo = document.getElementById(id);
+    if (campo) campo.value = "";
+  });
+  document.getElementById("numero-label")?.classList.add("hidden");
   document.getElementById("payment-method").value = "";
   /* O widget tem campo proprio: sem limpar, ele continuaria mostrando o
    * endereco do pedido anterior enquanto o campo real ja estava vazio, e o
@@ -1185,7 +1216,7 @@ function orderCard(order) {
       </div>
       <p class="order-items-line">${escapeHtml(order.items.map(item => `${item.qty}x ${item.name}`).join("  ·  "))}</p>
       ${order.note ? `<p class="order-note"><strong>Obs:</strong> ${escapeHtml(order.note)}</p>` : ""}
-      <p class="order-place">${escapeHtml(order.place)}${order.phone ? ` | ${escapeHtml(order.phone)}` : ""}</p>
+      <p class="order-place">${escapeHtml(enderecoCompleto(order))}${order.phone ? ` | ${escapeHtml(order.phone)}` : ""}</p>
       ${order.printed ? `<div class="order-flags"><span class="flag done">🖨 Cozinha ✓</span><span class="flag done">🖨 Balcao ✓</span></div>` : ""}
       <div class="order-actions">${statusActions(order)}</div>
     </article>
@@ -2265,7 +2296,7 @@ function exportDashboardExcel() {
     Cliente: order.customer,
     Canal: CHANNELS[order.channel] || order.channel,
     Tipo: FULFILLMENT[order.fulfillment] || order.fulfillment,
-    Local: order.place,
+    Local: enderecoCompleto(order),
     Pagamento: order.payment,
     Total: Number(order.total || 0),
     Criado: localTime(order.createdAt),
@@ -2352,7 +2383,7 @@ function buildReceipt(order, type) {
       <p><span>Canal</span><strong>${escapeHtml(CHANNELS[order.channel] || order.channel)}</strong></p>
       <p><span>Tipo</span><strong>${escapeHtml(FULFILLMENT[order.fulfillment] || order.fulfillment)}</strong></p>
       <p><span>Horario</span><strong>${localTime(order.createdAt)}</strong></p>
-      <p><span>Local</span><strong>${escapeHtml(order.place)}</strong></p>
+      <p><span>Local</span><strong>${escapeHtml(enderecoCompleto(order))}</strong></p>
       ${order.phone ? `<p><span>Telefone</span><strong>${escapeHtml(order.phone)}</strong></p>` : ""}
     </div>
     ${items}

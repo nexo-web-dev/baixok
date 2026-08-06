@@ -952,6 +952,9 @@ async function registrarPedido(corpo) {
     customer: String(pedido.customer || "Cliente").slice(0, 80),
     phone: String(pedido.phone || "").slice(0, 40),
     place: String(pedido.place || "").slice(0, 160),
+    // numero e complemento vem separados: a distancia e medida pelo ponto que a
+    // Mapbox devolveu, e "apto 302" no meio do texto so atrapalha a busca
+    complemento: String(pedido.complemento || "").slice(0, 80),
     note: String(pedido.note || "").slice(0, 400),
     payment: String(pedido.payment || "").slice(0, 60),
     channel: "cardapio",
@@ -1095,6 +1098,51 @@ const server = http.createServer(async (req, res) => {
       origem: MAPBOX_API,
       loja: loja.lng != null ? { lng: loja.lng, lat: loja.lat } : null
     });
+  }
+
+  /* — busca do widget, atendida aqui —
+   *
+   * O widget de endereco da Mapbox chama `{origin}/geocoding/v5/mapbox.places/
+   * {busca}.json`. Apontando o `origin` para o proprio site, essa chamada cai
+   * aqui em vez de ir para a Mapbox, e passa a usar exatamente o mesmo caminho
+   * que o servidor usa para conferir o pedido: ViaCEP para CEP, bbox da area,
+   * proximity na loja.
+   *
+   * Motivo: falando direto com a Mapbox, o widget nao tinha o ViaCEP. CEP
+   * brasileiro devolvia zero resultado na caixa de busca do cliente — medido:
+   * 20081-262, 20220-460 e 22010-000, todos vazios — enquanto o servidor,
+   * pelo mesmo CEP, achava a rua sem dificuldade. O cliente digitava o CEP,
+   * nao vinha nada, e ele concluia que a loja nao entrega nele.
+   *
+   * De quebra o token deixa de ser necessario no navegador para a busca. */
+  if (pathname.startsWith("/geocoding/v5/")) {
+    if (excedeu(`geo:${ipDe(req)}`, 300, 60 * 60 * 1000)) {
+      return sendJson(res, 429, { message: "muitas buscas seguidas" });
+    }
+    const bruto = decodeURIComponent(pathname.split("/").pop().replace(/\.json$/, ""));
+    if (bruto.trim().length < 3) return sendJson(res, 200, { type: "FeatureCollection", query: [bruto], features: [] });
+    try {
+      const achados = await geocodificar(bruto, { limitarNaArea: true });
+      return sendJson(res, 200, {
+        type: "FeatureCollection",
+        query: [bruto],
+        attribution: "Mapbox",
+        // o widget espera o formato da v5, que e diferente do da v6
+        features: achados.map((r, i) => ({
+          id: `address.${i}`,
+          type: "Feature",
+          place_type: ["address"],
+          relevance: 1,
+          properties: {},
+          text: r.nome,
+          place_name: [r.nome, r.detalhe].filter(Boolean).join(", "),
+          center: [r.lng, r.lat],
+          geometry: { type: "Point", coordinates: [r.lng, r.lat] }
+        }))
+      });
+    } catch (error) {
+      return sendJson(res, 502, { message: error.message });
+    }
   }
 
   if (pathname === "/api/patch" && req.method === "POST") {
