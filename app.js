@@ -585,7 +585,8 @@ function setFulfillment(mode) {
   if (label) label.classList.toggle("hidden", mode === "retirada");
   if (label) label.firstChild.textContent = "Endereco de entrega";
   if (place) {
-    place.placeholder = "Endereco completo";
+    // mesmo convite do widget, para o caminho reserva sem Mapbox
+    place.placeholder = "Rua e numero. Ex: Rua da Gamboa, 100";
     if (mode === "retirada") place.value = "";
   }
   if (mode === "entrega") montarBuscaEndereco();
@@ -708,9 +709,13 @@ async function montarBuscaEndereco() {
    * servidor, que resolve CEP pelo ViaCEP e aplica o mesmo bbox que ele usa
    * para conferir o pedido. Sem isso o cliente digitava o CEP e nao vinha
    * nada, porque a Mapbox nao conhece CEP brasileiro completo. */
+  /* O convite pede rua e numero, que e o que chega completo: o endereco
+   * escrito ja traz o numero da casa, enquanto o CEP so identifica a rua e
+   * obriga o cliente a preencher o numero depois. CEP digitado continua
+   * funcionando — apenas deixou de ser sugerido. */
   const geocoder = criarGeocoder("#endereco-widget", {
     token, origem: location.origin, loja, zones: loja.zones,
-    placeholder: "Ex: Rua Sacadura Cabral, 10 ou 20081-262",
+    placeholder: "Rua e numero. Ex: Rua da Gamboa, 100",
     limitarNaArea: true
   });
   if (!geocoder) return; // fica o campo comum, com a busca pelo servidor

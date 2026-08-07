@@ -310,14 +310,60 @@ async function geocodificar(texto, { limitarNaArea = false } = {}) {
     throw new Error(`Mapbox respondeu ${resposta.status}${motivo ? `: ${motivo}` : ""}`);
   }
   const dados = JSON.parse(resposta.body || "{}");
-  return (dados.features || []).map(f => ({
+  const achados = (dados.features || []).map(f => ({
     id: f.properties?.mapbox_id || "",
+    tipo: f.properties?.feature_type || "",
     nome: f.properties?.name || "",
     detalhe: f.properties?.place_formatted || "",
     lng: f.properties?.coordinates?.longitude,
     lat: f.properties?.coordinates?.latitude,
     precisao: f.properties?.coordinates?.accuracy || ""
   })).filter(r => Number.isFinite(r.lng) && Number.isFinite(r.lat));
+
+  if (!limitarNaArea) return achados;
+  /* Endereco de cliente: fora rua e bairro, o resto e ruido.
+   * Buscando "Rua da Gamboa 1" apareciam "12121" e "12133" no meio da lista —
+   * resultados do tipo postcode, que apontam para a cidade inteira, e "Rio de
+   * Janeiro" do tipo place. Nenhum deles e um lugar onde se entrega pizza, e
+   * escolher um faria a taxa ser calculada a partir do centro da cidade.
+   * O CEP continua chegando aqui como rua, porque o ViaCEP traduz antes. */
+  const UTEIS = new Set(["address", "street", "neighborhood"]);
+  const filtrados = achados.filter(r => !r.tipo || UTEIS.has(r.tipo));
+  // se sobrou nada, devolve o bruto: melhor um resultado ruim do que lista vazia
+  const lista = filtrados.length ? filtrados : achados;
+
+  /* Mais perto primeiro.
+   * A ordem da Mapbox e por semelhanca de texto, e o `proximity` so inclina um
+   * pouco. Buscando "Barao de Tefe" ela devolvia em primeiro a "Rua Barao De
+   * Tefe Vinte E Cinco De Agosto", em Duque de Caxias, a 17,5 km — enquanto a
+   * Avenida Barao de Tefe da Saude fica a 100 m daqui. Todos os resultados ja
+   * passaram pelo filtro de texto e pela caixa da area de entrega; entre eles,
+   * o que o cliente quer e quase sempre o mais proximo da loja. */
+  if (loja.lng == null || loja.lat == null) return lista;
+  /* Ordem: primeiro o mais preciso, depois o que da para entregar. Empate
+   * mantem a ordem da Mapbox, que e quem sabe qual texto casou melhor.
+   *
+   * Duas tentativas antes desta, as duas erradas:
+   *
+   * Ordenar so por distancia subia o BAIRRO para o topo — o centro da Gamboa
+   * fica mais perto da loja do que o numero 1 da Rua da Gamboa. Dai o grau de
+   * precisao vir primeiro: bairro nao e endereco de entrega.
+   *
+   * Ordenar por distancia dentro do mesmo grau tambem quebrou: buscando o CEP
+   * de Copacabana, "Rua Copacabana" no Caju subia acima da Avenida Atlantica,
+   * so por ser mais perto. Distancia nao mede se o texto casou.
+   *
+   * Dentro/fora da area resolve os dois: em "Barao de Tefe", a avenida da
+   * Saude (dentro) passa a rua de mesmo nome em Duque de Caxias (fora, 17,5
+   * km); e em Copacabana, as duas estao dentro, entao a Mapbox decide e a
+   * Avenida Atlantica continua em primeiro. */
+  const PRECISAO = { address: 0, street: 1, neighborhood: 2 };
+  const grau = r => (r.tipo in PRECISAO ? PRECISAO[r.tipo] : 3);
+  const alcance = Math.max(0, ...(loja.zones || []).map(z => Number(z.km) || 0));
+  return lista
+    .map(r => ({ ...r, km: distanciaKm(loja.lng, loja.lat, r.lng, r.lat) }))
+    .map(r => ({ ...r, fora: alcance > 0 && r.km > alcance ? 1 : 0 }))
+    .sort((a, b) => grau(a) - grau(b) || a.fora - b.fora);
 }
 
 /* Taxa calculada aqui, nunca aceita do navegador. */
