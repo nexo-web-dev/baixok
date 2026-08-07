@@ -496,6 +496,33 @@ async function geocodificar(texto, { limitarNaArea = false } = {}) {
     .sort((a, b) => grau(a) - grau(b) || a.fora - b.fora);
 }
 
+/* — qual dos achados e o endereco que o cliente escolheu —
+ *
+ * Sugerir e conferir sao trabalhos opostos, e a mesma lista nao serve para os
+ * dois. Sugerindo, o melhor primeiro e o que da para entregar. Conferindo, o
+ * unico que serve e o que a pessoa escolheu, esteja onde estiver.
+ *
+ * Usar achados[0] na conferencia inverteu isso e o resultado foi cobrar
+ * errado. Medido: o cliente escolhe "Avenida Presidente Vargas 100, Centro,
+ * Duque de Caxias, 25070-070", que fica a 17,6 km e esta fora de todas as
+ * faixas. Na reconferencia a lista volta com a Avenida Presidente Vargas do
+ * Centro do Rio em primeiro — justamente porque ela esta DENTRO do raio, que e
+ * o desempate das sugestoes. A loja aceitava o pedido a R$ 5,00 e mandava a
+ * moto 17,6 km.
+ *
+ * Aqui a ordem nao vale nada: vale quem casa melhor com o texto inteiro que
+ * foi escolhido. E o texto inteiro carrega bairro, cidade e CEP, que e
+ * exatamente o que distingue as duas avenidas de mesmo nome. */
+function melhorCasamento(texto, achados) {
+  let melhor = achados[0];
+  let nota = -1;
+  for (const achado of achados) {
+    const atual = quantoCasou(texto, `${achado.nome} ${achado.detalhe}`);
+    if (atual > nota) { nota = atual; melhor = achado; }
+  }
+  return melhor;
+}
+
 /* Taxa calculada aqui, nunca aceita do navegador. */
 function taxaParaEndereco(endereco, coordenada) {
   const loja = state.delivery || {};
@@ -1101,7 +1128,9 @@ async function registrarPedido(corpo) {
   if (ehEntrega && (state.delivery?.zones || []).length) {
     const achados = await geocodificar(pedido.place || "", { limitarNaArea: true });
     if (!achados.length) throw new Error("nao encontramos esse endereco");
-    const calculo = taxaParaEndereco(pedido.place, achados[0]);
+    // melhorCasamento, e nao achados[0]: a ordem das sugestoes poe o entregavel
+    // na frente, e aqui isso vira cobrar a rua errada de mesmo nome
+    const calculo = taxaParaEndereco(pedido.place, melhorCasamento(pedido.place, achados));
     if (!calculo.dentro) throw new Error(`endereco fora da area de entrega (${calculo.km} km da loja)`);
     if (subtotal - desconto < calculo.minimo) {
       throw new Error(`pedido minimo de R$ ${calculo.minimo.toFixed(2)} para entrega nessa faixa`);
@@ -1240,7 +1269,9 @@ const server = http.createServer(async (req, res) => {
     try {
       const achados = await geocodificar(q, { limitarNaArea: true });
       if (!achados.length) return sendJson(res, 404, { erro: "endereco nao encontrado" });
-      return sendJson(res, 200, taxaParaEndereco(q, achados[0]));
+      // mesma razao da conferencia do pedido: a previa tem que mostrar a taxa
+      // do endereco escolhido, nao a do homonimo mais perto da loja
+      return sendJson(res, 200, taxaParaEndereco(q, melhorCasamento(q, achados)));
     } catch (error) {
       return sendJson(res, 502, { erro: error.message });
     }
