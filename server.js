@@ -243,6 +243,52 @@ function caixaDaArea() {
   ].map(n => n.toFixed(6)).join(",");
 }
 
+/* — desenho das faixas no mapa —
+ *
+ * Um raio de N km em volta de um ponto vira um circulo achatado em graus: a
+ * longitude encolhe conforme se afasta do equador, e no Rio um grau de
+ * longitude vale so 92% de um grau de latitude. Sem o cosseno, o "circulo"
+ * sairia esticado no sentido leste-oeste e mostraria area de entrega onde nao
+ * ha. E a mesma correcao da caixa de busca, em caixaDaArea(). */
+function circulo(lng, lat, raioKm, lados = 48) {
+  const grausLat = raioKm / 111;
+  const grausLng = raioKm / (111 * Math.cos((lat * Math.PI) / 180));
+  const pontos = [];
+  for (let i = 0; i <= lados; i += 1) {
+    const angulo = (2 * Math.PI * i) / lados;
+    pontos.push([lng + grausLng * Math.cos(angulo), lat + grausLat * Math.sin(angulo)]);
+  }
+  return pontos;
+}
+
+/* Polilinha codificada (o formato do Google, precisao 5), que e como a API de
+ * imagem da Mapbox aceita um traco. Escrever os 49 pares como GeoJSON na URL
+ * passaria do limite de tamanho com tres aneis; codificado, cada ponto ocupa
+ * meia duzia de caracteres. Repare que a ordem e lat,lng — o contrario do
+ * resto da API. */
+function polilinha(pontos) {
+  let ultimaLat = 0;
+  let ultimaLng = 0;
+  let saida = "";
+  const trecho = valor => {
+    let v = valor < 0 ? ~(valor << 1) : valor << 1;
+    let texto = "";
+    while (v >= 0x20) {
+      texto += String.fromCharCode((0x20 | (v & 0x1f)) + 63);
+      v >>= 5;
+    }
+    return texto + String.fromCharCode(v + 63);
+  };
+  for (const [lng, lat] of pontos) {
+    const iLat = Math.round(lat * 1e5);
+    const iLng = Math.round(lng * 1e5);
+    saida += trecho(iLat - ultimaLat) + trecho(iLng - ultimaLng);
+    ultimaLat = iLat;
+    ultimaLng = iLng;
+  }
+  return saida;
+}
+
 /* — CEP —
  * A Mapbox nao conhece CEP brasileiro completo. Medido com a API de verdade:
  * "20081-262", "20220-460", "22010-000" e ate "01310-100" (Avenida Paulista)
@@ -1281,10 +1327,35 @@ const server = http.createServer(async (req, res) => {
     const token = tokenMapbox();
     const loja = state.delivery || {};
     if (!token || loja.lng == null) return sendJson(res, 404, { erro: "mapa indisponivel" });
-    const raios = (loja.zones || []).map(z => Number(z.km)).filter(Boolean);
-    const zoom = raios.length ? Math.max(9, 14 - Math.log2(Math.max(...raios) || 1)) : 14;
+
+    /* O mapa mostrava so o alfinete. Com faixas de 2, 6 e 12 km cadastradas,
+     * quem olhava nao tinha como saber ate onde a loja entrega nem onde uma
+     * faixa vira a outra — que e justamente a pergunta que essa tela responde.
+     *
+     * Do maior para o menor, para o circulo de dentro ficar por cima. */
+    const raios = (loja.zones || [])
+      .map(z => Number(z.km))
+      .filter(km => Number.isFinite(km) && km > 0)
+      .sort((a, b) => b - a);
+    /* Cor contada de dentro para fora, e nao pela posicao no vetor: assim a
+     * faixa mais barata e sempre a mais quente, tendo a loja duas faixas ou
+     * cinco. A legenda do painel usa a mesma contagem, entao as duas nao saem
+     * do lugar quando alguem adiciona uma faixa no meio. */
+    const CORES = ["c97443", "d99a68", "6f665b"];   // copper, gold, faint
+    const aneis = raios.map((km, i) => {
+      const deDentro = raios.length - 1 - i;
+      const cor = CORES[Math.min(deDentro, CORES.length - 1)];
+      return `path-2+${cor}-0.9+${cor}-0.10(${encodeURIComponent(polilinha(circulo(loja.lng, loja.lat, km)))})`;
+    });
+
     const pino = `pin-l-restaurant+c97443(${loja.lng},${loja.lat})`;
-    const alvo = `${MAPBOX_API}/styles/v1/mapbox/dark-v11/static/${pino}/${loja.lng},${loja.lat},${zoom.toFixed(1)}/640x420@2x?access_token=${token}&attribution=true&logo=true`;
+    const camadas = [...aneis, pino].join(",");
+    /* "auto" enquadra as camadas sozinho. Antes o zoom saia de uma formula
+     * (14 - log2 do maior raio) que chutava o enquadramento e cortava o anel
+     * de fora. Sem faixa nenhuma nao ha o que enquadrar, e ai o ponto manda. */
+    const enquadre = aneis.length ? "auto" : `${loja.lng},${loja.lat},14`;
+    const alvo = `${MAPBOX_API}/styles/v1/mapbox/dark-v11/static/${camadas}/${enquadre}/640x420@2x`
+      + `?access_token=${token}&attribution=true&logo=true${aneis.length ? "&padding=30" : ""}`;
     try {
       const imagem = await requestExterno(alvo, { method: "GET", responseType: "buffer" });
       if (imagem.status < 200 || imagem.status >= 300) return sendJson(res, 502, { erro: `Mapbox respondeu ${imagem.status}` });

@@ -2069,7 +2069,15 @@ async function renderEntrega() {
           <div class="sugestoes" id="loja-sugestoes"></div>
         </div>` : ""}
 
-        ${marcada && configurado ? `<img class="mapa-loja" src="/api/entrega/mapa?v=${Date.now()}" alt="Mapa com o ponto da loja">` : ""}
+        ${marcada && configurado ? `
+        <img class="mapa-loja" src="/api/entrega/mapa?v=${Date.now()}"
+             alt="Mapa da area de entrega: ${zones.length ? zones.map(z => `faixa ate ${z.km} km`).join(", ") : "somente o ponto da loja"}">
+        ${zones.length ? `
+        <ul class="mapa-legenda">
+          ${[...zones].sort((a, b) => a.km - b.km).map((zone, i) => `
+            <li><i class="anel-${Math.min(i, 2)}"></i>ate ${zone.km} km <em>R$ ${Number(zone.fee).toFixed(2)}</em></li>
+          `).join("")}
+        </ul>` : `<p class="faint small">Crie uma faixa ao lado para o mapa desenhar o alcance da entrega.</p>`}` : ""}
         ${marcada ? `<button class="danger small" onclick="limparLoja()">Apagar ponto</button>` : ""}
       </section>
 
