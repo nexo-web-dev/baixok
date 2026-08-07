@@ -271,6 +271,107 @@ async function enderecoDoCep(texto) {
   }
 }
 
+/* — ponto de referencia —
+ *
+ * "Museu do Amanha", "Pedra do Sal", "Cais do Valongo": lugar sem numero, que
+ * o cliente conhece pelo nome. Hoje a busca por nome nao acha nada — medido:
+ * "Museu do Amanha" devolvia "Rua do Amanha", em Sao Jose dos Pinhais, Parana.
+ *
+ * O tipo "poi" nao resolve isso na Geocoding v6: ela responde 422 e derruba a
+ * busca inteira ("Type \"poi\" is not a known type"). Ponto de referencia saiu
+ * da Geocoding e virou a Search Box, que e outro endpoint.
+ *
+ * Usamos o /forward dela, e nao o /suggest: o /suggest devolve so o nome e
+ * obriga um segundo pedido (/retrieve, com session_token) para cada item so
+ * para saber onde fica. O /forward resolve em uma chamada e ja vem com
+ * coordenada, que e o que precisamos para medir a taxa. */
+async function buscarPontos(texto, caixa) {
+  const token = tokenMapbox();
+  const params = new URLSearchParams({
+    q: String(texto).slice(0, 256),
+    access_token: token,
+    country: "br",
+    language: "pt",
+    limit: "5",
+    types: "poi"
+  });
+  const loja = state.delivery || {};
+  if (loja.lng != null && loja.lat != null) params.set("proximity", `${loja.lng},${loja.lat}`);
+  if (caixa) params.set("bbox", caixa);
+  try {
+    const resposta = await requestExterno(`${MAPBOX_API}/search/searchbox/v1/forward?${params}`, {
+      method: "GET",
+      headers: { Accept: "application/json" }
+    });
+    if (resposta.status < 200 || resposta.status >= 300) return [];
+    const dados = JSON.parse(resposta.body || "{}");
+    return (dados.features || []).map(f => ({
+      id: f.properties?.mapbox_id || "",
+      tipo: "poi",
+      nome: f.properties?.name || "",
+      detalhe: f.properties?.place_formatted || "",
+      lng: f.geometry?.coordinates?.[0],
+      lat: f.geometry?.coordinates?.[1],
+      precisao: "poi"
+    })).filter(r => Number.isFinite(r.lng) && Number.isFinite(r.lat));
+  } catch {
+    return [];                         // e um extra: falhar aqui nao pode derrubar a busca de endereco
+  }
+}
+
+/* — o texto casou mesmo? —
+ *
+ * A Mapbox nunca devolve lista vazia numa busca por rua: ela aproxima. Medido:
+ * "Museu do Amanha" voltava "Rua Amanda Guimaraes", "Pedra do Sal" voltava
+ * "Travessa Do Salo", "AquaRio" voltava "Rua Aquarios". Sao ruas de verdade e
+ * dentro da area, mas nenhuma e o que o cliente pediu.
+ *
+ * Por isso "veio alguma rua" nao serve de criterio para dispensar a busca por
+ * ponto de referencia — na pratica ele nunca dispensaria. O que decide e
+ * quanto do que foi digitado aparece no nome da rua encontrada.
+ *
+ * Palavra de via ("rua", "avenida") sai da conta dos dois lados: ela casa
+ * sempre e inflaria a nota sem dizer nada. */
+const VAZIAS = new Set([
+  "de", "do", "da", "dos", "das", "e", "o", "a", "os", "as", "no", "na",
+  "rua", "av", "avenida", "travessa", "estrada", "praca", "alameda",
+  "rodovia", "largo", "beco", "ladeira", "via", "rod"
+]);
+function palavras(texto) {
+  return String(texto)
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")   // tira acento: "Tefé" e "Tefe" sao a mesma busca
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(p => p.length >= 3 && !VAZIAS.has(p));
+}
+/* Fracao das palavras da busca que aparecem no nome do resultado. */
+function quantoCasou(busca, nome) {
+  const querido = palavras(busca);
+  if (!querido.length) return 1;                        // so palavra de via: nao da para julgar
+  const achado = new Set(palavras(nome));
+  return querido.filter(p => achado.has(p)).length / querido.length;
+}
+
+/* A Search Box repete o mesmo lugar. "Museu do Amanha" voltou duas vezes com
+ * o mesmo nome e 124 m de diferenca entre os pontos — provavelmente a entrada
+ * e o predio. Para o cliente e a mesma coisa duas vezes na lista.
+ *
+ * Por isso ponto de referencia junta so pelo nome: dentro da area de entrega,
+ * dois lugares com nome identico sao o mesmo lugar. Rua nao pode usar essa
+ * regra — "Praca Maua" tem dois trechos de verdade, em CEPs diferentes, e a
+ * escolha entre eles muda a taxa. Nesse caso a coordenada entra na chave. */
+function semRepetir(lista) {
+  const vistos = new Set();
+  return lista.filter(r => {
+    const chave = r.tipo === "poi"
+      ? `poi|${r.nome.toLowerCase()}`
+      : `${r.tipo}|${r.nome.toLowerCase()}|${r.lng.toFixed(4)}|${r.lat.toFixed(4)}`;
+    if (vistos.has(chave)) return false;
+    vistos.add(chave);
+    return true;
+  });
+}
+
 /* limitarNaArea: liga o bbox. Vale para endereco de cliente, onde tudo que
  * esta longe demais e ruido. Nao vale para a busca do endereco da propria
  * loja no painel, que pode estar corrigindo um ponto errado. */
@@ -327,10 +428,35 @@ async function geocodificar(texto, { limitarNaArea = false } = {}) {
    * Janeiro" do tipo place. Nenhum deles e um lugar onde se entrega pizza, e
    * escolher um faria a taxa ser calculada a partir do centro da cidade.
    * O CEP continua chegando aqui como rua, porque o ViaCEP traduz antes. */
-  const UTEIS = new Set(["address", "street", "neighborhood"]);
+  const UTEIS = new Set(["address", "street", "neighborhood", "poi"]);
   const filtrados = achados.filter(r => !r.tipo || UTEIS.has(r.tipo));
+
+  /* Ponto de referencia so quando a busca por rua nao respondeu de verdade.
+   * Nao chamamos sempre por dois motivos: e um segundo pedido a Mapbox em cada
+   * busca, cobrado a parte da Geocoding; e quem digitou "Rua da Gamboa 100" ja
+   * teve sua resposta, entao o ponto so entraria como ruido embaixo dela.
+   *
+   * A nota e medida so contra o primeiro trecho, antes da virgula: depois do
+   * ViaCEP o texto vira "Avenida Barao de Tefe, Saude, Rio de Janeiro, RJ", e
+   * cobrar do nome da rua as palavras do bairro e da cidade derrubaria a nota
+   * de um endereco que casou perfeitamente. */
+  const trecho = busca.split(",")[0];
+  const casou = Math.max(0, ...filtrados
+    .filter(r => r.tipo === "address" || r.tipo === "street")
+    .map(r => quantoCasou(trecho, r.nome)));
+  /* Tres pontos bastam. A Search Box devolve cinco, e a cauda vem cheia de
+   * anuncio de hospedagem — buscando "Museu do Amanha" ela ofereceu "Casa do
+   * Saulo Museu do Amanha" e "Vista deslumbrante pertinho do Museu do Amanha".
+   * Sao enderecos que existem, mas nao e o que a pessoa procurou. */
+  const pontos = casou >= 0.6 ? [] : (await buscarPontos(busca, caixaDaArea())).slice(0, 3);
+
+  /* Ponto na frente da rua, e nao atras: se ele foi buscado e porque nenhuma
+   * rua casou com o texto. As ruas ficam logo abaixo, como segunda opcao —
+   * "Rua Amanda Guimaraes" nao e o Museu do Amanha, mas tambem nao custa nada
+   * deixar na lista. Empate de grau mantem esta ordem. */
   // se sobrou nada, devolve o bruto: melhor um resultado ruim do que lista vazia
-  const lista = filtrados.length ? filtrados : achados;
+  const lista = semRepetir([...pontos, ...filtrados]);
+  if (!lista.length) return achados;
 
   /* Mais perto primeiro.
    * A ordem da Mapbox e por semelhanca de texto, e o `proximity` so inclina um
@@ -357,7 +483,11 @@ async function geocodificar(texto, { limitarNaArea = false } = {}) {
    * Saude (dentro) passa a rua de mesmo nome em Duque de Caxias (fora, 17,5
    * km); e em Copacabana, as duas estao dentro, entao a Mapbox decide e a
    * Avenida Atlantica continua em primeiro. */
-  const PRECISAO = { address: 0, street: 1, neighborhood: 2 };
+  /* "poi" empata com "street" de proposito: os dois sao um ponto certo, e por
+   * construcao nunca aparecem juntos — o ponto de referencia so e buscado
+   * quando nao veio rua nenhuma. O que importa aqui e que ele fique acima do
+   * bairro, que e centro de regiao e nao endereco de entrega. */
+  const PRECISAO = { address: 0, street: 1, poi: 1, neighborhood: 2 };
   const grau = r => (r.tipo in PRECISAO ? PRECISAO[r.tipo] : 3);
   const alcance = Math.max(0, ...(loja.zones || []).map(z => Number(z.km) || 0));
   return lista

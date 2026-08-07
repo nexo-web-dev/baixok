@@ -656,20 +656,25 @@ function caixaDeBusca(loja, zones) {
 /* Devolve o widget ja montado, ou null quando nao da para usar: sem token
  * publico, sem a CDN, ou token com formato que a Mapbox recusa. Em qualquer
  * um desses casos quem assume e o campo comum, que nunca sai da pagina. */
-function criarGeocoder(seletor, { token, origem, loja, zones, placeholder, limitarNaArea }) {
+/* `types` muda conforme para onde o widget aponta, porque as duas APIs da
+ * Mapbox tem vocabularios diferentes e cada uma responde 422 para o tipo da
+ * outra — medido: "street" so existe na v6, "poi" e "locality" so na v5.
+ *
+ *   busca do cliente -> origin = este site -> nosso servidor -> Geocoding v6
+ *   busca da loja    -> origin = api.mapbox.com            -> Geocoding v5
+ *
+ * No caminho do cliente o servidor ignora este parametro e monta o dele: e la
+ * que estao o ViaCEP, a caixa da area e o ponto de referencia pela Search Box.
+ * Precisa ser assim, porque quem oferece a sugestao e o widget mas quem refaz
+ * a conta ao fechar o pedido e o servidor — se o widget oferecesse um tipo que
+ * o servidor nao encontra, o cliente escolheria o endereco e levaria "nao
+ * encontramos esse endereco" no ultimo passo. */
+const TIPOS_V5 = "address,postcode,poi,place,neighborhood,locality";
+function criarGeocoder(seletor, { token, origem, loja, zones, placeholder, limitarNaArea, types }) {
   if (typeof MapboxGeocoder === "undefined" || !token) return null;
   const opcoes = {
     accessToken: token,
-    /* As duas APIs da Mapbox tem vocabularios de tipo diferentes, e cada uma
-     * responde 422 para o tipo da outra:
-     *   "street" existe na v6 (servidor), nao na v5 (este widget)
-     *   "poi"    existe na v5, nao na v6
-     * Esta e a intersecao, que vale nas duas. Ela precisa valer nas duas
-     * porque quem oferece a sugestao e o widget, mas quem refaz a conta na
-     * hora de fechar o pedido e o servidor: se o widget oferecesse um tipo que
-     * o servidor nao encontra, o cliente escolheria o endereco e levaria "nao
-     * encontramos esse endereco" no ultimo passo. */
-    types: "address,postcode,place,neighborhood",
+    types: types || TIPOS_V5,
     countries: "br",
     language: "pt-BR",
     limit: 5,
