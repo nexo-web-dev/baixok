@@ -7,16 +7,18 @@
 import { Router } from "express";
 import {
   pedidosController, produtosController, promocoesController, cuponsController,
-  mesasController, entregaController, relatoriosController, usuariosController, ajustesController
+  mesasController, entregaController, relatoriosController, usuariosController, ajustesController,
+  insumosController
 } from "../controllers/painel.controller.js";
 import { exigirLogin, exigirPapel, exigirAba } from "../middlewares/auth.js";
 import { validarCorpo, validarQuery, validarParams } from "../middlewares/validate.js";
 import { paramsId, paramsNumero } from "../schemas/comum.schema.js";
 import {
-  criarPedidoManualSchema, mudarStatusSchema, cancelarPedidoSchema,
+  criarPedidoManualSchema, mudarStatusSchema, cancelarPedidoSchema, motoboyPedidoSchema,
   listarPedidosSchema, relatorioSchema
 } from "../schemas/pedido.schema.js";
-import { produtoSchema, ajusteEstoqueSchema, promocaoSchema, cupomSchema } from "../schemas/catalogo.schema.js";
+import { produtoSchema, ajusteEstoqueSchema, reordenarProdutoSchema, promocaoSchema, cupomSchema } from "../schemas/catalogo.schema.js";
+import { insumoSchema, ajusteInsumoSchema } from "../schemas/insumo.schema.js";
 import { configEntregaSchema } from "../schemas/entrega.schema.js";
 import { criarUsuarioSchema, atualizarUsuarioSchema, redefinirSenhaSchema } from "../schemas/auth.schema.js";
 import { ajustesSchema, auditoriaQuerySchema } from "../schemas/ajustes.schema.js";
@@ -29,6 +31,7 @@ const VER_PEDIDOS = exigirAba("pedidos", "ver");
 const EDIT_PEDIDOS = exigirAba("pedidos", "editar");
 const VER_MESAS = exigirAba("mesas", "ver");
 const EDIT_MESAS = exigirAba("mesas", "editar");
+const VER_ESTOQUE = exigirAba("estoque", "ver");
 const EDIT_ESTOQUE = exigirAba("estoque", "editar");
 const ADMIN = exigirPapel("admin");
 
@@ -39,16 +42,25 @@ rotasPainel.get("/pedidos/:id", VER_PEDIDOS, validarParams(paramsId), pedidosCon
 rotasPainel.patch("/pedidos/:id/status", EDIT_PEDIDOS, validarParams(paramsId), validarCorpo(mudarStatusSchema), pedidosController.mudarStatus);
 rotasPainel.post("/pedidos/:id/impresso", EDIT_PEDIDOS, validarParams(paramsId), pedidosController.marcarImpresso);
 rotasPainel.post("/pedidos/:id/cancelar", EDIT_PEDIDOS, validarParams(paramsId), validarCorpo(cancelarPedidoSchema), pedidosController.cancelar);
+rotasPainel.patch("/pedidos/:id/motoboy", EDIT_PEDIDOS, validarParams(paramsId), validarCorpo(motoboyPedidoSchema), pedidosController.definirMotoboy);
 rotasPainel.post("/pedidos", EDIT_PEDIDOS, validarCorpo(criarPedidoManualSchema), pedidosController.criarManual);
 
 // ----------------------------------------------------------------- produtos ---
-rotasPainel.get("/produtos", ADMIN, produtosController.listar);
+rotasPainel.get("/produtos", produtosController.listar);
 rotasPainel.get("/produtos/em-falta", ADMIN, produtosController.emFalta);
 rotasPainel.post("/produtos", ADMIN, validarCorpo(produtoSchema), produtosController.criar);
 rotasPainel.put("/produtos/:id", ADMIN, validarParams(paramsId), validarCorpo(produtoSchema), produtosController.atualizar);
 rotasPainel.delete("/produtos/:id", ADMIN, validarParams(paramsId), produtosController.remover);
 rotasPainel.post("/produtos/:id/alternar", ADMIN, validarParams(paramsId), produtosController.alternarAtivo);
 rotasPainel.patch("/produtos/:id/estoque", EDIT_ESTOQUE, validarParams(paramsId), validarCorpo(ajusteEstoqueSchema), produtosController.ajustarEstoque);
+rotasPainel.patch("/produtos/:id/ordem", ADMIN, validarParams(paramsId), validarCorpo(reordenarProdutoSchema), produtosController.moverOrdem);
+
+// ------------------------------------------------------------------ insumos ---
+rotasPainel.get("/insumos", VER_ESTOQUE, insumosController.listar);
+rotasPainel.post("/insumos", EDIT_ESTOQUE, validarCorpo(insumoSchema), insumosController.criar);
+rotasPainel.put("/insumos/:id", EDIT_ESTOQUE, validarParams(paramsId), validarCorpo(insumoSchema), insumosController.atualizar);
+rotasPainel.patch("/insumos/:id/estoque", EDIT_ESTOQUE, validarParams(paramsId), validarCorpo(ajusteInsumoSchema), insumosController.ajustar);
+rotasPainel.delete("/insumos/:id", EDIT_ESTOQUE, validarParams(paramsId), insumosController.remover);
 
 // -------------------------------------------------------- promocoes e cupons ---
 rotasPainel.get("/promocoes", ADMIN, promocoesController.listar);

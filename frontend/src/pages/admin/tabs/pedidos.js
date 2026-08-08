@@ -146,7 +146,8 @@ async function recusar(id) {
   const pedido = estado.pedidos.find(item => item.id === id);
   if (!confirm(`Recusar o pedido de ${pedido?.customer || "cliente"}? Os itens voltam para o estoque.`)) return;
 
-  const motivo = prompt("Motivo da recusa (fica registrado):", "") ?? "";
+  const motivo = (prompt("Motivo da recusa (obrigatorio e fica registrado):", "") ?? "").trim();
+  if (!motivo) return toastFalha(new Error("Informe o motivo para recusar o pedido."), "Cancelamento");
   try {
     await apiPedidos.cancelar(id, motivo);
     await carregar("pedidos", "produtos");

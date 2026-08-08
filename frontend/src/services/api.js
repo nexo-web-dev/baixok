@@ -30,6 +30,7 @@ export const apiPedidos = {
   criarManual: (pedido, opcoes) => http.post("/painel/pedidos", pedido, opcoes),
   mudarStatus: (id, status) => http.patch(`/painel/pedidos/${id}/status`, { status }),
   cancelar: (id, motivo) => http.post(`/painel/pedidos/${id}/cancelar`, { motivo }),
+  definirMotoboy: (id, motoboy) => http.patch(`/painel/pedidos/${id}/motoboy`, { motoboy }),
   marcarImpresso: id => http.post(`/painel/pedidos/${id}/impresso`)
 };
 
@@ -40,7 +41,16 @@ export const apiProdutos = {
   atualizar: (id, produto) => http.put(`/painel/produtos/${id}`, produto),
   remover: id => http.delete(`/painel/produtos/${id}`),
   alternarAtivo: id => http.post(`/painel/produtos/${id}/alternar`),
-  ajustarEstoque: (id, ajuste) => http.patch(`/painel/produtos/${id}/estoque`, ajuste)
+  ajustarEstoque: (id, ajuste) => http.patch(`/painel/produtos/${id}/estoque`, ajuste),
+  moverOrdem: (id, direction) => http.patch(`/painel/produtos/${id}/ordem`, { direction })
+};
+
+export const apiInsumos = {
+  listar: () => http.get("/painel/insumos"),
+  criar: insumo => http.post("/painel/insumos", insumo),
+  atualizar: (id, insumo) => http.put(`/painel/insumos/${id}`, insumo),
+  ajustarEstoque: (id, ajuste) => http.patch(`/painel/insumos/${id}/estoque`, ajuste),
+  remover: id => http.delete(`/painel/insumos/${id}`)
 };
 
 export const apiPromocoes = {

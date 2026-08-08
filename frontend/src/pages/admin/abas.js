@@ -6,15 +6,15 @@
  */
 
 const PAPEL_PADRAO_VER = Object.freeze({
-  admin: ["pedidos", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "plano", "usuarios"],
-  caixa: ["pedidos", "mesas", "estoque"],
+  admin: ["pedidos", "motoboy", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "plano", "usuarios"],
+  caixa: ["pedidos", "motoboy", "mesas", "estoque"],
   cozinha: ["pedidos"],
   entregador: ["pedidos"]
 });
 
 const PAPEL_PADRAO_EDITAR = Object.freeze({
-  admin: ["pedidos", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "plano", "usuarios"],
-  caixa: ["pedidos", "mesas", "estoque"],
+  admin: ["pedidos", "motoboy", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "plano", "usuarios"],
+  caixa: ["pedidos", "motoboy", "mesas", "estoque"],
   cozinha: [],
   entregador: ["pedidos"]
 });
@@ -26,6 +26,13 @@ export const ABAS = Object.freeze({
     icone: "☰",
     rotulo: "Pedidos",
     papeis: ["admin", "caixa", "cozinha", "entregador"]
+  },
+  motoboy: {
+    titulo: "Motoboy",
+    subtitulo: "Entregas prontas e entregues, com responsavel pela rota.",
+    icone: "MB",
+    rotulo: "Motoboy",
+    papeis: ["admin", "caixa"]
   },
   mesas: {
     titulo: "Mesas do salao",

@@ -64,7 +64,7 @@
   }
   body[data-page="menu"] .nexo-footer {
     margin-top: 22px;
-    padding: 24px 22px calc(122px + env(safe-area-inset-bottom, 0px));
+    padding: 24px 22px calc(168px + env(safe-area-inset-bottom, 0px));
     line-height: 1.45;
   }
   body[data-page="admin"] {
@@ -83,17 +83,17 @@
     padding: 0;
   }
   body[data-page="admin"] .nav-list {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
     gap: 8px;
-    overflow: visible;
-    padding: 0;
+    overflow-x: auto;
+    padding: 0 0 4px;
   }
   body[data-page="admin"] .nav-item {
+    flex: 0 0 auto;
     min-height: 42px;
     justify-content: flex-start;
     padding: 10px 12px;
-    white-space: normal;
+    white-space: nowrap;
   }
   body[data-page="admin"] .nav-foot {
     display: grid;

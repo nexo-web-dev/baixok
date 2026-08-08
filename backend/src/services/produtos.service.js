@@ -5,6 +5,7 @@ import { auditoriaRepo } from "../repositories/auditoria.repo.js";
 import { naoEncontrado, ErroApp } from "../lib/errors.js";
 import { publicar, CANAL } from "../lib/events.js";
 import { uid } from "../lib/ids.js";
+import { emTransacao } from "../db/postgres.js";
 
 const SELO_POR_CATEGORIA = {
   pizzas: "Pizza", burgues: "Burguer", massas: "Massa", drinks: "Drink", porcoes: "Porcao"
@@ -71,6 +72,28 @@ export const produtosService = {
     await auditoriaRepo.registrar({
       usuarioId: usuario.id, usuario: usuario.usuario, acao: "produto_alterado",
       entidade: "produto", entidadeId: id, detalhes: mudancas, ip
+    });
+    publicar("produtos", [CANAL.PUBLICO, CANAL.OPERACAO]);
+    return produto;
+  },
+
+  async moverOrdem(id, direction, { usuario, ip }) {
+    const produtos = await produtosRepo.listar();
+    const indice = produtos.findIndex(produto => produto.id === id);
+    if (indice === -1) throw naoEncontrado("Produto nao encontrado.");
+
+    const destino = direction === "up" ? indice - 1 : indice + 1;
+    if (destino < 0 || destino >= produtos.length) return produtos[indice];
+
+    const ids = produtos.map(produto => produto.id);
+    [ids[indice], ids[destino]] = [ids[destino], ids[indice]];
+    await emTransacao(() => produtosRepo.reordenarIds(ids));
+    const produto = await this.buscar(id);
+
+    await auditoriaRepo.registrar({
+      usuarioId: usuario.id, usuario: usuario.usuario, acao: "produto_ordem",
+      entidade: "produto", entidadeId: id,
+      detalhes: { nome: produto.name, ordem: produto.order }, ip
     });
     publicar("produtos", [CANAL.PUBLICO, CANAL.OPERACAO]);
     return produto;

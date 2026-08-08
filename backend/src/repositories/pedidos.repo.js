@@ -34,6 +34,7 @@ const paraApi = (linha, itens = []) => linha && ({
   deliveryKm: linha.entrega_km,
   deliveryZone: linha.entrega_faixa,
   total: linha.total,
+  motoboy: linha.motoboy || "",
   printed: doBanco(linha.impresso),
   stockDeducted: doBanco(linha.estoque_baixado),
   createdBy: linha.criado_por,
@@ -157,14 +158,14 @@ export const pedidosRepo = {
       INSERT INTO pedidos (
         id, criado_em, status, canal, modalidade, cliente, telefone, local, observacao,
         pagamento, troco_para, mesa_n, subtotal, desconto, cupom_code, taxa_entrega, entrega_km,
-        entrega_faixa, total, impresso, estoque_baixado, criado_por
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        entrega_faixa, total, motoboy, impresso, estoque_baixado, criado_por
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       pedido.id, pedido.createdAt, pedido.status, pedido.channel, pedido.fulfillment,
       pedido.customer, pedido.phone, pedido.place, pedido.note, pedido.payment, pedido.trocoPara ?? null,
       pedido.tableNumber ?? null, pedido.subtotal, pedido.discount, pedido.coupon,
       pedido.deliveryFee, pedido.deliveryKm ?? null, pedido.deliveryZone ?? null,
-      pedido.total, paraBanco(pedido.printed), paraBanco(pedido.stockDeducted),
+      pedido.total, pedido.motoboy || "", paraBanco(pedido.printed), paraBanco(pedido.stockDeducted),
       pedido.createdBy ?? null
     ]);
 
@@ -186,6 +187,11 @@ export const pedidosRepo = {
 
   async atualizarStatus(id, status) {
     await alteradas("UPDATE pedidos SET status = ?, atualizado_em = now() WHERE id = ?", [status, id]);
+    return this.buscar(id);
+  },
+
+  async definirMotoboy(id, motoboy) {
+    await alteradas("UPDATE pedidos SET motoboy = ?, atualizado_em = now() WHERE id = ?", [motoboy, id]);
     return this.buscar(id);
   },
 

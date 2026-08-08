@@ -19,6 +19,7 @@ import { ABAS, abaInicial, podeVer } from "./abas.js";
 import { ligarVendaManual } from "./venda-manual.js";
 
 import { desenharPedidos, ligarPedidos } from "./tabs/pedidos.js";
+import { desenharMotoboy, ligarMotoboy } from "./tabs/motoboy.js";
 import { desenharMesas, ligarMesas } from "./tabs/mesas.js";
 import { desenharProdutos, ligarProdutos } from "./tabs/produtos.js";
 import { desenharPromocoes, desenharCupons, ligarPromocoes } from "./tabs/promocoes.js";
@@ -33,6 +34,7 @@ let abaAtual = null;
 /* Qual funcao redesenha cada aba, e o que ela precisa recarregar. */
 const DESENHO = {
   pedidos: desenharPedidos,
+  motoboy: desenharMotoboy,
   mesas: desenharMesas,
   produtos: desenharProdutos,
   promos: () => { desenharPromocoes(); desenharCupons(); },
@@ -46,14 +48,37 @@ const DESENHO = {
 /* Que abas cada assunto do SSE afeta. Sem este mapa voltariamos ao
  * comportamento antigo: qualquer alteracao redesenhava o sistema inteiro. */
 const AFETADAS = {
-  pedidos: ["pedidos", "mesas", "dashboard"],
+  pedidos: ["pedidos", "motoboy", "mesas", "dashboard"],
   produtos: ["produtos", "estoque", "promos", "dashboard"],
+  insumos: ["estoque"],
   promocoes: ["promos", "produtos"],
   cupons: ["promos"],
   mesas: ["mesas"],
   entrega: ["entrega"],
   retomada: ["pedidos", "mesas"]
 };
+
+const DEPENDENCIAS_ABA = {
+  pedidos: ["pedidos", "produtos"],
+  motoboy: [],
+  mesas: ["mesas", "produtos"],
+  produtos: ["produtos", "promocoes"],
+  promos: ["produtos", "promocoes", "cupons"],
+  entrega: ["entrega"],
+  estoque: ["produtos", "insumos"],
+  dashboard: [],
+  plano: ["ajustes"],
+  usuarios: []
+};
+
+function areasIniciais(usuario) {
+  const areas = new Set(["pedidos"]);
+  if (podeVer("pedidos", usuario) || podeVer("produtos", usuario) || podeVer("estoque", usuario) || podeVer("mesas", usuario)) {
+    areas.add("produtos");
+  }
+  if (podeVer("estoque", usuario)) areas.add("insumos");
+  return [...areas];
+}
 
 // ------------------------------------------------------------------- sessao ---
 definirTratamentoDeSessao(() => {
@@ -84,6 +109,8 @@ async function abrirAba(chave) {
    * onde a pessoa estava, em vez de sempre cair na fila. */
   history.replaceState(null, "", `#${chave}`);
 
+  const dependencias = DEPENDENCIAS_ABA[chave] || [];
+  if (dependencias.length) await carregar(...dependencias);
   await DESENHO[chave]?.();
 }
 
@@ -132,6 +159,7 @@ function ligarShell() {
   ligarModal(qr, fecharQrMesa);
 
   ligarPedidos();
+  ligarMotoboy();
   ligarMesas();
   ligarProdutos();
   ligarPromocoes();
@@ -166,7 +194,7 @@ async function iniciar() {
   montarMenu(sessao.usuario);
   ligarShell();
 
-  await carregar();
+  await carregar(...areasIniciais(sessao.usuario));
   desenharMetricas();
 
   /* Aba da URL, se o papel permitir; senao a inicial daquele papel. */
@@ -176,7 +204,7 @@ async function iniciar() {
   conectarEventos({
     canal: "operacao",
     aoMudar: async assunto => {
-      const areas = { pedidos: ["pedidos"], produtos: ["produtos"], promocoes: ["promocoes"], cupons: ["cupons"], mesas: ["mesas"], entrega: ["entrega"] }[assunto];
+      const areas = { pedidos: ["pedidos"], produtos: ["produtos"], insumos: ["insumos"], promocoes: ["promocoes"], cupons: ["cupons"], mesas: ["mesas"], entrega: ["entrega"] }[assunto];
       await carregar(...(areas || []));
       if (assunto === "entrega") recarregarRascunhoEntrega();
       desenharMetricas();

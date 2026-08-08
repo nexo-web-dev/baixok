@@ -1,7 +1,7 @@
 /* Usuarios e auditoria. O backend cria a credencial no Supabase Auth (quando
  * configurado) e o perfil local numa unica operacao. */
 import { el, render, $, delegar } from "../../../utils/dom.js";
-import { dataHora } from "../../../utils/formato.js";
+import { dataHora, reais } from "../../../utils/formato.js";
 import { PAPEIS_ROTULO } from "../../../utils/categorias.js";
 import { apiUsuarios } from "../../../services/api.js";
 import { estado } from "../store.js";
@@ -18,12 +18,18 @@ const DESCRICAO_ACAO = {
   pedido_lancado: "lancou pedido manual",
   pedido_status: "mudou status do pedido",
   pedido_cancelado: "cancelou pedido",
+  pedido_motoboy: "informou motoboy",
   produto_criado: "criou produto",
   produto_alterado: "alterou produto",
   produto_removido: "excluiu produto",
   produto_pausado: "pausou produto",
   produto_ativado: "reativou produto",
+  produto_ordem: "alterou ordem do cardapio",
   estoque_ajustado: "ajustou estoque",
+  insumo_criado: "criou insumo",
+  insumo_alterado: "alterou insumo",
+  insumo_estoque: "ajustou insumo",
+  insumo_removido: "removeu insumo",
   promocao_salva: "criou promocao",
   promocao_encerrada: "encerrou promocao",
   cupom_criado: "criou cupom",
@@ -194,6 +200,30 @@ function linhaUsuario(usuario) {
   );
 }
 
+function detalheAuditoria(registro) {
+  const detalhes = registro.detalhes || {};
+
+  if (registro.acao === "pedido_cancelado") {
+    const itens = Array.isArray(detalhes.itens) && detalhes.itens.length
+      ? ` | ${detalhes.itens.join(", ")}`
+      : "";
+    return `Motivo: ${detalhes.motivo || "nao informado"}${detalhes.cliente ? ` | Cliente ${detalhes.cliente}` : ""}${detalhes.total ? ` | Total ${reais(detalhes.total)}` : ""}${itens}`;
+  }
+  if (registro.acao === "pedido_motoboy") {
+    return `Motoboy: ${detalhes.motoboy || "-"}${detalhes.cliente ? ` | Cliente ${detalhes.cliente}` : ""}`;
+  }
+  if (registro.acao === "produto_ordem") {
+    return `${detalhes.nome || "Produto"} agora esta na ordem ${detalhes.ordem || "-"}`;
+  }
+  if (registro.acao?.startsWith("insumo_")) {
+    if (detalhes.de !== undefined || detalhes.para !== undefined) {
+      return `${detalhes.nome || "Insumo"}: ${detalhes.de ?? "-"} -> ${detalhes.para ?? "-"} ${detalhes.unidade || ""}`.trim();
+    }
+    return detalhes.nome || "";
+  }
+  return "";
+}
+
 export async function desenharEquipe() {
   try {
     usuarios = (await apiUsuarios.listar()).usuarios;
@@ -209,7 +239,10 @@ export async function desenharEquipe() {
       el("div.audit-row", {},
         el("span.audit-when", {}, dataHora(registro.criado_em)),
         el("strong", {}, registro.usuario || "cliente"),
-        el("span", {}, DESCRICAO_ACAO[registro.acao] || registro.acao),
+        el("span", {},
+          DESCRICAO_ACAO[registro.acao] || registro.acao,
+          detalheAuditoria(registro) ? el("small.audit-detail", {}, detalheAuditoria(registro)) : null
+        ),
         el("span.small.faint", {}, registro.entidade_id ? `#${String(registro.entidade_id).slice(-8)}` : "")
       )
     ));

@@ -13,9 +13,10 @@ const imagemSchema = z
   .trim()
   .max(500_000, "Imagem grande demais. Use ate 500 KB.")
   .refine(
-    valor => valor === "" || /^images\/[\w.-]+$/.test(valor) || /^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(valor),
+    valor => valor === "" || /^\/?images\/[\w.-]+$/.test(valor) || /^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(valor),
     "Use uma imagem do proprio site ou envie um arquivo de imagem."
   )
+  .transform(valor => valor.replace(/^\/images\//, "images/"))
   .default("");
 
 export const produtoSchema = z.object({
@@ -24,9 +25,14 @@ export const produtoSchema = z.object({
   price: dinheiro,
   stock: z.coerce.number().int().min(0).max(99999).default(0),
   minStock: z.coerce.number().int().min(0).max(9999).default(4),
+  order: z.coerce.number().int().min(1).max(9999).optional(),
   active: z.boolean().default(true),
   image: imagemSchema,
   description: texto(300)
+}).strict();
+
+export const reordenarProdutoSchema = z.object({
+  direction: z.enum(["up", "down"], { message: "Direcao invalida." })
 }).strict();
 
 export const ajusteEstoqueSchema = z.object({

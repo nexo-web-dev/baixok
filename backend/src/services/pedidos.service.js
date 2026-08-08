@@ -61,11 +61,12 @@ async function precificar(itens) {
  * do endereco em texto — nunca aceita taxa vinda do navegador. */
 async function cotarEntregaSeNecessario(dados) {
   if (dados.fulfillment !== "entrega") return { taxa: 0, km: null, zona: null, minimo: 0 };
+  if (!dados.phone) throw new ErroApp("Informe o telefone do cliente para entrega.", 400, "telefone_ausente");
+  if (!dados.place) throw new ErroApp("Informe o endereco de entrega.", 400, "endereco_ausente");
 
   const config = await entregaService.config();
   if (!config.zones.length) return { taxa: 0, km: null, zona: null, minimo: 0 };
 
-  if (!dados.place) throw new ErroApp("Informe o endereco de entrega.", 400, "endereco_ausente");
   const cotacao = await entregaService.cotarPorEndereco(dados.place);
   if (!cotacao.dentro) {
     throw new ErroApp(`Endereco fora da area de entrega (${cotacao.km} km da loja).`, 400, "fora_da_area");
@@ -251,7 +252,9 @@ export const pedidosService = {
     if (atual.status === status) return atual;
 
     /* Cancelar tem regra propria (devolve estoque), entao nao entra por aqui. */
-    if (status === "cancelado") return this.cancelar(id, "", { usuario, ip });
+    if (status === "cancelado") {
+      throw new ErroApp("Informe o motivo do cancelamento.", 400, "motivo_obrigatorio");
+    }
 
     const pedido = await pedidosRepo.atualizarStatus(id, status);
     await auditoriaRepo.registrar({
@@ -267,6 +270,11 @@ export const pedidosService = {
    * inflar o estoque — no sistema antigo essa marca existia mas nao era checada
    * de forma atomica. */
   async cancelar(id, motivo, { usuario, ip }) {
+    const motivoLimpo = String(motivo || "").trim();
+    if (!motivoLimpo) {
+      throw new ErroApp("Informe o motivo do cancelamento.", 400, "motivo_obrigatorio");
+    }
+
     const pedido = await emTransacao(async () => {
       const atual = await pedidosRepo.buscar(id);
       if (!atual) throw naoEncontrado("Pedido nao encontrado.");
@@ -283,9 +291,35 @@ export const pedidosService = {
 
     await auditoriaRepo.registrar({
       usuarioId: usuario.id, usuario: usuario.usuario, acao: "pedido_cancelado",
-      entidade: "pedido", entidadeId: id, detalhes: { motivo, total: pedido.total }, ip
+      entidade: "pedido", entidadeId: id,
+      detalhes: {
+        motivo: motivoLimpo,
+        cliente: pedido.customer,
+        total: pedido.total,
+        itens: pedido.items.map(item => `${item.qty}x ${item.name}`)
+      },
+      ip
     });
     publicar("pedidos", [CANAL.OPERACAO, CANAL.TELAO, CANAL.PUBLICO]);
+    return pedido;
+  },
+
+  async definirMotoboy(id, motoboy, { usuario, ip }) {
+    const nome = String(motoboy || "").trim();
+    if (!nome) throw new ErroApp("Informe o nome do motoboy.", 400, "motoboy_obrigatorio");
+
+    const atual = await this.buscar(id);
+    if (atual.fulfillment !== "entrega") throw conflito("Motoboy so pode ser informado em pedido de entrega.");
+    if (!["pronto", "entregue"].includes(atual.status)) {
+      throw conflito("Informe o motoboy quando a entrega estiver pronta ou entregue.");
+    }
+
+    const pedido = await pedidosRepo.definirMotoboy(id, nome);
+    await auditoriaRepo.registrar({
+      usuarioId: usuario.id, usuario: usuario.usuario, acao: "pedido_motoboy",
+      entidade: "pedido", entidadeId: id, detalhes: { motoboy: nome, cliente: pedido.customer }, ip
+    });
+    publicar("pedidos", [CANAL.OPERACAO]);
     return pedido;
   },
 

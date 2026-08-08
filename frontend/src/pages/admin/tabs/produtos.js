@@ -12,10 +12,10 @@ import { estado, carregar, promocaoDoProduto } from "../store.js";
 import { toast, toastFalha } from "../../../components/toast.js";
 
 const PRESETS = [
-  { label: "Pizza", src: "/images/produto-pizza.png" },
-  { label: "Burguer", src: "/images/produto-burguer.png" },
-  { label: "Massa", src: "/images/produto-massa.png" },
-  { label: "Drink", src: "/images/produto-drinks.png" }
+  { label: "Pizza", src: "images/produto-pizza.png" },
+  { label: "Burguer", src: "images/produto-burguer.png" },
+  { label: "Massa", src: "images/produto-massa.png" },
+  { label: "Drink", src: "images/produto-drinks.png" }
 ];
 
 const LADO_MAXIMO = 900;
@@ -23,6 +23,7 @@ const QUALIDADE = 0.82;
 let filtroCategoria = "todos";
 
 const categoriasFiltro = () => ({ todos: "Todos", ...CATEGORIAS_ROTULO });
+const normalizarImagem = valor => String(valor || "").trim().replace(/^\/images\//, "images/");
 
 /* Redimensiona e recomprime no proprio navegador antes de enviar. */
 function prepararFoto(arquivo) {
@@ -53,13 +54,14 @@ function prepararFoto(arquivo) {
 }
 
 function atualizarPreview(valor) {
+  const normalizado = normalizarImagem(valor);
   const preview = $("#product-photo-preview");
   const vazio = $(".photo-empty");
   if (preview) {
-    preview.src = valor || "";
-    preview.classList.toggle("hidden", !valor);
+    preview.src = normalizado || "";
+    preview.classList.toggle("hidden", !normalizado);
   }
-  if (vazio) vazio.classList.toggle("hidden", Boolean(valor));
+  if (vazio) vazio.classList.toggle("hidden", Boolean(normalizado));
 }
 
 function cardProduto(produto) {
@@ -72,6 +74,7 @@ function cardProduto(produto) {
       : el("div.no-photo", {}, "Sem foto")),
     el("div.admin-product-main", {},
       el("div.admin-product-title", {},
+        el("span.pill.order-pill", {}, `Ordem ${produto.order || "-"}`),
         el("strong", {}, produto.name),
         el("span.pill", { class: produto.active ? "is-active" : "is-paused" }, produto.active ? (semEstoque ? "Esgotado" : "Ativo") : "Pausado")
       ),
@@ -87,6 +90,8 @@ function cardProduto(produto) {
       )
     ),
     el("div.row-actions", { class: "right" },
+      el("button.ghost.small", { type: "button", title: "Subir no cardapio", dataset: { acao: "mover-ordem", id: produto.id, direction: "up" } }, "Subir"),
+      el("button.ghost.small", { type: "button", title: "Descer no cardapio", dataset: { acao: "mover-ordem", id: produto.id, direction: "down" } }, "Descer"),
       el("button.ghost.small", { type: "button", dataset: { acao: "editar", id: produto.id } }, "Editar"),
       el("button.ghost.small", { type: "button", dataset: { acao: "alternar", id: produto.id } },
         produto.active ? "Pausar" : "Ativar"),
@@ -157,6 +162,7 @@ function limparFormulario() {
   $("#product-description").value = "";
   $("#product-price").value = "";
   $("#product-stock").value = "";
+  $("#product-order").value = "";
   $("#product-category").value = "pizzas";
   $("#product-image").value = "";
   $("#product-active").checked = true;
@@ -174,6 +180,7 @@ function editar(id) {
   $("#product-description").value = produto.description || "";
   $("#product-price").value = String(produto.price);
   $("#product-stock").value = String(produto.stock);
+  $("#product-order").value = String(produto.order || "");
   $("#product-category").value = produto.category;
   $("#product-image").value = produto.image || "";
   $("#product-active").checked = produto.active;
@@ -194,8 +201,9 @@ async function salvar(evento) {
     price: paraNumero($("#product-price").value),
     stock: Math.max(0, Math.floor(paraNumero($("#product-stock").value))),
     minStock: estado.produtos.find(item => item.id === id)?.minStock ?? 4,
+    order: Math.max(1, Math.floor(paraNumero($("#product-order").value) || ((estado.produtos.length || 0) + 1))),
     active: $("#product-active").checked,
-    image: $("#product-image").value.trim()
+    image: normalizarImagem($("#product-image").value)
   };
 
   try {
@@ -216,6 +224,16 @@ export function ligarProdutos() {
   const tabela = $("#product-table");
 
   delegar(lista, "click", "[data-acao='editar']", (_e, botao) => editar(botao.dataset.id));
+
+  delegar(lista, "click", "[data-acao='mover-ordem']", async (_e, botao) => {
+    try {
+      await apiProdutos.moverOrdem(botao.dataset.id, botao.dataset.direction);
+      await carregar("produtos");
+      desenharProdutos();
+    } catch (erro) {
+      toastFalha(erro);
+    }
+  });
 
   delegar(lista, "click", "[data-acao='alternar']", async (_e, botao) => {
     try {
@@ -242,12 +260,14 @@ export function ligarProdutos() {
   });
 
   delegar(presets, "click", "[data-acao='preset']", (_e, imagem) => {
-    $("#product-image").value = imagem.dataset.src;
-    atualizarPreview(imagem.dataset.src);
+    const src = normalizarImagem(imagem.dataset.src);
+    $("#product-image").value = src;
+    atualizarPreview(src);
   });
 
   $("#form-produto")?.addEventListener("submit", salvar);
   $("#product-reset")?.addEventListener("click", limparFormulario);
+  $("#product-image")?.addEventListener("input", evento => atualizarPreview(evento.target.value));
   $("#product-photo-button")?.addEventListener("click", () => $("#product-photo-file").click());
 
   $("#product-photo-file")?.addEventListener("change", async evento => {

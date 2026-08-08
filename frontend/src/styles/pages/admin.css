@@ -94,6 +94,7 @@
 .audit-when { color: var(--muted); font-size: .72rem; }
 .audit-row strong { font-size: .8rem; }
 .audit-row .small.faint { text-align: right; }
+.audit-detail { display: block; margin-top: 3px; color: var(--gold); font-size: .72rem; line-height: 1.35; }
 
 /* â€” plano do sistema â€” */
 .plan-card {
@@ -222,7 +223,7 @@
   padding: 10px; border-radius: var(--radius-sm); background: var(--panel); border: 1px solid var(--line-soft);
 }
 .admin-product-thumb { width: 74px; height: 74px; overflow: hidden; border-radius: 14px; background: var(--soft); }
-.admin-product-thumb img, .admin-product-thumb .no-photo { width: 100%; height: 100%; min-height: 74px; object-fit: cover; border-radius: 14px; }
+.admin-product-thumb img, .admin-product-thumb .no-photo { width: 100%; height: 100%; min-height: 74px; object-fit: contain; border-radius: 14px; }
 .admin-product-thumb .no-photo { padding: 6px; font-size: .62rem; }
 .admin-product-main { display: grid; gap: 5px; min-width: 0; }
 .admin-product-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -283,11 +284,25 @@
 .chip-toggle.active { border-color: rgba(217,154,104,.6); background: var(--amber-bg); color: var(--gold-light); }
 
 /* â€” estoque â€” */
-.stock-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 14px; }
+.stock-grid { display: grid; grid-template-columns: 1fr; gap: 18px; }
+.stock-section { display: grid; gap: 12px; min-width: 0; }
+.stock-section .section-head.compact { margin: 0; }
+.stock-section .section-head.compact p { max-width: 720px; color: var(--muted); font-size: .82rem; }
+.stock-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 14px; }
+.insumo-layout { display: grid; grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); gap: 14px; align-items: start; }
+.insumo-form { display: grid; gap: 10px; padding: 18px; border-radius: var(--radius-md); background: var(--sidebar); border: 1.5px solid rgba(217,154,104,.3); }
+.form-title-row { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.form-title-row h2 { font-size: 1rem; }
+.stock-headline { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
 .stock-card { display: grid; gap: 2px; padding: 16px 18px; border-radius: var(--radius-md); background: var(--panel); border: 1.5px solid var(--line-soft); }
 .stock-card.low { border-color: rgba(212,127,110,.5); }
 .stock-card strong { font-size: .84rem; }
 .stock-card > span { color: var(--muted); font-size: .72rem; }
+.stock-value { color: var(--gold-light); font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; line-height: 1.1; }
+.stock-card.low .stock-value { color: var(--danger); }
+.stock-card .counter { display: grid; grid-template-columns: 38px minmax(0, 1fr) 38px; gap: 8px; margin-top: 10px; padding: 0; background: transparent; border: 0; border-radius: 0; }
+.stock-card .counter button { display: grid; place-items: center; min-height: 38px; border-radius: var(--radius-pill); border: 1px solid var(--line); color: var(--gold); background: var(--soft); font-weight: 800; }
+.stock-card .counter input { min-height: 38px; padding-inline: 10px; text-align: center; border-radius: var(--radius-pill); }
 .stock-line { display: flex; align-items: baseline; gap: 8px; margin-top: 10px; }
 .stock-number { color: var(--gold-light); font-family: var(--font-head); font-weight: 800; font-size: 1.9rem; line-height: 1; }
 .stock-card.low .stock-number, .stock-card.low .stock-line em { color: var(--danger); }
@@ -297,6 +312,24 @@
 .qty-actions button:hover { border-color: rgba(217,154,104,.4); }
 .qty-actions button.filled { border-color: transparent; background: var(--copper); color: var(--on-accent); }
 .qty-actions button.filled:hover { background: var(--copper-hover); }
+.row-actions.left { justify-content: flex-start; }
+
+/* — motoboy — */
+.motoboy-list { display: grid; gap: 12px; }
+.motoboy-card {
+  display: grid; gap: 12px; padding: 16px 18px; border-radius: var(--radius-md);
+  background: var(--panel); border: 1.5px solid var(--line-soft);
+}
+.motoboy-card.done { border-color: rgba(143,174,109,.35); opacity: .9; }
+.motoboy-card-head { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; }
+.motoboy-card-head h2 { margin-top: 6px; color: var(--ink); font-size: 1rem; overflow-wrap: anywhere; }
+.motoboy-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.motoboy-grid p { display: grid; gap: 3px; min-width: 0; margin: 0; }
+.motoboy-grid span, .motoboy-actions label span { color: var(--muted); font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.motoboy-grid strong { color: var(--muted-2); font-size: .78rem; overflow-wrap: anywhere; }
+.motoboy-items { color: var(--muted-2); font-size: .82rem; line-height: 1.45; }
+.motoboy-actions { display: grid; grid-template-columns: minmax(220px, 1fr) auto auto; gap: 8px; align-items: end; }
+.motoboy-actions label { display: grid; gap: 5px; }
 
 /* â€” dashboard â€” */
 .filter-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
@@ -368,6 +401,7 @@
 @media (max-width: 1280px) {
   .products-layout { grid-template-columns: 1fr; }
   .panel-form { position: static; }
+  .insumo-layout { grid-template-columns: 1fr; }
   .user-row { grid-template-columns: minmax(0, 1fr) minmax(110px, auto); }
   .user-row > span.small { grid-column: 1 / -1; }
   .user-row .row-actions { grid-column: 1 / -1; justify-content: flex-start; }
@@ -403,6 +437,11 @@
   .user-row, .permission-row, .audit-row, .sale-row { grid-template-columns: 1fr; }
   .permission-group, .sale-side { justify-content: flex-start; justify-items: start; }
   .sale-main em { white-space: normal; }
+  .stock-cards { grid-template-columns: 1fr; }
+  .motoboy-card-head, .motoboy-actions { grid-template-columns: 1fr; }
+  .motoboy-card-head { display: grid; }
+  .motoboy-grid { grid-template-columns: 1fr; }
+  .motoboy-actions .secondary, .motoboy-actions .ghost-green { width: 100%; }
 }
 
 

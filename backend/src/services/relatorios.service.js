@@ -95,9 +95,8 @@ export const relatoriosService = {
     };
   },
 
-  /* Linhas cruas do periodo para a exportacao. Nao inclui telefone nem endereco:
-   * a planilha de faturamento circula por e-mail e grupo de WhatsApp, e nao
-   * precisa carregar dado pessoal de cliente junto. */
+  /* Linhas cruas do periodo para a exportacao. Inclui dados de entrega porque
+   * a casa usa a planilha para conferencia operacional e repasse de motoboy. */
   async exportacao({ periodo, desde, ate, canal }) {
     const intervalo = resolverPeriodo({ periodo, desde, ate });
     const pedidos = await pedidosRepo.listar({ desde: intervalo.desde, ate: intervalo.ate, limite: 1000 });
@@ -113,6 +112,9 @@ export const relatoriosService = {
           canal: pedido.channel,
           modalidade: pedido.fulfillment,
           cliente: pedido.customer,
+          telefone: pedido.phone,
+          endereco: pedido.place,
+          motoboy: pedido.motoboy,
           pagamento: pedido.payment,
           itens: pedido.items.map(item => `${item.qty}x ${item.name}`).join("; "),
           subtotal: pedido.subtotal,

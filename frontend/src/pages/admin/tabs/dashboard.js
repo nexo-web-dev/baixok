@@ -9,6 +9,7 @@ import { reais, dinheiro } from "../../../utils/formato.js";
 import { CANAIS_ROTULO, MODALIDADES_ROTULO } from "../../../utils/categorias.js";
 import { apiPedidos, apiRelatorios } from "../../../services/api.js";
 import { toastFalha, toastOk } from "../../../components/toast.js";
+import { imprimirAmbas } from "../../../components/impressao.js";
 
 const filtros = { periodo: "hoje", canal: "", desde: "", ate: "" };
 let ultimoRelatorio = null;
@@ -83,11 +84,15 @@ function vendaLinha(pedido) {
     el("div.sale-main", {},
       el("strong", {}, pedido.customer || "Cliente sem nome"),
       el("span", {}, `${horaCurta(pedido.createdAt)} | ${CANAIS_ROTULO[pedido.channel] || pedido.channel || "-"} | ${pedido.fulfillment || "-"}`),
+      pedido.fulfillment === "entrega" && pedido.motoboy ? el("span", {}, `Motoboy: ${pedido.motoboy}`) : null,
       el("em", {}, pedido.items.map(item => `${item.qty}x ${item.name}`).join(" | ") || "Sem itens")
     ),
     el("div.sale-side", {},
       el("strong", {}, reais(pedido.total || 0)),
       el("span", { class: cancelado ? "danger-text" : "" }, cancelado ? "Cancelado" : pedido.payment || "Pagamento nao informado"),
+      !cancelado
+        ? el("button.secondary.small", { type: "button", dataset: { action: "reprint-sale" } }, "Reimprimir")
+        : null,
       cancelado
         ? null
         : el("button.secondary.small", { type: "button", dataset: { action: "cancel-sale" } }, "Cancelar")
@@ -196,7 +201,7 @@ function exportarPlanilha() {
 
   apiRelatorios.exportar(parametrosDashboard())
     .then(({ linhas, periodo }) => {
-      const colunas = ["id", "data", "status", "canal", "modalidade", "cliente", "pagamento", "itens", "subtotal", "desconto", "taxaEntrega", "total"];
+      const colunas = ["id", "data", "status", "canal", "modalidade", "cliente", "telefone", "endereco", "motoboy", "pagamento", "itens", "subtotal", "desconto", "taxaEntrega", "total"];
       const escapar = valor => `"${String(valor ?? "").replace(/"/g, '""')}"`;
 
       const csv = [
@@ -260,13 +265,30 @@ export function ligarDashboard() {
   delegar($("#dashboard-sales"), "click", "[data-action='cancel-sale']", async (_evento, botao) => {
     const linha = botao.closest(".sale-row");
     if (!linha) return;
+    const motivo = (prompt("Motivo do cancelamento da venda (obrigatorio):", "") ?? "").trim();
+    if (!motivo) return toastFalha(new Error("Informe o motivo para cancelar."), "Venda");
     botao.disabled = true;
     try {
-      await apiPedidos.cancelar(linha.dataset.id, "Cancelado pelo dashboard");
+      await apiPedidos.cancelar(linha.dataset.id, motivo);
       toastOk("Venda cancelada.");
       await desenharDashboard();
     } catch (erro) {
       toastFalha(erro, "Venda");
+      botao.disabled = false;
+    }
+  });
+
+  delegar($("#dashboard-sales"), "click", "[data-action='reprint-sale']", async (_evento, botao) => {
+    const linha = botao.closest(".sale-row");
+    if (!linha) return;
+    botao.disabled = true;
+    try {
+      const { pedido } = await apiPedidos.buscar(linha.dataset.id);
+      imprimirAmbas(pedido);
+      toastOk("Nota enviada para reimpressao.");
+    } catch (erro) {
+      toastFalha(erro, "Reimpressao");
+    } finally {
       botao.disabled = false;
     }
   });

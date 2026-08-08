@@ -10,7 +10,7 @@
  * usados para gravar coisa nenhuma. */
 import {
   apiPedidos, apiProdutos, apiPromocoes, apiCupons,
-  apiMesas, apiEntrega, apiAjustes
+  apiMesas, apiEntrega, apiAjustes, apiInsumos
 } from "../../services/api.js";
 
 export const estado = {
@@ -18,6 +18,7 @@ export const estado = {
   pedidos: [],
   resumo: { abertos: 0, porStatus: {} },
   produtos: [],
+  insumos: [],
   promocoes: [],
   cupons: [],
   mesas: [],
@@ -51,6 +52,9 @@ const carregadores = {
   },
   async produtos() {
     estado.produtos = (await apiProdutos.listar()).produtos;
+  },
+  async insumos() {
+    estado.insumos = (await apiInsumos.listar()).insumos;
   },
   async promocoes() {
     estado.promocoes = (await apiPromocoes.listar()).promocoes;

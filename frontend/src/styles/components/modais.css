@@ -27,10 +27,11 @@
 }
 .manual-product:hover { border-color: rgba(217,154,104,.45); background: rgba(217,154,104,.08); }
 .manual-thumb {
-  display: grid; place-items: center; width: 58px; height: 58px; min-width: 58px; border-radius: 12px; object-fit: cover;
+  display: grid; place-items: center; width: 58px; height: 58px; min-width: 58px; border-radius: 12px; object-fit: contain;
   color: var(--gold); background: repeating-linear-gradient(135deg, rgba(217,154,104,.08) 0 8px, rgba(255,255,255,.03) 8px 16px), var(--soft);
   font-size: .62rem; font-weight: 800; text-align: center;
 }
+img.manual-thumb { background: var(--soft); }
 .manual-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .88rem; font-weight: 800; }
 .manual-price { color: var(--gold); font-size: .84rem; font-weight: 800; white-space: nowrap; }
 .manual-product small { grid-column: 2; color: var(--muted); font-size: .72rem; }

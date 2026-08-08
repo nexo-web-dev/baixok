@@ -46,7 +46,11 @@ export const mudarStatusSchema = z.object({
 });
 
 export const cancelarPedidoSchema = z.object({
-  motivo: texto(200)
+  motivo: texto(200, { obrigatorio: true })
+});
+
+export const motoboyPedidoSchema = z.object({
+  motoboy: texto(80, { obrigatorio: true })
 });
 
 export const listarPedidosSchema = z.object({

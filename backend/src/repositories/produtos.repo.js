@@ -23,6 +23,7 @@ const paraApi = linha => linha && ({
   price: linha.preco,
   stock: linha.estoque,
   minStock: linha.estoque_min,
+  order: linha.ordem ?? 9999,
   active: doBanco(linha.ativo),
   image: linha.imagem,
   badge: linha.selo,
@@ -33,17 +34,17 @@ const paraApi = linha => linha && ({
 
 export const produtosRepo = {
   async listar() {
-    return (await todos("SELECT * FROM produtos ORDER BY categoria, nome")).map(paraApi);
+    return (await todos("SELECT * FROM produtos ORDER BY ordem ASC, categoria, nome")).map(paraApi);
   },
 
   /* Cardapio publico: so o que esta a venda, e sem estoque_min nem custo —
    * quantas unidades restam e informacao de operacao, nao de vitrine. */
   async listarPublico() {
     const linhas = await todos(`
-      SELECT id, nome, categoria, preco, imagem, selo, descricao, estoque
+      SELECT id, nome, categoria, preco, imagem, selo, descricao, estoque, ordem
         FROM produtos
        WHERE ativo = 1 AND estoque > 0
-       ORDER BY categoria, nome
+       ORDER BY ordem ASC, categoria, nome
     `);
     return linhas.map(linha => ({
       id: linha.id,
@@ -53,6 +54,7 @@ export const produtosRepo = {
       image: linha.imagem,
       badge: linha.selo,
       description: linha.descricao,
+      order: linha.ordem ?? 9999,
       disponivel: linha.estoque > 0
     }));
   },
@@ -62,13 +64,14 @@ export const produtosRepo = {
   },
 
   async criar(produto) {
+    const ordem = produto.order || (await um("SELECT COALESCE(MAX(ordem), 0) + 1 AS proxima FROM produtos"))?.proxima || 1;
     return paraApi(await um(`
-      INSERT INTO produtos (id, nome, categoria, preco, estoque, estoque_min, ativo, imagem, selo, descricao)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO produtos (id, nome, categoria, preco, estoque, estoque_min, ordem, ativo, imagem, selo, descricao)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       RETURNING *
     `, [
       produto.id, produto.name, produto.category, produto.price,
-      produto.stock, produto.minStock, paraBanco(produto.active),
+      produto.stock, produto.minStock, ordem, paraBanco(produto.active),
       produto.image, produto.badge, produto.description
     ]));
   },
@@ -76,14 +79,21 @@ export const produtosRepo = {
   async atualizar(id, produto) {
     return paraApi(await um(`
       UPDATE produtos
-         SET nome = ?, categoria = ?, preco = ?, estoque = ?, estoque_min = ?,
+         SET nome = ?, categoria = ?, preco = ?, estoque = ?, estoque_min = ?, ordem = ?,
              ativo = ?, imagem = ?, selo = ?, descricao = ?, atualizado_em = now()
        WHERE id = ?
       RETURNING *
     `, [
       produto.name, produto.category, produto.price, produto.stock, produto.minStock,
+      produto.order || 9999,
       paraBanco(produto.active), produto.image, produto.badge, produto.description, id
     ]));
+  },
+
+  async reordenarIds(ids) {
+    for (const [indice, id] of ids.entries()) {
+      await alteradas("UPDATE produtos SET ordem = ?, atualizado_em = now() WHERE id = ?", [indice + 1, id]);
+    }
   },
 
   async remover(id) {

@@ -26,6 +26,7 @@
 
     <nav class="nav-list" id="nav-list" aria-label="Secoes">
       <button class="nav-item active" type="button" data-tab="pedidos"><span class="nav-icon" aria-hidden="true">☰</span>Pedidos<span class="nav-badge hidden" id="nav-badge">0</span></button>
+      <button class="nav-item" type="button" data-tab="motoboy"><span class="nav-icon" aria-hidden="true">MB</span>Motoboy</button>
       <button class="nav-item" type="button" data-tab="mesas"><span class="nav-icon" aria-hidden="true">▢</span>Mesas (salao)</button>
       <button class="nav-item" type="button" data-tab="produtos"><span class="nav-icon" aria-hidden="true">◱</span>Produtos</button>
       <button class="nav-item" type="button" data-tab="promos"><span class="nav-icon" aria-hidden="true">✦</span>Promocoes</button>
@@ -75,6 +76,15 @@
       <p class="tab-hint">Dica: arraste um card para qualquer coluna, para frente ou para tras, para corrigir o status.</p>
     </section>
 
+    <!-- ------------------------------------------------------------ motoboy -->
+    <section class="admin-tab hidden" id="tab-motoboy">
+      <div class="tab-guide">
+        <strong>Como usar esta aba</strong>
+        <p>Mostra apenas pedidos de entrega que estao prontos ou ja foram entregues. Salve o nome do motoboy responsavel para ficar registrado no historico da venda.</p>
+      </div>
+      <div class="motoboy-list" id="motoboy-list"></div>
+    </section>
+
     <!-- -------------------------------------------------------------- mesas -->
     <section class="admin-tab hidden" id="tab-mesas">
       <div class="tab-guide">
@@ -118,6 +128,7 @@
             <input id="product-price" type="number" step="0.01" min="0" required placeholder="Preco (R$)">
             <input id="product-stock" type="number" step="1" min="0" required placeholder="Estoque">
           </div>
+          <input id="product-order" type="number" step="1" min="1" placeholder="Ordem no cardapio (ex: 1)">
           <select id="product-category" aria-label="Categoria">
             <option value="pizzas">Pizzas</option>
             <option value="burgues">Burgues</option>
@@ -133,7 +144,7 @@
               <img class="hidden" id="product-photo-preview" src="" alt="Previa da foto">
               <span class="photo-empty">Sem foto cadastrada</span>
             </div>
-            <input id="product-image" type="hidden">
+            <input id="product-image" type="text" placeholder="Escreva a foto: images/produto-pizza.png ou envie pelo botao">
             <input id="product-photo-file" type="file" accept="image/*" capture="environment" class="hidden">
           </div>
           <label class="check-field"><input id="product-active" type="checkbox" checked> Ativo no cardapio</label>

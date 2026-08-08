@@ -6,6 +6,7 @@
  * sozinho, entao nao ha try/catch repetido aqui. */
 import { pedidosService } from "../services/pedidos.service.js";
 import { produtosService, promocoesService } from "../services/produtos.service.js";
+import { insumosService } from "../services/insumos.service.js";
 import { mesasService } from "../services/mesas.service.js";
 import { cuponsService } from "../services/cupons.service.js";
 import { entregaService } from "../services/entrega.service.js";
@@ -40,8 +41,31 @@ export const pedidosController = {
     const { id } = req.validado.params;
     res.json({ pedido: await pedidosService.cancelar(id, req.validado.body.motivo, contexto(req)) });
   },
+  async definirMotoboy(req, res) {
+    const { id } = req.validado.params;
+    res.json({ pedido: await pedidosService.definirMotoboy(id, req.validado.body.motoboy, contexto(req)) });
+  },
   async marcarImpresso(req, res) {
     await pedidosService.marcarImpresso(req.validado.params.id);
+    res.json({ ok: true });
+  }
+};
+
+export const insumosController = {
+  async listar(_req, res) {
+    res.json({ insumos: await insumosService.listar() });
+  },
+  async criar(req, res) {
+    res.status(201).json({ insumo: await insumosService.criar(req.validado.body, contexto(req)) });
+  },
+  async atualizar(req, res) {
+    res.json({ insumo: await insumosService.atualizar(req.validado.params.id, req.validado.body, contexto(req)) });
+  },
+  async ajustar(req, res) {
+    res.json({ insumo: await insumosService.ajustar(req.validado.params.id, req.validado.body, contexto(req)) });
+  },
+  async remover(req, res) {
+    await insumosService.remover(req.validado.params.id, contexto(req));
     res.json({ ok: true });
   }
 };
@@ -65,6 +89,9 @@ export const produtosController = {
   },
   async ajustarEstoque(req, res) {
     res.json({ produto: await produtosService.ajustarEstoque(req.validado.params.id, req.validado.body, contexto(req)) });
+  },
+  async moverOrdem(req, res) {
+    res.json({ produto: await produtosService.moverOrdem(req.validado.params.id, req.validado.body.direction, contexto(req)) });
   },
   async emFalta(_req, res) {
     res.json({ produtos: await produtosService.emFalta() });
