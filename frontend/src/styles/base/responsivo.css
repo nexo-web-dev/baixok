@@ -32,8 +32,8 @@
   body[data-page="menu"] .filters { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 8px; }
   body[data-page="menu"] .filter { white-space: nowrap; min-height: 38px; }
   body[data-page="menu"] .menu-grid { display: flex; flex-direction: column; gap: 11px; }
-  body[data-page="menu"] .product { grid-template-columns: 82px minmax(0, 1fr); min-height: 104px; border-radius: var(--radius-md); }
-  body[data-page="menu"] .product img, body[data-page="menu"] .product .no-photo { min-height: 104px; border-radius: var(--radius-md) 0 0 var(--radius-md); }
+  body[data-page="menu"] .product { grid-template-columns: 92px minmax(0, 1fr); min-height: 116px; border-radius: var(--radius-md); }
+  body[data-page="menu"] .product img, body[data-page="menu"] .product .no-photo { width: 92px; min-height: 116px; border-radius: var(--radius-md) 0 0 var(--radius-md); }
   body[data-page="menu"] .product .badge, body[data-page="menu"] .product .stock-chip { display: none; }
   body[data-page="menu"] .product-body { padding: 10px 11px; gap: 4px; }
   body[data-page="menu"] .product strong { font-size: .94rem; }

@@ -20,6 +20,9 @@ const PRESETS = [
 
 const LADO_MAXIMO = 900;
 const QUALIDADE = 0.82;
+let filtroCategoria = "todos";
+
+const categoriasFiltro = () => ({ todos: "Todos", ...CATEGORIAS_ROTULO });
 
 /* Redimensiona e recomprime no proprio navegador antes de enviar. */
 function prepararFoto(arquivo) {
@@ -38,8 +41,6 @@ function prepararFoto(arquivo) {
       canvas.getContext("2d").drawImage(imagem, 0, 0, canvas.width, canvas.height);
 
       const dataUrl = canvas.toDataURL("image/jpeg", QUALIDADE);
-      /* O schema do servidor recusa acima de 500 KB. Avisamos aqui para o
-       * atendente nao descobrir isso so ao salvar. */
       if (dataUrl.length > 500_000) return reject(new Error("Imagem ainda muito pesada. Tente uma foto menor."));
       resolve(dataUrl);
     };
@@ -61,24 +62,31 @@ function atualizarPreview(valor) {
   if (vazio) vazio.classList.toggle("hidden", Boolean(valor));
 }
 
-function linha(produto) {
+function cardProduto(produto) {
   const promocao = promocaoDoProduto(produto.id);
   const semEstoque = produto.stock <= 0;
 
-  return el("div.product-row", { dataset: { id: produto.id } },
-    el("span.row-thumb", {}, produto.image
-      ? el("img", { src: produto.image, alt: "", loading: "lazy" })
-      : el("div.no-photo", {}, "—")),
-    el("span", {}, el("strong", {}, produto.name), el("small", {}, produto.description || "")),
-    el("span", {}, CATEGORIAS_ROTULO[produto.category] || produto.category),
-    el("span", {},
-      promocao ? el("s", {}, reais(produto.price)) : null,
-      promocao ? " " : null,
-      reais(promocao ? promocao.price : produto.price)
+  return el("article.admin-product-card", { dataset: { id: produto.id } },
+    el("div.admin-product-thumb", {}, produto.image
+      ? el("img", { src: produto.image, alt: produto.name, loading: "lazy" })
+      : el("div.no-photo", {}, "Sem foto")),
+    el("div.admin-product-main", {},
+      el("div.admin-product-title", {},
+        el("strong", {}, produto.name),
+        el("span.pill", { class: produto.active ? "is-active" : "is-paused" }, produto.active ? (semEstoque ? "Esgotado" : "Ativo") : "Pausado")
+      ),
+      el("p", {}, produto.description || "Sem descricao cadastrada."),
+      el("div.admin-product-meta", {},
+        el("span", {}, CATEGORIAS_ROTULO[produto.category] || produto.category),
+        el("span.price", {},
+          promocao ? el("s", {}, reais(produto.price)) : null,
+          promocao ? " " : null,
+          reais(promocao ? promocao.price : produto.price)
+        ),
+        el("span", { class: produto.stock <= produto.minStock ? "danger-text" : "" }, `${produto.stock} em estoque`)
+      )
     ),
-    el("span", { class: produto.stock <= produto.minStock ? "danger-text" : "" }, String(produto.stock)),
-    el("span", {}, produto.active ? (semEstoque ? "Esgotado" : "Ativo") : "Pausado"),
-    el("span.row-actions.right", {},
+    el("div.row-actions", { class: "right" },
       el("button.ghost.small", { type: "button", dataset: { acao: "editar", id: produto.id } }, "Editar"),
       el("button.ghost.small", { type: "button", dataset: { acao: "alternar", id: produto.id } },
         produto.active ? "Pausar" : "Ativar"),
@@ -87,13 +95,50 @@ function linha(produto) {
   );
 }
 
+function desenharFiltrosProdutos() {
+  const alvo = $("#product-category-filters");
+  if (!alvo) return;
+
+  render(alvo, ...Object.entries(categoriasFiltro()).map(([categoria, rotulo]) =>
+    el("button.filter", {
+      type: "button",
+      class: filtroCategoria === categoria ? "active" : "",
+      dataset: { acao: "filtrar-categoria", categoria },
+      "aria-pressed": String(filtroCategoria === categoria)
+    }, rotulo)
+  ));
+}
+
+function produtosFiltrados() {
+  return estado.produtos.filter(produto => filtroCategoria === "todos" || produto.category === filtroCategoria);
+}
+
+function produtosAgrupados(produtos) {
+  return Object.keys(CATEGORIAS_ROTULO)
+    .map(categoria => [categoria, produtos.filter(produto => produto.category === categoria)])
+    .filter(([, itens]) => itens.length);
+}
+
+function grupoCategoria(categoria, produtos) {
+  return el("section.product-category-group", {},
+    el("header", {},
+      el("h3", {}, CATEGORIAS_ROTULO[categoria] || categoria),
+      el("span", {}, `${produtos.length} ${produtos.length === 1 ? "item" : "itens"}`)
+    ),
+    el("div.product-category-list", {}, ...produtos.map(cardProduto))
+  );
+}
+
 export function desenharProdutos() {
   const alvo = $("#product-admin-list");
   if (!alvo) return;
 
-  render(alvo, estado.produtos.length
-    ? estado.produtos.map(linha)
-    : el("p.faint.pad", {}, "Nenhum produto cadastrado."));
+  desenharFiltrosProdutos();
+  const produtos = produtosFiltrados();
+
+  render(alvo, produtos.length
+    ? produtosAgrupados(produtos).map(([categoria, itens]) => grupoCategoria(categoria, itens))
+    : el("p.faint.pad", {}, "Nenhum produto cadastrado nesse filtro."));
 
   const presets = $("#photo-presets");
   if (presets && !presets.childElementCount) {
@@ -148,7 +193,6 @@ async function salvar(evento) {
     category: $("#product-category").value,
     price: paraNumero($("#product-price").value),
     stock: Math.max(0, Math.floor(paraNumero($("#product-stock").value))),
-    /* minStock nao esta no formulario; preservamos o cadastrado ao editar. */
     minStock: estado.produtos.find(item => item.id === id)?.minStock ?? 4,
     active: $("#product-active").checked,
     image: $("#product-image").value.trim()
@@ -169,6 +213,7 @@ async function salvar(evento) {
 export function ligarProdutos() {
   const lista = $("#product-admin-list");
   const presets = $("#photo-presets");
+  const tabela = $("#product-table");
 
   delegar(lista, "click", "[data-acao='editar']", (_e, botao) => editar(botao.dataset.id));
 
@@ -191,6 +236,11 @@ export function ligarProdutos() {
     } catch (erro) { toastFalha(erro); }
   });
 
+  delegar(tabela, "click", "[data-acao='filtrar-categoria']", (_e, botao) => {
+    filtroCategoria = botao.dataset.categoria || "todos";
+    desenharProdutos();
+  });
+
   delegar(presets, "click", "[data-acao='preset']", (_e, imagem) => {
     $("#product-image").value = imagem.dataset.src;
     atualizarPreview(imagem.dataset.src);
@@ -210,7 +260,7 @@ export function ligarProdutos() {
     } catch (erro) {
       toastFalha(erro);
     } finally {
-      evento.target.value = "";   // permite reenviar o mesmo arquivo
+      evento.target.value = "";
     }
   });
 }

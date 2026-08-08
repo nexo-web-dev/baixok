@@ -11,11 +11,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/admin-DFL8CKLm.js"></script>
+  <script type="module" crossorigin src="/assets/admin-miwGPW6Y.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/api-DEKr3VnT.js">
   <link rel="modulepreload" crossorigin href="/assets/toast-BeiLEQAS.js">
   <link rel="modulepreload" crossorigin href="/assets/categorias-BdpHgxAa.js">
-  <link rel="stylesheet" crossorigin href="/assets/admin-56WZUNJR.css">
+  <link rel="stylesheet" crossorigin href="/assets/admin-DlUYYSVZ.css">
 </head>
 <body data-page="admin">
   <div class="aviso-offline" role="alert">Sem conexao com o servidor. As alteracoes nao estao sendo salvas.</div>
@@ -107,6 +107,7 @@
       </div>
       <div class="products-layout">
         <div class="data-table" id="product-table">
+          <div class="filters product-category-filters" id="product-category-filters" aria-label="Filtrar produtos por categoria"></div>
           <div class="data-head product-row">
             <span></span><span>Produto</span><span>Categoria</span><span>Preco</span><span>Estoque</span><span>Status</span><span class="right">Acoes</span>
           </div>
@@ -290,16 +291,20 @@
     <section class="admin-tab hidden" id="tab-usuarios">
       <div class="tab-guide">
         <strong>Como usar esta aba</strong>
-        <p>Cada pessoa entra com o proprio login do Supabase. <strong>Administrador</strong> mexe em cadastro, precos, cupons, entrega e permissoes; <strong>balcao</strong> ve e edita apenas o que voce liberar.</p>
+        <p>Crie o acesso de cada pessoa aqui. <strong>Administrador</strong> mexe em cadastro, precos, cupons, entrega e permissoes; <strong>caixa</strong> e <strong>cozinha</strong> veem e editam apenas o que voce liberar.</p>
       </div>
       <div class="promo-layout">
         <section class="panel">
           <h2>Quem tem acesso</h2>
-          <p class="small faint">Os usuarios sao criados no Supabase. Aqui voce so ajusta papel, permissao e status de acesso.</p>
+          <p class="small faint">Cadastre um novo acesso ou selecione alguem da lista para ajustar suas permissoes.</p>
           <div class="user-list" id="user-list"></div>
           <form class="panel-divider" id="form-usuario">
-            <strong class="field-label gold" id="user-form-title">Selecione um usuario</strong>
-            <p class="small faint" id="user-form-hint">Os usuarios sao criados no Supabase. Aqui voce ajusta o acesso de quem ja existe.</p>
+            <strong class="field-label gold" id="user-form-title">Novo usuario</strong>
+            <p class="small faint" id="user-form-hint">Use um e-mail valido e uma senha com pelo menos 10 caracteres.</p>
+            <div class="field-row" id="user-credentials">
+              <input id="user-login" type="email" required autocomplete="off" placeholder="E-mail de acesso" maxlength="80">
+              <input id="user-password" type="password" required autocomplete="new-password" placeholder="Senha (minimo 10 caracteres)" minlength="10" maxlength="200">
+            </div>
             <div class="field-row">
               <input id="user-name" required placeholder="Nome da pessoa" maxlength="80">
               <select id="user-role" aria-label="Papel">
@@ -311,7 +316,10 @@
             </div>
             <div class="permission-grid" id="user-permissions"></div>
             <p class="form-error hidden" id="user-error" role="alert"></p>
-            <button class="primary wide" type="submit" id="user-submit">Salvar permissoes</button>
+            <div class="field-row">
+              <button class="primary wide" type="submit" id="user-submit">Criar usuario</button>
+              <button class="secondary hidden" type="button" id="user-cancel">Cancelar edicao</button>
+            </div>
           </form>
         </section>
 
@@ -339,7 +347,9 @@
       <input id="manual-customer" placeholder="Nome do cliente (opcional)" maxlength="80">
       <div class="manual-section hidden" id="manual-delivery-fields">
         <input id="manual-phone" placeholder="Telefone do cliente" inputmode="tel" maxlength="30">
-        <input id="manual-address" placeholder="Endereco de entrega" maxlength="160">
+        <input id="manual-address" placeholder="Endereco de entrega" maxlength="160" autocomplete="off">
+        <div class="sugestoes" id="manual-address-sugestoes"></div>
+        <p class="entrega-aviso hidden" id="manual-entrega-aviso" role="status"></p>
       </div>
       <div class="chip-row" id="manual-payments"></div>
       <label class="change-field hidden" id="manual-change-field">
