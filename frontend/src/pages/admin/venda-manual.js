@@ -7,6 +7,7 @@
 import { el, render, $, delegar, mostrar, ligarModal } from "../../utils/dom.js";
 import { reais } from "../../utils/formato.js";
 import { CANAIS_ROTULO, MODALIDADES_ROTULO } from "../../utils/categorias.js";
+import { controlaEstoqueCategoria } from "../../utils/estoque.js";
 import { apiPedidos, apiPublica } from "../../services/api.js";
 import { estado, carregar, precoEfetivo } from "./store.js";
 import { toast, toastFalha } from "../../components/toast.js";
@@ -159,7 +160,7 @@ function desenharChips() {
 function desenharProdutos() {
   const termo = ($("#manual-search")?.value || "").trim().toLowerCase();
   const lista = estado.produtos
-    .filter(produto => produto.active && produto.stock > 0)
+    .filter(produto => produto.active && (!controlaEstoqueCategoria(produto.category) || produto.stock > 0))
     .filter(produto => !termo || produto.name.toLowerCase().includes(termo))
     .slice(0, 40);
 
@@ -177,6 +178,10 @@ function desenharProdutos() {
 }
 
 function desenharCarrinho() {
+  const total = subtotal() + freteManual();
+  const trocoPara = normalizarTroco($("#manual-change-for")?.value);
+  const mostrarTroco = rascunho.pagamento === "Dinheiro" && rascunho.mesa === null && Boolean(trocoPara);
+
   render($("#manual-cart"), ...(rascunho.itens.length
     ? [
         ...rascunho.itens.map(item =>
@@ -194,7 +199,13 @@ function desenharCarrinho() {
         freteManual() > 0
           ? el("div.manual-total", {}, el("span", {}, "Taxa de entrega"), el("strong", {}, reais(freteManual())))
           : null,
-        el("div.manual-total", {}, el("span", {}, "Total"), el("strong", {}, reais(subtotal() + freteManual())))
+        el("div.manual-total", {}, el("span", {}, "Total"), el("strong", {}, reais(total))),
+        mostrarTroco
+          ? el("div.manual-total change", {},
+              el("span", {}, `Troco para ${reais(trocoPara)}`),
+              el("strong", {}, `Devolver ${reais(Math.max(0, trocoPara - total))}`)
+            )
+          : null
       ]
     : [el("p.faint", {}, "Nenhum item adicionado.")]));
 
@@ -317,6 +328,7 @@ export function ligarVendaManual() {
 
   $("#manual-change-for")?.addEventListener("input", () => {
     if (rascunho.pagamento === "Dinheiro") definirErro("");
+    desenharCarrinho();
   });
 
   $("#manual-address")?.addEventListener("input", e => {

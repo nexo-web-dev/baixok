@@ -54,7 +54,9 @@ img.manual-thumb { background: var(--soft); }
 .manual-cart-row { display: flex; align-items: center; gap: 10px; font-size: .78rem; }
 .manual-cart-row > span:first-child { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .manual-cart-row button { color: var(--gold); font-size: .95rem; font-weight: 800; padding: 0 4px; }
-.manual-cart-total { display: flex; justify-content: space-between; padding-top: 9px; border-top: 1px solid var(--line-soft); color: var(--gold-light); font-weight: 800; font-size: .9rem; }
+.manual-cart-total,
+.manual-total { display: flex; justify-content: space-between; gap: 12px; padding-top: 9px; border-top: 1px solid var(--line-soft); color: var(--gold-light); font-weight: 800; font-size: .9rem; }
+.manual-total.change { color: var(--gold); }
 .qr-card { width: 360px; justify-items: center; text-align: center; }
 .qr-logo { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; }
 .qr-frame { padding: 14px; border-radius: var(--radius-md); background: #fff; }
