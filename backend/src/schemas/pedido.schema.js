@@ -59,7 +59,8 @@ export const localizacaoMotoboySchema = z.object({
   lng: longitude,
   accuracy: z.coerce.number().min(0).max(10000).nullable().optional(),
   deviceId: idTexto.default("principal"),
-  deviceName: texto(80)
+  deviceName: texto(80),
+  motoboy: texto(80).optional()
 }).strict();
 
 export const listarPedidosSchema = z.object({

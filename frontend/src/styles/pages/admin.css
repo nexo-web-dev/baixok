@@ -169,6 +169,8 @@
 .order-note { color: var(--gold); font-size: .73rem; }
 .order-note strong { color: var(--gold); }
 .order-note.money { color: var(--gold-light); }
+.order-note.route { color: var(--green); }
+.order-note.route a { color: var(--green); font-weight: 800; text-decoration: underline; text-underline-offset: 2px; }
 .order-place { color: var(--muted); font-size: .7rem; }
 .order-actions { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 3px; }
 .order-flags { display: flex; gap: 5px; flex-wrap: wrap; }
@@ -366,6 +368,7 @@
 .location-card span { color: var(--green); font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
 .location-card strong { color: var(--ink); overflow-wrap: anywhere; }
 .location-card small { color: var(--muted); font-size: .74rem; line-height: 1.35; }
+.location-card .location-order { color: var(--gold-light); font-weight: 700; }
 .location-card.empty { border-style: dashed; border-color: var(--line-soft); }
 .motoboy-list { display: grid; gap: 12px; }
 .motoboy-card {

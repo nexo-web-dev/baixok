@@ -10,6 +10,7 @@ import { apiPedidos } from "../../../services/api.js";
 import { estado, carregar } from "../store.js";
 import { toast, toastFalha } from "../../../components/toast.js";
 import { imprimirAmbas, imprimirTeste } from "../../../components/impressao.js";
+import { registrarMotoboyLocal } from "./motoboy.js";
 
 const MINUTOS_ATRASO = 15;
 
@@ -191,7 +192,9 @@ async function mudarStatus(id, status) {
     await carregar("pedidos", "produtos");
     desenharPedidos();
     if (status === "entregue") {
-      toast(`Pedido ${senha(pedido)} entregue${pedido.motoboy ? ` por ${pedido.motoboy}` : ""}.`);
+      const nomeMotoboy = pedido.motoboy || extras?.motoboy || atual?.motoboy || "";
+      if (nomeMotoboy) registrarMotoboyLocal(nomeMotoboy);
+      toast(`Pedido ${senha(pedido)} entregue${nomeMotoboy ? ` por ${nomeMotoboy}` : ""}.`);
     } else if (status === "preparo") {
       toast(`Pedido ${senha(pedido)} aprovado e impresso.`);
     } else if (status === "pronto") {

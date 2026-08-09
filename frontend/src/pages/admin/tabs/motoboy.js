@@ -13,12 +13,45 @@ let erroLocalizacaoMostrado = false;
 let timerPainelLocalizacoes = null;
 const timersMotoboy = new Map();
 const INTERVALO_LOCALIZACAO_MS = 1000;
+const CHAVE_MOTOBOY_NOME = "baixok.motoboy.nome";
 
 const senha = pedido => String(pedido.id).slice(-3).toUpperCase();
 const porData = lista => [...lista].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 const podeVerLocalizacoes = () => ["admin", "caixa"].includes(estado.usuario?.papel);
 const podeEnviarLocalizacao = () => estado.usuario?.papel === "entregador";
 const ehAdmin = () => estado.usuario?.papel === "admin";
+const normalizarNome = valor => String(valor || "")
+  .normalize("NFD")
+  .replace(/\p{Diacritic}/gu, "")
+  .trim()
+  .toLowerCase();
+
+function nomeMotoboyLocal() {
+  try {
+    return localStorage.getItem(CHAVE_MOTOBOY_NOME) || "";
+  } catch {
+    return "";
+  }
+}
+
+function salvarNomeMotoboyLocal(nome) {
+  if (!nome || !podeEnviarLocalizacao()) return;
+  try {
+    localStorage.setItem(CHAVE_MOTOBOY_NOME, nome);
+  } catch {
+    /* Sem localStorage, a localizacao continua usando o nome do login. */
+  }
+}
+
+export function registrarMotoboyLocal(nome) {
+  salvarNomeMotoboyLocal(nome);
+  if (!podeEnviarLocalizacao() || !("geolocation" in navigator)) return;
+  navigator.geolocation.getCurrentPosition(
+    posicao => enviarLocalizacao(posicao, { forcar: true }),
+    () => {},
+    { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
+  );
+}
 
 function deviceId() {
   try {
@@ -55,6 +88,31 @@ function mapaUrl(localizacao) {
   return `https://www.google.com/maps?q=${encodeURIComponent(`${localizacao.lat},${localizacao.lng}`)}`;
 }
 
+function detalheAparelho(localizacao) {
+  const partes = [];
+  if (localizacao.usuario) partes.push(`Login ${localizacao.usuario}`);
+  if (localizacao.deviceName) partes.push(localizacao.deviceName);
+  return partes.join(" | ");
+}
+
+function nomesDaLocalizacao(localizacao) {
+  return [localizacao.nome, localizacao.usuario].map(normalizarNome).filter(Boolean);
+}
+
+function localizacaoDoMotoboy(nome) {
+  const chave = normalizarNome(nome);
+  if (!chave) return null;
+  return localizacoes.find(localizacao => nomesDaLocalizacao(localizacao).includes(chave)) || null;
+}
+
+function ultimaEntregaDaLocalizacao(localizacao) {
+  const nomes = new Set(nomesDaLocalizacao(localizacao));
+  if (!nomes.size) return null;
+  return porData(entregas.filter(pedido =>
+    pedido.status === "entregue" && nomes.has(normalizarNome(pedido.motoboy))
+  ))[0] || null;
+}
+
 function trocoResumo(pedido) {
   if (!String(pedido.payment || "").toLowerCase().includes("dinheiro")) return null;
   const trocoPara = Number(pedido.trocoPara || 0);
@@ -64,23 +122,30 @@ function trocoResumo(pedido) {
 }
 
 function cartaoLocalizacaoAoVivo(localizacao) {
-  const aparelho = localizacao.deviceName ? ` - ${localizacao.deviceName}` : "";
+  const aparelho = detalheAparelho(localizacao);
+  const entrega = ultimaEntregaDaLocalizacao(localizacao);
   const precisao = localizacao.accuracy ? ` | precisão ${Math.round(localizacao.accuracy)}m` : "";
   return el("article.location-card", { class: localizacao.online ? "live" : "" },
     el("div", {},
       el("span", {}, localizacao.online ? "Ao vivo" : "Última posição"),
-      el("strong", {}, `${localizacao.nome || "Motoboy"}${aparelho}`),
-      el("small", {}, `${minutosDesde(localizacao.updatedAt)}${precisao}`)
+      el("strong", {}, localizacao.nome || "Motoboy"),
+      aparelho ? el("small", {}, aparelho) : null,
+      el("small", {}, `${minutosDesde(localizacao.updatedAt)}${precisao}`),
+      entrega ? el("small.location-order", {},
+        `Pedido ${senha(entrega)} entregue por ${entrega.motoboy || localizacao.nome} - ${entrega.customer || "Cliente"}`
+      ) : null
     ),
     el("a.secondary.small", { href: mapaUrl(localizacao), target: "_blank", rel: "noopener" }, "Abrir no Google")
   );
 }
 
 function cartaoLocalizacao(localizacao) {
+  const aparelho = detalheAparelho(localizacao);
   return el("article.location-card", {},
     el("div", {},
       el("span", {}, "Ultima posicao"),
       el("strong", {}, localizacao.nome || "Motoboy"),
+      aparelho ? el("small", {}, aparelho) : null,
       el("small", {}, `${minutosDesde(localizacao.updatedAt)}${localizacao.accuracy ? ` | precisão ${Math.round(localizacao.accuracy)}m` : ""}`)
     ),
     el("a.secondary.small", { href: mapaUrl(localizacao), target: "_blank", rel: "noopener" }, "Abrir mapa")
@@ -122,9 +187,9 @@ function desenharLocalizacoes() {
   );
 }
 
-async function enviarLocalizacao(posicao) {
+async function enviarLocalizacao(posicao, { forcar = false } = {}) {
   const agora = Date.now();
-  if (agora - ultimoEnvioLocalizacao < INTERVALO_LOCALIZACAO_MS) return;
+  if (!forcar && agora - ultimoEnvioLocalizacao < INTERVALO_LOCALIZACAO_MS) return;
   ultimoEnvioLocalizacao = agora;
 
   try {
@@ -133,7 +198,8 @@ async function enviarLocalizacao(posicao) {
       lng: posicao.coords.longitude,
       accuracy: posicao.coords.accuracy,
       deviceId: deviceId(),
-      deviceName: deviceName()
+      deviceName: deviceName(),
+      motoboy: nomeMotoboyLocal() || undefined
     });
     const status = $("#motoboy-location-status");
     if (status) status.textContent = "Localização ativa";
@@ -186,6 +252,8 @@ function cardEntrega(pedido) {
   const entregue = pedido.status === "entregue";
   const podeEditarMotoboy = !pedido.motoboy || ehAdmin();
   const troco = trocoResumo(pedido);
+  const localizacao = localizacaoDoMotoboy(pedido.motoboy);
+  const precisao = localizacao?.accuracy ? ` | precisão ${Math.round(localizacao.accuracy)}m` : "";
 
   return el("article.motoboy-card", { class: entregue ? "done" : "", dataset: { id: pedido.id, motoboySalvo: pedido.motoboy || "" } },
     el("div.motoboy-card-head", {},
@@ -204,6 +272,11 @@ function cardEntrega(pedido) {
     el("p.motoboy-items", {}, pedido.items.map(item => `${item.qty}x ${item.name}`).join(" | ") || "Sem itens"),
     pedido.note ? el("p.order-note", {}, el("strong", {}, "Obs: "), pedido.note) : null,
     troco ? el("p.order-note.money", {}, el("strong", {}, "Troco: "), troco) : null,
+    localizacao ? el("p.order-note.route", {},
+      el("strong", {}, "Localização: "),
+      `${localizacao.nome || pedido.motoboy} ${minutosDesde(localizacao.updatedAt)}${precisao} `,
+      el("a", { href: mapaUrl(localizacao), target: "_blank", rel: "noopener" }, "abrir no Google")
+    ) : null,
     el("div.motoboy-actions", {},
       el("label", {},
         el("span", {}, "Motoboy"),
@@ -278,6 +351,7 @@ async function salvarMotoboy(card, { redesenhar = false } = {}) {
   try {
     statusMotoboy(card, "Salvando...");
     await apiPedidos.definirMotoboy(card.dataset.id, nome);
+    registrarMotoboyLocal(nome);
     card.dataset.motoboySalvo = nome;
     statusMotoboy(card, "Salvo", "ok");
     if (redesenhar) await desenharMotoboy();
@@ -308,6 +382,7 @@ async function marcarEntregue(card) {
       return toastFalha(new Error("Motoboy ja foi salvo. Apenas administrador pode alterar."), "Entrega");
     }
     await apiPedidos.mudarStatus(card.dataset.id, "entregue", { motoboy: nome });
+    registrarMotoboyLocal(nome);
     toast("Pedido marcado como entregue.");
     await desenharMotoboy();
   } catch (erro) {

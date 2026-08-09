@@ -3,7 +3,7 @@ import { todos, um } from "../db/postgres.js";
 const paraApi = linha => linha && ({
   usuarioId: linha.usuario_id,
   usuario: linha.usuario || "",
-  nome: linha.usuario_nome_atual || linha.usuario_nome || "Motoboy",
+  nome: linha.usuario_nome || linha.usuario_nome_atual || linha.usuario || "Motoboy",
   papel: linha.papel || "entregador",
   deviceId: linha.dispositivo_id || "principal",
   deviceName: linha.dispositivo_nome || "",
@@ -15,7 +15,8 @@ const paraApi = linha => linha && ({
 });
 
 export const motoboysRepo = {
-  async salvarLocalizacao(usuario, { lat, lng, accuracy = null, deviceId = "principal", deviceName = "" }) {
+  async salvarLocalizacao(usuario, { lat, lng, accuracy = null, deviceId = "principal", deviceName = "", motoboy = "" }) {
+    const nomeVisivel = String(motoboy || "").trim() || usuario.nome || usuario.usuario || "Motoboy";
     const linha = await um(`
       INSERT INTO motoboy_localizacoes (
         usuario_id, usuario_nome, papel, dispositivo_id, dispositivo_nome, lat, lng, precisao, atualizado_em
@@ -31,7 +32,7 @@ export const motoboysRepo = {
       RETURNING *
     `, [
       usuario.id,
-      usuario.nome || usuario.usuario || "Motoboy",
+      nomeVisivel,
       usuario.papel || "entregador",
       deviceId,
       deviceName,
