@@ -3,9 +3,9 @@
  * A ordem das colunas continua a mesma, e o arrastar entre colunas foi mantido.
  * Cada acao virou uma chamada a API: o painel nao muda mais o proprio banco
  * local e torce para o servidor concordar depois. */
-import { el, render, $, delegar } from "../../../utils/dom.js";
+import { el, render, $, delegar, mostrar } from "../../../utils/dom.js";
 import { reais, minutosDesde, esperaLegivel } from "../../../utils/formato.js";
-import { CANAIS_ROTULO, MODALIDADES_ROTULO } from "../../../utils/categorias.js";
+import { CANAIS_ROTULO, MODALIDADES_ROTULO, STATUS_ROTULO } from "../../../utils/categorias.js";
 import { apiPedidos } from "../../../services/api.js";
 import { estado, carregar } from "../store.js";
 import { toast, toastFalha } from "../../../components/toast.js";
@@ -31,6 +31,47 @@ const pedidosDoPapel = (pedidos, papel) => papel === "entregador"
 
 const senha = pedido => String(pedido.id).slice(-3).toUpperCase();
 const porChegada = lista => [...lista].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+const normalizar = valor => String(valor || "")
+  .normalize("NFD")
+  .replace(/\p{Diacritic}/gu, "")
+  .trim()
+  .toLowerCase();
+
+function produtoDoItem(item) {
+  const id = String(item?.id || "");
+  const nome = normalizar(item?.name);
+  return estado.produtos.find(produto =>
+    String(produto.id || "") === id || normalizar(produto.name) === nome
+  ) || null;
+}
+
+function miniFotoItem(item) {
+  const produto = produtoDoItem(item);
+  if (!produto?.image) return el("div.order-detail-thumb.no-photo", {}, "Sem foto");
+  return el("img.order-detail-thumb", {
+    src: produto.image,
+    alt: item.name || produto.name || "Produto",
+    loading: "lazy",
+    decoding: "async",
+    onerror: evento => evento.target.replaceWith(el("div.order-detail-thumb.no-photo", {}, "Sem foto"))
+  });
+}
+
+function rotuloPronto(pedido) {
+  if (pedido.fulfillment === "entrega") return "Despachar entrega";
+  if (pedido.fulfillment === "mesa") return "Pronto na mesa";
+  return "Pronto - chamar no telão";
+}
+
+function rotuloConcluir(pedido) {
+  if (pedido.fulfillment === "entrega") return "Marcar entregue";
+  if (pedido.fulfillment === "mesa") return "Concluir mesa";
+  return "Concluir retirada";
+}
+
+function botaoDetalhe(pedido) {
+  return el("button.secondary.small", { type: "button", dataset: { acao: "detalhe", id: pedido.id } }, "Ver pedido");
+}
 
 function dadosParaStatus(pedido, status) {
   if (status !== "entregue" || pedido?.fulfillment !== "entrega") return {};
@@ -84,28 +125,36 @@ function acoes(pedido, papel) {
 
   if (papel === "entregador") {
     if (pedido.status === "pronto" && pedido.fulfillment === "entrega") {
-      return [el("button.ghost-green.small", { type: "button", dataset: { acao: "status", id: pedido.id, status: "entregue" } }, "Marcar entregue")];
+      return [
+        botaoDetalhe(pedido),
+        el("button.ghost-green.small", { type: "button", dataset: { acao: "status", id: pedido.id, status: "entregue" } }, "Marcar entregue")
+      ];
     }
-    return [];
+    return [botaoDetalhe(pedido)];
   }
 
   if (pedido.status === "novo") {
     return [
+      botaoDetalhe(pedido),
       el("button.primary.small", { type: "button", dataset: { acao: "aprovar", id: pedido.id } }, "Aprovar e imprimir"),
       podeOperar ? el("button.danger.small", { type: "button", dataset: { acao: "recusar", id: pedido.id } }, "Recusar") : null
     ];
   }
   if (pedido.status === "preparo") {
     return [
+      botaoDetalhe(pedido),
       el("button.primary.small", { type: "button", dataset: { acao: "status", id: pedido.id, status: "pronto" } },
-        pedido.fulfillment === "retirada" ? "Pronto - chamar no telão" : "Despachar entrega"),
+        rotuloPronto(pedido)),
       podeOperar ? el("button.secondary.small", { type: "button", dataset: { acao: "reimprimir", id: pedido.id } }, "Reimprimir") : null
     ];
   }
   if (pedido.status === "pronto") {
-    return [el("button.ghost-green.small", { type: "button", dataset: { acao: "status", id: pedido.id, status: "entregue" } }, "Marcar entregue")];
+    return [
+      botaoDetalhe(pedido),
+      el("button.ghost-green.small", { type: "button", dataset: { acao: "status", id: pedido.id, status: "entregue" } }, rotuloConcluir(pedido))
+    ];
   }
-  return [];
+  return [botaoDetalhe(pedido)];
 }
 
 function cartao(pedido, papel) {
@@ -146,6 +195,59 @@ function cartao(pedido, papel) {
     el("div.order-actions", {}, ...acoes(pedido, papel)),
     atalhosStatus(pedido, papel)
   );
+}
+
+function fecharDetalhePedido() {
+  mostrar($("#order-detail-modal"), false);
+}
+
+function linhaDetalheItem(item) {
+  return el("div.order-detail-item", {},
+    miniFotoItem(item),
+    el("div", {},
+      el("strong", {}, `${item.qty}x ${item.name}`),
+      el("span", {}, `${reais(item.price)} cada`)
+    ),
+    el("strong", {}, reais(Number(item.price || 0) * Number(item.qty || 0)))
+  );
+}
+
+function abrirDetalhePedido(id) {
+  const pedido = estado.pedidos.find(item => item.id === id);
+  const modal = $("#order-detail-modal");
+  const corpo = $("#order-detail-body");
+  if (!pedido || !modal || !corpo) return;
+
+  const titulo = $("#order-detail-title");
+  const subtitulo = $("#order-detail-subtitle");
+  const troco = trocoResumo(pedido);
+  if (titulo) titulo.textContent = `Pedido ${senha(pedido)} - ${pedido.customer || "Cliente"}`;
+  if (subtitulo) {
+    subtitulo.textContent = [
+      STATUS_ROTULO[pedido.status] || pedido.status,
+      MODALIDADES_ROTULO[pedido.fulfillment] || pedido.fulfillment,
+      CANAIS_ROTULO[pedido.channel] || pedido.channel
+    ].filter(Boolean).join(" | ");
+  }
+
+  render(corpo,
+    el("div.order-detail-summary", {},
+      el("div", {}, el("span", {}, "Pagamento"), el("strong", {}, pedido.payment || "-")),
+      el("div", {}, el("span", {}, "Total"), el("strong", {}, reais(pedido.total))),
+      el("div", {}, el("span", {}, "Tempo"), el("strong", {}, esperaLegivel(minutosDesde(pedido.createdAt)))),
+      pedido.tableNumber ? el("div", {}, el("span", {}, "Mesa"), el("strong", {}, `Mesa ${pedido.tableNumber}`)) : null
+    ),
+    el("div.order-detail-items", {}, pedido.items.map(linhaDetalheItem)),
+    troco ? el("p.order-note.money", {}, el("strong", {}, "Troco: "), troco) : null,
+    pedido.note ? el("p.order-note", {}, el("strong", {}, "Observação: "), pedido.note) : null,
+    pedido.phone ? el("p.order-place", {}, el("strong", {}, "Telefone: "), pedido.phone) : null,
+    pedido.place ? el("p.order-place", {}, el("strong", {}, "Local: "), pedido.place) : null,
+    pedido.motoboy ? el("p.order-note", {}, el("strong", {}, "Motoboy: "), pedido.motoboy) : null,
+    el("div.order-detail-actions", {},
+      el("button.secondary", { type: "button", dataset: { acao: "reimprimir-detalhe", id: pedido.id } }, "Reimprimir nota")
+    )
+  );
+  mostrar(modal, true);
 }
 
 export function desenharPedidos() {
@@ -228,9 +330,14 @@ export function ligarPedidos() {
   delegar(alvo, "click", "[data-acao='aprovar']", (_e, botao) => mudarStatus(botao.dataset.id, "preparo"));
   delegar(alvo, "click", "[data-acao='status']", (_e, botao) => mudarStatus(botao.dataset.id, botao.dataset.status));
   delegar(alvo, "click", "[data-acao='recusar']", (_e, botao) => recusar(botao.dataset.id));
+  delegar(alvo, "click", "[data-acao='detalhe']", (_e, botao) => abrirDetalhePedido(botao.dataset.id));
   delegar(alvo, "click", "[data-acao='reimprimir']", (_e, botao) => {
     const pedido = estado.pedidos.find(item => item.id === botao.dataset.id);
     if (pedido) imprimirAmbas(pedido);
+  });
+  delegar(alvo, "click", ".order-card", (evento, cartaoNode) => {
+    if (evento.target.closest("button, a, input, textarea, select")) return;
+    abrirDetalhePedido(cartaoNode.dataset.id);
   });
 
   /* Arrastar entre colunas, para frente ou para tras, para corrigir status. */
@@ -251,4 +358,13 @@ export function ligarPedidos() {
 
   $("#print-test-kitchen")?.addEventListener("click", () => imprimirTeste("kitchen"));
   $("#print-test-counter")?.addEventListener("click", () => imprimirTeste("counter"));
+
+  $("#order-detail-close")?.addEventListener("click", fecharDetalhePedido);
+  $("#order-detail-modal")?.addEventListener("click", evento => {
+    if (evento.target === $("#order-detail-modal")) fecharDetalhePedido();
+  });
+  delegar($("#order-detail-body"), "click", "[data-acao='reimprimir-detalhe']", (_e, botao) => {
+    const pedido = estado.pedidos.find(item => item.id === botao.dataset.id);
+    if (pedido) imprimirAmbas(pedido);
+  });
 }

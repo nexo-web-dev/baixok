@@ -161,6 +161,10 @@
 .order-card.priority-attention { border-color: rgba(217,154,104,.55); }
 .order-card.priority-urgent { border-color: rgba(212,127,110,.5); }
 .order-card.status-entregue { opacity: .72; }
+.order-card { cursor: pointer; }
+.order-card[draggable="true"] { cursor: grab; }
+.order-card:active { cursor: grabbing; }
+.order-card:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 .order-top { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .order-num { color: var(--gold); font-family: var(--font-head); font-size: .88rem; }
 .order-customer { font-size: .82rem; }
@@ -180,6 +184,47 @@
 .flag.done { color: var(--green); background: var(--green-bg); }
 .priority-attention .flag.time { color: var(--gold-light); background: var(--amber-bg); }
 .priority-urgent .flag.time { color: var(--danger); background: var(--danger-bg); }
+
+.order-detail-card { width: min(780px, calc(100vw - 24px)); padding: 20px; }
+.order-detail-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 14px;
+  padding-bottom: 10px; border-bottom: 1px solid var(--line-soft);
+}
+.order-detail-head h2 { margin-top: 3px; font-size: 1.35rem; overflow-wrap: anywhere; }
+.order-detail-head p { margin-top: 3px; color: var(--muted); font-size: .82rem; }
+.icon-close {
+  display: grid; place-items: center; width: 38px; height: 38px; flex: 0 0 38px;
+  border-radius: var(--radius-pill); background: var(--soft); color: var(--ink);
+  font-size: 1.3rem; line-height: 1;
+}
+.icon-close:hover { background: rgba(255,255,255,.12); }
+.order-detail-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.order-detail-summary div {
+  display: grid; gap: 3px; min-height: 70px; padding: 12px; border-radius: var(--radius-sm);
+  background: var(--soft); border: 1px solid var(--line-soft);
+}
+.order-detail-summary span { color: var(--muted); font-size: .72rem; font-weight: 700; text-transform: uppercase; }
+.order-detail-summary strong {
+  color: var(--gold-light); font-family: var(--font-head); font-size: .95rem; overflow-wrap: anywhere;
+}
+.order-detail-items { display: grid; gap: 8px; }
+.order-detail-item {
+  display: grid; grid-template-columns: 70px minmax(0, 1fr) auto; gap: 12px; align-items: center;
+  padding: 10px; border-radius: var(--radius-sm); background: var(--sidebar); border: 1px solid var(--line-soft);
+}
+.order-detail-thumb {
+  width: 70px; height: 70px; min-height: 70px; border-radius: 14px;
+  object-fit: cover; object-position: center; background: var(--soft);
+}
+.order-detail-thumb.no-photo {
+  display: grid; place-items: center; color: var(--gold); font-size: .66rem; font-weight: 800; text-align: center;
+  background: repeating-linear-gradient(135deg, rgba(217,154,104,.08) 0 8px, rgba(255,255,255,.03) 8px 16px), var(--soft);
+}
+.order-detail-item div { display: grid; gap: 4px; min-width: 0; }
+.order-detail-item div strong { color: var(--ink); overflow-wrap: anywhere; }
+.order-detail-item div span { color: var(--muted); font-size: .78rem; }
+.order-detail-item > strong { color: var(--gold-light); white-space: nowrap; }
+.order-detail-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; padding-top: 4px; }
 
 /* â€” cozinha (KDS) â€” */
 .kds-board { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
@@ -488,6 +533,11 @@
 }
 
 @media (max-width: 720px) {
+  .order-detail-card { padding: 16px; }
+  .order-detail-summary { grid-template-columns: 1fr 1fr; }
+  .order-detail-item { grid-template-columns: 62px minmax(0, 1fr); align-items: start; }
+  .order-detail-thumb { width: 62px; height: 62px; min-height: 62px; }
+  .order-detail-item > strong { grid-column: 2; justify-self: start; }
   .filter-bar { align-items: stretch; }
   .period-group, .custom-period, .filter-bar select, .export-btn { width: 100%; }
   .period-group { overflow-x: auto; padding-bottom: 2px; }
