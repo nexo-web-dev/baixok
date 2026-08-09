@@ -6,8 +6,8 @@
 import { Router } from "express";
 import { publicoController } from "../controllers/publico.controller.js";
 import { validarCorpo, validarQuery, validarParams } from "../middlewares/validate.js";
-import { limitePedido, limiteGeocodificacao } from "../middlewares/rateLimit.js";
-import { criarPedidoPublicoSchema } from "../schemas/pedido.schema.js";
+import { limitePedido, limiteGeocodificacao, limiteHistoricoPedidos } from "../middlewares/rateLimit.js";
+import { criarPedidoPublicoSchema, historicoPedidoSchema } from "../schemas/pedido.schema.js";
 import { validarCupomSchema } from "../schemas/catalogo.schema.js";
 import { buscarEnderecoSchema, cotarEntregaSchema } from "../schemas/entrega.schema.js";
 import { paramsNumero } from "../schemas/comum.schema.js";
@@ -16,6 +16,7 @@ export const rotasPublicas = Router();
 
 rotasPublicas.get("/cardapio", publicoController.cardapio);
 rotasPublicas.get("/mesas/:n", validarParams(paramsNumero), publicoController.statusMesa);
+rotasPublicas.get("/pedidos/historico", limiteHistoricoPedidos, validarQuery(historicoPedidoSchema), publicoController.historicoPedidos);
 
 rotasPublicas.post(
   "/pedidos",

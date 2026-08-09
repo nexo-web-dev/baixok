@@ -6,15 +6,15 @@
  */
 
 const PAPEL_PADRAO_VER = Object.freeze({
-  admin: ["pedidos", "motoboy", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "plano", "usuarios"],
-  caixa: ["pedidos", "motoboy", "mesas", "estoque"],
+  admin: ["pedidos", "motoboy", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "fechamentos", "plano", "usuarios"],
+  caixa: ["pedidos", "motoboy", "mesas", "estoque", "dashboard", "fechamentos"],
   cozinha: ["pedidos"],
   entregador: ["pedidos"]
 });
 
 const PAPEL_PADRAO_EDITAR = Object.freeze({
-  admin: ["pedidos", "motoboy", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "plano", "usuarios"],
-  caixa: ["pedidos", "motoboy", "mesas", "estoque"],
+  admin: ["pedidos", "motoboy", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "fechamentos", "plano", "usuarios"],
+  caixa: ["pedidos", "motoboy", "mesas", "estoque", "dashboard", "fechamentos"],
   cozinha: [],
   entregador: ["pedidos"]
 });
@@ -74,6 +74,13 @@ export const ABAS = Object.freeze({
     subtitulo: "Faturamento, movimento por hora e mais vendidos.",
     icone: "◔",
     rotulo: "Dashboard",
+    papeis: ["admin", "caixa"]
+  },
+  fechamentos: {
+    titulo: "Fechamentos de caixa",
+    subtitulo: "Historico de aberturas, fechamentos e relatorios para imprimir ou salvar em PDF.",
+    icone: "FC",
+    rotulo: "Fechamentos",
     papeis: ["admin", "caixa"]
   },
   plano: {

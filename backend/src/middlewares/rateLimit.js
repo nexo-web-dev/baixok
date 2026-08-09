@@ -44,6 +44,15 @@ export const limitePedido = rateLimit({
   handler: resposta("Muitos pedidos seguidos deste aparelho. Fale com o balcao.")
 });
 
+/* Historico publico por telefone: leve e limitado, mas ainda e uma rota aberta
+ * que consulta pedidos. O teto evita varredura de telefone por script. */
+export const limiteHistoricoPedidos = rateLimit({
+  ...base,
+  windowMs: 10 * 60 * 1000,
+  limit: Math.max(20, env.LIMITE_PEDIDO * 3),
+  handler: resposta("Muitas consultas de historico. Tente daqui a pouco.")
+});
+
 /* Teto geral, folgado: nao atrapalha o uso normal e evita que uma aba em laco
  * consuma o servidor. */
 export const limiteGeral = rateLimit({

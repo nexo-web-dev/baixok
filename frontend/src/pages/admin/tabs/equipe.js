@@ -53,7 +53,7 @@ const ROTULOS_ABAS = Object.fromEntries(
 
 const PADRAO_PERMISSOES = {
   admin: { ver: Object.keys(ABAS), editar: Object.keys(ABAS) },
-  caixa: { ver: ["pedidos", "mesas", "estoque", "dashboard"], editar: ["pedidos", "mesas"] },
+  caixa: { ver: ["pedidos", "mesas", "estoque", "dashboard", "fechamentos"], editar: ["pedidos", "mesas"] },
   cozinha: { ver: ["pedidos"], editar: ["pedidos"] },
   entregador: { ver: ["pedidos"], editar: ["pedidos"] }
 };

@@ -154,6 +154,23 @@ body.cart-open .mobile-cart { opacity: 0; pointer-events: none; transform: trans
 .totals-line { display: flex; justify-content: space-between; color: var(--muted); font-size: .86rem; }
 .totals-line.discount { color: var(--green); font-weight: 700; }
 
+.history-card { max-width: 520px; }
+.history-list { display: grid; gap: 8px; max-height: 46vh; overflow: auto; }
+.history-order {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: start;
+  padding: 12px 14px; border-radius: var(--radius-sm); background: var(--soft); border: 1px solid var(--line-soft);
+}
+.history-order div { display: grid; gap: 3px; min-width: 0; }
+.history-order strong { color: var(--ink); font-size: .88rem; }
+.history-order span, .history-order em { color: var(--muted); font-size: .76rem; font-style: normal; line-height: 1.35; overflow-wrap: anywhere; }
+.history-order div:last-child { justify-items: end; }
+.history-order div:last-child strong { color: var(--gold-light); white-space: nowrap; }
+
+@media (max-width: 640px) {
+  .history-order { grid-template-columns: 1fr; }
+  .history-order div:last-child { justify-items: start; }
+}
+
 /* â€” modo mesa: cardapio aberto pelo QR code â€” */
 .table-bar {
   position: sticky; top: 0; z-index: 22; display: flex; align-items: center; justify-content: space-between;

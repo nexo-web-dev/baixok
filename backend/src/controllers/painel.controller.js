@@ -11,6 +11,7 @@ import { mesasService } from "../services/mesas.service.js";
 import { cuponsService } from "../services/cupons.service.js";
 import { entregaService } from "../services/entrega.service.js";
 import { relatoriosService } from "../services/relatorios.service.js";
+import { caixaService } from "../services/caixa.service.js";
 import { usuariosService } from "../services/usuarios.service.js";
 import { ajustesRepo } from "../repositories/ajustes.repo.js";
 import { mapaEstatico } from "../lib/mapbox.js";
@@ -173,6 +174,27 @@ export const relatoriosController = {
   },
   async exportacao(req, res) {
     res.json(await relatoriosService.exportacao(req.validado.query));
+  }
+};
+
+export const caixaController = {
+  async atual(_req, res) {
+    res.json({ caixa: await caixaService.atual() });
+  },
+  async listar(req, res) {
+    res.json({ fechamentos: await caixaService.listar(req.validado.query) });
+  },
+  async buscar(req, res) {
+    res.json({ fechamento: await caixaService.buscar(req.validado.params.id) });
+  },
+  async abrir(req, res) {
+    res.status(201).json({ caixa: await caixaService.abrir(contexto(req)) });
+  },
+  async fechar(req, res) {
+    res.json({ caixa: await caixaService.fechar(contexto(req), req.validado.body) });
+  },
+  async pdf(req, res) {
+    res.type("html").send(await caixaService.relatorioHtml(req.validado.params.id));
   }
 };
 

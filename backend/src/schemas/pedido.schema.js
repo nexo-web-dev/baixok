@@ -60,6 +60,11 @@ export const listarPedidosSchema = z.object({
   limite: z.coerce.number().int().min(1).max(1000).default(500)
 });
 
+export const historicoPedidoSchema = z.object({
+  phone: texto(LIMITES.TELEFONE, { obrigatorio: true }),
+  limite: z.coerce.number().int().min(1).max(10).default(5)
+});
+
 export const relatorioSchema = z.object({
   periodo: z.enum(["hoje", "7dias", "30dias", "mes", "personalizado"]).default("hoje"),
   desde: dataIso.optional(),

@@ -1,0 +1,2 @@
+-- Referencia SQLite: a pasta raiz de migrations nao e mais executada.
+-- Em Postgres, a tabela e criada por migrations/postgres/010_fechamentos_caixa.sql.

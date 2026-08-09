@@ -9,15 +9,15 @@ import { logger } from "../lib/logger.js";
 import { supabaseAuth } from "./supabase-auth.js";
 
 const ABAS_POR_PADRAO = {
-  [PAPEIS.ADMIN]: ["pedidos", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "plano", "usuarios"],
-  [PAPEIS.CAIXA]: ["pedidos", "mesas", "estoque"],
+  [PAPEIS.ADMIN]: ["pedidos", "motoboy", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "fechamentos", "plano", "usuarios"],
+  [PAPEIS.CAIXA]: ["pedidos", "motoboy", "mesas", "estoque", "dashboard", "fechamentos"],
   [PAPEIS.COZINHA]: ["pedidos"],
   [PAPEIS.ENTREGADOR]: ["pedidos"]
 };
 
 const EDITAVEIS_POR_PADRAO = {
-  [PAPEIS.ADMIN]: ["pedidos", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "plano", "usuarios"],
-  [PAPEIS.CAIXA]: ["pedidos", "mesas", "estoque"],
+  [PAPEIS.ADMIN]: ["pedidos", "motoboy", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "fechamentos", "plano", "usuarios"],
+  [PAPEIS.CAIXA]: ["pedidos", "motoboy", "mesas", "estoque"],
   [PAPEIS.COZINHA]: [],
   [PAPEIS.ENTREGADOR]: ["pedidos"]
 };

@@ -1,0 +1,2 @@
+-- Referencia SQLite: a pasta raiz de migrations nao e mais executada.
+-- Em Postgres, a coluna e o indice sao criados por migrations/postgres/011_telefone_historico_pedidos.sql.

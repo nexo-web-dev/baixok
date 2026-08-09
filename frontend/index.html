@@ -92,6 +92,7 @@
       </div>
     </div>
     <div class="top-actions">
+      <button class="secondary" type="button" id="open-history">Meus pedidos</button>
       <a class="secondary" href="https://www.instagram.com/baixok_/" target="_blank" rel="noopener">◎ Instagram</a>
     </div>
   </header>
@@ -232,6 +233,21 @@
     Siga o <a href="https://www.instagram.com/baixok_/" target="_blank" rel="noopener">Baixo K no Instagram</a>
     · Desenvolvido pela <a href="https://portfolio-nexo.netlify.app/" target="_blank" rel="noopener">Nexo Developer</a>
   </footer>
+
+  <div class="modal hidden" id="history-modal" role="dialog" aria-modal="true" aria-labelledby="history-title">
+    <div class="modal-card history-card">
+      <div>
+        <h2 id="history-title">Meus pedidos</h2>
+        <p>Digite o telefone usado no pedido para ver os ultimos registros.</p>
+      </div>
+      <div class="coupon-input-row">
+        <input id="history-phone" placeholder="WhatsApp ou telefone" inputmode="tel" autocomplete="tel">
+        <button class="primary" type="button" id="history-search">Buscar</button>
+      </div>
+      <div class="history-list" id="history-results"></div>
+      <button class="secondary wide" type="button" id="history-close">Fechar</button>
+    </div>
+  </div>
 
   <div class="toast" id="toast" role="alert" aria-live="polite"></div>
 

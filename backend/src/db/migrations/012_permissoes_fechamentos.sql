@@ -1,0 +1,2 @@
+-- Referencia SQLite: a pasta raiz de migrations nao e mais executada.
+-- Em Postgres, as permissoes sao atualizadas por migrations/postgres/012_permissoes_fechamentos.sql.

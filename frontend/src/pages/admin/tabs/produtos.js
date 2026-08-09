@@ -21,6 +21,12 @@ const PRESETS = [
 const LADO_MAXIMO = 900;
 const QUALIDADE = 0.82;
 let filtroCategoria = "todos";
+let filtroBusca = "";
+
+const normalizarBusca = valor => String(valor || "")
+  .normalize("NFD")
+  .replace(/\p{Diacritic}/gu, "")
+  .toLowerCase();
 
 function categoriasDosProdutos() {
   const mapa = new Map();
@@ -124,7 +130,12 @@ function desenharFiltrosProdutos() {
 }
 
 function produtosFiltrados() {
-  return estado.produtos.filter(produto => filtroCategoria === "todos" || produto.category === filtroCategoria);
+  const termo = normalizarBusca(filtroBusca);
+  return estado.produtos.filter(produto => {
+    const categoriaOk = filtroCategoria === "todos" || produto.category === filtroCategoria;
+    const texto = normalizarBusca(`${produto.name} ${produto.description || ""} ${produto.category || ""}`);
+    return categoriaOk && (!termo || texto.includes(termo));
+  });
 }
 
 function produtosAgrupados(produtos) {
@@ -290,6 +301,10 @@ export function ligarProdutos() {
 
   $("#form-produto")?.addEventListener("submit", salvar);
   $("#product-reset")?.addEventListener("click", limparFormulario);
+  $("#product-search")?.addEventListener("input", evento => {
+    filtroBusca = evento.target.value;
+    desenharProdutos();
+  });
   $("#product-image")?.addEventListener("input", evento => atualizarPreview(evento.target.value));
   $("#product-photo-button")?.addEventListener("click", () => $("#product-photo-file").click());
 

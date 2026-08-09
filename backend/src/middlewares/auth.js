@@ -8,15 +8,15 @@ import { authService } from "../services/auth.service.js";
 import { naoAutenticado, semPermissao } from "../lib/errors.js";
 
 const ABAS_PADRAO_VER = Object.freeze({
-  admin: ["pedidos", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "usuarios"],
-  caixa: ["pedidos", "mesas", "estoque"],
+  admin: ["pedidos", "motoboy", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "fechamentos", "plano", "usuarios"],
+  caixa: ["pedidos", "motoboy", "mesas", "estoque", "dashboard", "fechamentos"],
   cozinha: ["pedidos"],
   entregador: ["pedidos"]
 });
 
 const ABAS_PADRAO_EDITAR = Object.freeze({
-  admin: ["pedidos", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "usuarios"],
-  caixa: ["pedidos", "mesas", "estoque"],
+  admin: ["pedidos", "motoboy", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "fechamentos", "plano", "usuarios"],
+  caixa: ["pedidos", "motoboy", "mesas", "estoque"],
   cozinha: [],
   entregador: ["pedidos"]
 });

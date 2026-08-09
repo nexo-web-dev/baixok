@@ -95,6 +95,24 @@ export const pedidosService = {
   listarAbertos: () => pedidosRepo.listarAbertos(),
   listarParaTelao: () => pedidosRepo.listarParaTelao(),
 
+  async historicoPublico({ phone, limite = 5 }) {
+    const pedidos = await pedidosRepo.listarPorTelefone(phone, limite);
+    return pedidos.map(pedido => ({
+      id: pedido.id,
+      createdAt: pedido.createdAt,
+      status: pedido.status,
+      fulfillment: pedido.fulfillment,
+      customer: pedido.customer,
+      payment: pedido.payment,
+      total: pedido.total,
+      items: pedido.items.map(item => ({
+        name: item.name,
+        qty: item.qty,
+        price: item.price
+      }))
+    }));
+  },
+
   async buscar(id) {
     const pedido = await pedidosRepo.buscar(id);
     if (!pedido) throw naoEncontrado("Pedido nao encontrado.");
@@ -286,7 +304,7 @@ export const pedidosService = {
         }
         await pedidosRepo.marcarEstoqueDevolvido(id);
       }
-      return pedidosRepo.cancelar(id, textoMotivo);
+      return pedidosRepo.cancelar(id, motivoLimpo);
     });
 
     await auditoriaRepo.registrar({

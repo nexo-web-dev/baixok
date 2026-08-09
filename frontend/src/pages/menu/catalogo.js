@@ -3,6 +3,11 @@ import { el, render, $ } from "../../utils/dom.js";
 import { reais } from "../../utils/formato.js";
 import { rotuloCategoria } from "../../utils/categorias.js";
 
+const normalizarBusca = valor => String(valor || "")
+  .normalize("NFD")
+  .replace(/\p{Diacritic}/gu, "")
+  .toLowerCase();
+
 function categoriasFiltro(produtos) {
   const categorias = new Map([["todos", "Todos"]]);
   for (const produto of produtos || []) {
@@ -99,11 +104,11 @@ export function desenharGrade(produtos, { categoria, busca }) {
   const alvo = $("#menu");
   if (!alvo) return;
 
-  const termo = (busca || "").trim().toLowerCase();
+  const termo = normalizarBusca(busca || "").trim();
   const lista = produtos.filter(produto => {
     const categoriaOk = categoria === "todos" || produto.category === categoria;
     const buscaOk = !termo ||
-      `${produto.name} ${produto.description || ""} ${produto.badge || ""}`.toLowerCase().includes(termo);
+      normalizarBusca(`${produto.name} ${produto.description || ""} ${produto.badge || ""} ${produto.category || ""}`).includes(termo);
     return categoriaOk && buscaOk;
   });
 

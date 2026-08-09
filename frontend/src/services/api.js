@@ -10,6 +10,7 @@ export const apiPublica = {
   cardapio: () => http.get("/publico/cardapio"),
   mesa: numero => http.get(`/publico/mesas/${numero}`),
   criarPedido: (pedido, opcoes) => http.post("/publico/pedidos", pedido, opcoes),
+  historicoPedidos: phone => http.get("/publico/pedidos/historico", { phone }),
   validarCupom: dados => http.post("/publico/cupons/validar", dados),
   statusEntrega: () => http.get("/publico/entrega/status"),
   buscarEndereco: (q, opcoes) => http.get("/publico/entrega/buscar", { q }, opcoes),
@@ -84,6 +85,14 @@ export const apiEntrega = {
 export const apiRelatorios = {
   dashboard: filtros => http.get("/painel/relatorios/dashboard", filtros),
   exportar: filtros => http.get("/painel/relatorios/exportar", filtros)
+};
+
+export const apiCaixa = {
+  atual: () => http.get("/painel/caixa/atual"),
+  abrir: () => http.post("/painel/caixa/abrir"),
+  fechar: observacao => http.post("/painel/caixa/fechar", { observacao }),
+  fechamentos: filtros => http.get("/painel/caixa/fechamentos", filtros),
+  relatorioUrl: id => `/api/painel/caixa/fechamentos/${encodeURIComponent(id)}/pdf`
 };
 
 export const apiUsuarios = {

@@ -8,7 +8,7 @@ import { Router } from "express";
 import {
   pedidosController, produtosController, promocoesController, cuponsController,
   mesasController, entregaController, relatoriosController, usuariosController, ajustesController,
-  insumosController
+  insumosController, caixaController
 } from "../controllers/painel.controller.js";
 import { exigirLogin, exigirPapel, exigirAba } from "../middlewares/auth.js";
 import { validarCorpo, validarQuery, validarParams } from "../middlewares/validate.js";
@@ -17,6 +17,7 @@ import {
   criarPedidoManualSchema, mudarStatusSchema, cancelarPedidoSchema, motoboyPedidoSchema,
   listarPedidosSchema, relatorioSchema
 } from "../schemas/pedido.schema.js";
+import { fecharCaixaSchema, listarFechamentosSchema } from "../schemas/caixa.schema.js";
 import { produtoSchema, ajusteEstoqueSchema, reordenarProdutoSchema, promocaoSchema, cupomSchema } from "../schemas/catalogo.schema.js";
 import { insumoSchema, ajusteInsumoSchema } from "../schemas/insumo.schema.js";
 import { configEntregaSchema } from "../schemas/entrega.schema.js";
@@ -33,6 +34,7 @@ const VER_MESAS = exigirAba("mesas", "ver");
 const EDIT_MESAS = exigirAba("mesas", "editar");
 const VER_ESTOQUE = exigirAba("estoque", "ver");
 const EDIT_ESTOQUE = exigirAba("estoque", "editar");
+const VER_FECHAMENTOS = exigirAba("fechamentos", "ver");
 const ADMIN = exigirPapel("admin");
 
 // ------------------------------------------------------------------ pedidos ---
@@ -44,6 +46,14 @@ rotasPainel.post("/pedidos/:id/impresso", EDIT_PEDIDOS, validarParams(paramsId),
 rotasPainel.post("/pedidos/:id/cancelar", EDIT_PEDIDOS, validarParams(paramsId), validarCorpo(cancelarPedidoSchema), pedidosController.cancelar);
 rotasPainel.patch("/pedidos/:id/motoboy", EDIT_PEDIDOS, validarParams(paramsId), validarCorpo(motoboyPedidoSchema), pedidosController.definirMotoboy);
 rotasPainel.post("/pedidos", EDIT_PEDIDOS, validarCorpo(criarPedidoManualSchema), pedidosController.criarManual);
+
+// -------------------------------------------------------------------- caixa ---
+rotasPainel.get("/caixa/atual", VER_PEDIDOS, caixaController.atual);
+rotasPainel.post("/caixa/abrir", EDIT_PEDIDOS, caixaController.abrir);
+rotasPainel.post("/caixa/fechar", EDIT_PEDIDOS, validarCorpo(fecharCaixaSchema), caixaController.fechar);
+rotasPainel.get("/caixa/fechamentos", VER_FECHAMENTOS, validarQuery(listarFechamentosSchema), caixaController.listar);
+rotasPainel.get("/caixa/fechamentos/:id", VER_FECHAMENTOS, validarParams(paramsId), caixaController.buscar);
+rotasPainel.get("/caixa/fechamentos/:id/pdf", VER_FECHAMENTOS, validarParams(paramsId), caixaController.pdf);
 
 // ----------------------------------------------------------------- produtos ---
 rotasPainel.get("/produtos", produtosController.listar);

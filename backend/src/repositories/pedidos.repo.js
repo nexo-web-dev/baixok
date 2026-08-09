@@ -14,6 +14,11 @@
  * de verdade. */
 import { todos, um, alteradas, paraBanco, doBanco } from "../db/postgres.js";
 
+const telefoneDigits = valor => {
+  const digits = String(valor || "").replace(/\D/g, "");
+  return digits.length > 11 && digits.startsWith("55") ? digits.slice(2) : digits;
+};
+
 const paraApi = (linha, itens = []) => linha && ({
   id: linha.id,
   createdAt: linha.criado_em,
@@ -151,19 +156,33 @@ export const pedidosRepo = {
     return anexarItens(linhas);
   },
 
+  async listarPorTelefone(telefone, limite = 5) {
+    const digits = telefoneDigits(telefone);
+    if (digits.length < 8) return [];
+
+    const linhas = await todos(`
+      ${SELECT_BASE}
+      WHERE p.telefone_digits = ?
+        AND p.status <> 'cancelado'
+      ORDER BY p.criado_em DESC
+      LIMIT ?
+    `, [digits, limite]);
+    return anexarItens(linhas);
+  },
+
   /* Chamado sempre de dentro de emTransacao(): pedido e itens entram juntos ou
    * nao entram. Os itens vao num INSERT so — um por item seria uma ida a rede
    * por item, dentro da transacao, com a linha do produto ja travada. */
   async inserir(pedido) {
     await alteradas(`
       INSERT INTO pedidos (
-        id, criado_em, status, canal, modalidade, cliente, telefone, local, observacao, motivo_cancelamento,
+        id, criado_em, status, canal, modalidade, cliente, telefone, telefone_digits, local, observacao, motivo_cancelamento,
         pagamento, troco_para, mesa_n, subtotal, desconto, cupom_code, taxa_entrega, entrega_km,
         entrega_faixa, total, motoboy, impresso, estoque_baixado, criado_por
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       pedido.id, pedido.createdAt, pedido.status, pedido.channel, pedido.fulfillment,
-      pedido.customer, pedido.phone, pedido.place, pedido.note, pedido.cancelReason || "",
+      pedido.customer, pedido.phone, telefoneDigits(pedido.phone), pedido.place, pedido.note, pedido.cancelReason || "",
       pedido.payment, pedido.trocoPara ?? null, pedido.tableNumber ?? null, pedido.subtotal, pedido.discount, pedido.coupon,
       pedido.deliveryFee, pedido.deliveryKm ?? null, pedido.deliveryZone ?? null,
       pedido.total, pedido.motoboy || "", paraBanco(pedido.printed), paraBanco(pedido.stockDeducted),

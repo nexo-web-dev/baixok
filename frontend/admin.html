@@ -35,6 +35,7 @@
       <button class="nav-item" type="button" data-tab="dashboard"><span class="nav-icon" aria-hidden="true">◔</span>Dashboard</button>
       <button class="nav-item" type="button" data-tab="plano"><span class="nav-icon" aria-hidden="true">PL</span>Plano do sistema</button>
       <button class="nav-item" type="button" data-tab="usuarios"><span class="nav-icon" aria-hidden="true">◍</span>Usuarios</button>
+      <button class="nav-item" type="button" data-tab="fechamentos"><span class="nav-icon" aria-hidden="true">FC</span>Fechamentos</button>
     </nav>
 
     <div class="nav-foot">
@@ -68,6 +69,9 @@
         <p>Tudo que entra pelo cardapio, WhatsApp ou lancamento manual cai aqui. Aprovar imprime nas duas impressoras; arraste os cards entre as colunas, para frente ou para tras, para corrigir o status.</p>
       </div>
       <div class="tab-actions">
+        <div class="cash-status" id="cash-status">Caixa: carregando</div>
+        <button class="secondary" type="button" id="open-cash">Abrir caixa</button>
+        <button class="secondary" type="button" id="close-cash">Fechar caixa</button>
         <button class="secondary" type="button" id="print-test-kitchen">Teste cozinha</button>
         <button class="secondary" type="button" id="print-test-counter">Teste balcao</button>
         <button class="primary" type="button" id="open-manual-sale">+ Lancar pedido manual</button>
@@ -112,6 +116,9 @@
       </div>
       <div class="products-layout">
         <div class="data-table" id="product-table">
+          <div class="product-tools">
+            <input id="product-search" type="search" placeholder="Filtrar por nome, categoria ou descricao">
+          </div>
           <div class="filters product-category-filters" id="product-category-filters" aria-label="Filtrar produtos por categoria"></div>
           <div class="data-head product-row">
             <span></span><span>Produto</span><span>Categoria</span><span>Preco</span><span>Estoque</span><span>Status</span><span class="right">Acoes</span>
@@ -286,6 +293,24 @@
           </div>
         </div>
         <div class="sales-list" id="dashboard-canceled"></div>
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------------ fechamentos -->
+    <section class="admin-tab hidden" id="tab-fechamentos">
+      <div class="tab-guide">
+        <strong>Como usar esta aba</strong>
+        <p>Todo caixa fechado fica salvo aqui. Abra o relatorio para imprimir ou salvar como PDF quando precisar conferir o movimento do dia.</p>
+      </div>
+      <div class="panel">
+        <div class="sales-head">
+          <div>
+            <h2>Historico de fechamentos</h2>
+            <p class="small faint">Mostra horario de abertura, fechamento, total vendido, cancelados e resumo do periodo.</p>
+          </div>
+          <button class="secondary small" type="button" id="refresh-closings">Atualizar</button>
+        </div>
+        <div class="closing-list" id="closing-list"></div>
       </div>
     </section>
 

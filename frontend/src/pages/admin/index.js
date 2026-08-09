@@ -28,12 +28,16 @@ import { desenharEstoque, ligarEstoque } from "./tabs/estoque.js";
 import { desenharDashboard, ligarDashboard } from "./tabs/dashboard.js";
 import { desenharEquipe as desenharUsuarios, ligarEquipe as ligarUsuarios } from "./tabs/equipe.js";
 import { desenharPlano, ligarPlano } from "./tabs/plano.js";
+import { desenharCaixaStatus, desenharFechamentos, ligarFechamentos } from "./tabs/fechamentos.js";
 
 let abaAtual = null;
 
 /* Qual funcao redesenha cada aba, e o que ela precisa recarregar. */
 const DESENHO = {
-  pedidos: desenharPedidos,
+  pedidos: async () => {
+    desenharPedidos();
+    await desenharCaixaStatus();
+  },
   motoboy: desenharMotoboy,
   mesas: desenharMesas,
   produtos: desenharProdutos,
@@ -41,6 +45,7 @@ const DESENHO = {
   entrega: desenharEntrega,
   estoque: desenharEstoque,
   dashboard: desenharDashboard,
+  fechamentos: desenharFechamentos,
   plano: desenharPlano,
   usuarios: desenharUsuarios
 };
@@ -55,11 +60,12 @@ const AFETADAS = {
   cupons: ["promos"],
   mesas: ["mesas"],
   entrega: ["entrega"],
+  caixa: ["pedidos", "dashboard", "fechamentos"],
   retomada: ["pedidos", "mesas"]
 };
 
 const DEPENDENCIAS_ABA = {
-  pedidos: ["pedidos", "produtos"],
+  pedidos: ["pedidos", "produtos", "caixa"],
   motoboy: [],
   mesas: ["mesas", "produtos"],
   produtos: ["produtos", "promocoes"],
@@ -67,12 +73,14 @@ const DEPENDENCIAS_ABA = {
   entrega: ["entrega"],
   estoque: ["produtos", "insumos"],
   dashboard: [],
+  fechamentos: ["fechamentos"],
   plano: ["ajustes"],
   usuarios: []
 };
 
 function areasIniciais(usuario) {
   const areas = new Set(["pedidos"]);
+  if (podeVer("pedidos", usuario)) areas.add("caixa");
   if (podeVer("pedidos", usuario) || podeVer("produtos", usuario) || podeVer("estoque", usuario) || podeVer("mesas", usuario)) {
     areas.add("produtos");
   }
@@ -168,6 +176,7 @@ function ligarShell() {
   ligarDashboard();
   ligarPlano();
   ligarUsuarios();
+  ligarFechamentos();
   ligarVendaManual();
 }
 
@@ -208,10 +217,11 @@ async function iniciar() {
   conectarEventos({
     canal: "operacao",
     aoMudar: async assunto => {
-      const areas = { pedidos: ["pedidos"], produtos: ["produtos"], insumos: ["insumos"], promocoes: ["promocoes"], cupons: ["cupons"], mesas: ["mesas"], entrega: ["entrega"] }[assunto];
+      const areas = { pedidos: ["pedidos"], produtos: ["produtos"], insumos: ["insumos"], promocoes: ["promocoes"], cupons: ["cupons"], mesas: ["mesas"], entrega: ["entrega"], caixa: ["caixa", "fechamentos"] }[assunto];
       await carregar(...(areas || []));
       if (assunto === "entrega") recarregarRascunhoEntrega();
       desenharMetricas();
+      if (assunto === "caixa") await desenharCaixaStatus();
 
       const afetadas = AFETADAS[assunto] || Object.keys(DESENHO);
       if (afetadas.includes(abaAtual)) await DESENHO[abaAtual]?.();

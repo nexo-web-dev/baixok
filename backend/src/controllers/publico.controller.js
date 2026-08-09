@@ -64,6 +64,10 @@ export const publicoController = {
     });
   },
 
+  async historicoPedidos(req, res) {
+    res.json({ pedidos: await pedidosService.historicoPublico(req.validado.query) });
+  },
+
   /* Valida o cupom que o cliente digitou.
    *
    * Devolve so o efeito no carrinho dele. Nao existe rota publica que liste

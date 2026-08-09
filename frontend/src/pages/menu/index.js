@@ -5,11 +5,12 @@
  * configuracao de entrega — nao entra neste bundle e portanto nao chega ao
  * aparelho de quem esta so pedindo uma pizza. */
 import "../../styles/index.css";
-import { $, delegar, ligarModal, mostrar } from "../../utils/dom.js";
+import { $, el, render, delegar, ligarModal, mostrar } from "../../utils/dom.js";
 import { toast, toastFalha } from "../../components/toast.js";
 import { apiPublica } from "../../services/api.js";
 import { conectarEventos } from "../../services/realtime.js";
 import { registrarPwa } from "../../services/pwa.js";
+import { reais, dataHora } from "../../utils/formato.js";
 import { desenharDestaques, desenharFiltros, desenharGrade } from "./catalogo.js";
 import { carrinho, aoMudarCarrinho } from "./carrinho-store.js";
 import {
@@ -189,6 +190,39 @@ async function enviarPedido() {
   }
 }
 
+// -------------------------------------------------------------- historico ---
+function pedidoHistorico(pedido) {
+  const itens = pedido.items.map(item => `${item.qty}x ${item.name}`).join(" | ");
+  return el("article.history-order", {},
+    el("div", {},
+      el("strong", {}, `Pedido ${String(pedido.id).slice(-3).toUpperCase()}`),
+      el("span", {}, `${dataHora(pedido.createdAt)} | ${pedido.fulfillment || "-"}`),
+      el("em", {}, itens || "Sem itens")
+    ),
+    el("div", {},
+      el("strong", {}, reais(pedido.total)),
+      el("span", {}, pedido.status)
+    )
+  );
+}
+
+async function buscarHistorico() {
+  const telefone = $("#history-phone")?.value.trim() || $("#customer-phone")?.value.trim() || "";
+  const alvo = $("#history-results");
+  if (!telefone) return toast("Informe o telefone usado no pedido.");
+
+  render(alvo, el("p.faint", {}, "Buscando pedidos..."));
+  try {
+    const { pedidos } = await apiPublica.historicoPedidos(telefone);
+    render(alvo, pedidos.length
+      ? pedidos.map(pedidoHistorico)
+      : el("p.faint", {}, "Nenhum pedido encontrado para este telefone."));
+  } catch (erro) {
+    toastFalha(erro, "Historico");
+    render(alvo);
+  }
+}
+
 // ------------------------------------------------------------------ ligacao ---
 function ligarEventos() {
   /* Um ouvinte por container, com delegacao. Substitui os onclick= que estavam
@@ -242,6 +276,21 @@ function ligarEventos() {
   $("#open-payment-info")?.addEventListener("click", () => mostrar(modalPagamento, true));
   $("#close-payment-info")?.addEventListener("click", () => mostrar(modalPagamento, false));
   ligarModal(modalPagamento, () => mostrar(modalPagamento, false));
+
+  const modalHistorico = $("#history-modal");
+  $("#open-history")?.addEventListener("click", () => {
+    const telefone = $("#customer-phone")?.value.trim();
+    if (telefone && $("#history-phone")) $("#history-phone").value = telefone;
+    render($("#history-results"));
+    mostrar(modalHistorico, true);
+    $("#history-phone")?.focus();
+  });
+  $("#history-close")?.addEventListener("click", () => mostrar(modalHistorico, false));
+  $("#history-search")?.addEventListener("click", buscarHistorico);
+  $("#history-phone")?.addEventListener("keydown", evento => {
+    if (evento.key === "Enter") buscarHistorico();
+  });
+  ligarModal(modalHistorico, () => mostrar(modalHistorico, false));
 
   /* Revalida o cupom quando o carrinho muda: um cupom com pedido minimo deixa
    * de valer se o cliente tirar itens, e o total tem que refletir na hora. */
