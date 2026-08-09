@@ -12,6 +12,15 @@ const SELO_POR_CATEGORIA = {
   pizzas: "Pizza", burgues: "Burguer", massas: "Massa", drinks: "Drink", porcoes: "Porcao"
 };
 
+function normalizarEstoqueDoProduto(dados) {
+  const controla = controlaEstoqueCategoria(dados.category);
+  return {
+    ...dados,
+    stock: controla ? Number(dados.stock || 0) : 0,
+    minStock: controla ? Number(dados.minStock ?? 4) : 0
+  };
+}
+
 export const produtosService = {
   listar: () => produtosRepo.listar(),
   async emFalta() {
@@ -48,10 +57,11 @@ export const produtosService = {
   },
 
   async criar(dados, { usuario, ip }) {
+    const normalizado = normalizarEstoqueDoProduto(dados);
     const produto = await produtosRepo.criar({
-      ...dados,
+      ...normalizado,
       id: uid("prod"),
-      badge: SELO_POR_CATEGORIA[dados.category] || "Item"
+      badge: SELO_POR_CATEGORIA[normalizado.category] || "Item"
     });
     await auditoriaRepo.registrar({
       usuarioId: usuario.id, usuario: usuario.usuario, acao: "produto_criado",
@@ -63,15 +73,16 @@ export const produtosService = {
 
   async atualizar(id, dados, { usuario, ip }) {
     const anterior = await this.buscar(id);
+    const normalizado = normalizarEstoqueDoProduto(dados);
     const produto = await produtosRepo.atualizar(id, {
-      ...dados,
-      badge: SELO_POR_CATEGORIA[dados.category] || "Item"
+      ...normalizado,
+      badge: SELO_POR_CATEGORIA[normalizado.category] || "Item"
     });
 
     /* A auditoria guarda o que mudou, nao o objeto inteiro: um relatorio de
      * "quem baixou o preco da pizza?" fica legivel. */
     const mudancas = Object.fromEntries(
-      Object.entries(dados)
+      Object.entries(normalizado)
         .filter(([chave, valor]) => anterior[chave] !== valor && chave !== "image")
         .map(([chave, valor]) => [chave, { de: anterior[chave], para: valor }])
     );
@@ -131,6 +142,9 @@ export const produtosService = {
 
   async ajustarEstoque(id, { delta, valor }, { usuario, ip }) {
     const anterior = await this.buscar(id);
+    if (!controlaEstoqueCategoria(anterior.category)) {
+      throw new ErroApp("Estoque operacional e usado apenas para bebidas, refrigerantes e drinks.", 422, "estoque_nao_controlado");
+    }
     const produto = valor !== undefined
       ? await produtosRepo.definirEstoque(id, valor)
       : await produtosRepo.ajustarEstoque(id, delta);

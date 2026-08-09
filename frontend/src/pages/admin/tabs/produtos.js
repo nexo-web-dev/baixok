@@ -41,6 +41,19 @@ function categoriasDosProdutos() {
 const categoriasFiltro = () => new Map([["todos", "Todos"], ...categoriasDosProdutos()]);
 const normalizarImagem = valor => String(valor || "").trim().replace(/^\/images\//, "images/");
 
+function atualizarCampoEstoqueProduto() {
+  const campo = $("#product-stock");
+  if (!campo) return;
+
+  const controla = controlaEstoqueCategoria($("#product-category")?.value);
+  campo.disabled = !controla;
+  campo.placeholder = controla ? "Estoque (bebidas)" : "Sem estoque para comida";
+  campo.title = controla
+    ? "Use este campo para bebidas, refrigerantes e drinks."
+    : "Pizza, burguer, massa e porcao ficam ativos pelo cadastro, sem estoque operacional.";
+  if (!controla) campo.value = "";
+}
+
 /* Redimensiona e recomprime no proprio navegador antes de enviar. */
 function prepararFoto(arquivo) {
   return new Promise((resolve, reject) => {
@@ -202,6 +215,7 @@ function limparFormulario() {
   $("#product-stock").value = "";
   $("#product-order").value = "";
   $("#product-category").value = "";
+  atualizarCampoEstoqueProduto();
   $("#product-image").value = "";
   $("#product-active").checked = true;
   $("#product-form-title").textContent = "Novo produto";
@@ -217,9 +231,10 @@ function editar(id) {
   $("#product-name").value = produto.name;
   $("#product-description").value = produto.description || "";
   $("#product-price").value = String(produto.price);
-  $("#product-stock").value = String(produto.stock);
   $("#product-order").value = String(produto.order || "");
   $("#product-category").value = produto.category;
+  atualizarCampoEstoqueProduto();
+  $("#product-stock").value = controlaEstoqueCategoria(produto.category) ? String(produto.stock) : "";
   $("#product-image").value = produto.image || "";
   $("#product-active").checked = produto.active;
   $("#product-form-title").textContent = `Editando: ${produto.name}`;
@@ -231,14 +246,16 @@ function editar(id) {
 async function salvar(evento) {
   evento.preventDefault();
   const id = $("#product-id").value;
+  const categoria = $("#product-category").value.trim();
+  const controlaEstoque = controlaEstoqueCategoria(categoria);
 
   const corpo = {
     name: $("#product-name").value.trim(),
     description: $("#product-description").value.trim(),
-    category: $("#product-category").value.trim(),
+    category: categoria,
     price: paraNumero($("#product-price").value),
-    stock: Math.max(0, Math.floor(paraNumero($("#product-stock").value))),
-    minStock: estado.produtos.find(item => item.id === id)?.minStock ?? 4,
+    stock: controlaEstoque ? Math.max(0, Math.floor(paraNumero($("#product-stock").value))) : 0,
+    minStock: controlaEstoque ? (estado.produtos.find(item => item.id === id)?.minStock ?? 4) : 0,
     order: Math.max(1, Math.floor(paraNumero($("#product-order").value) || ((estado.produtos.length || 0) + 1))),
     active: $("#product-active").checked,
     image: normalizarImagem($("#product-image").value)
@@ -310,6 +327,9 @@ export function ligarProdutos() {
     desenharProdutos();
   });
   $("#product-image")?.addEventListener("input", evento => atualizarPreview(evento.target.value));
+  $("#product-category")?.addEventListener("input", atualizarCampoEstoqueProduto);
+  $("#product-category")?.addEventListener("change", atualizarCampoEstoqueProduto);
+  atualizarCampoEstoqueProduto();
   $("#product-photo-button")?.addEventListener("click", () => $("#product-photo-file").click());
 
   $("#product-photo-file")?.addEventListener("change", async evento => {
