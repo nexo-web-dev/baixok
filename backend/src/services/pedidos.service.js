@@ -132,6 +132,7 @@ export const pedidosService = {
   /* Pedido vindo do cardapio do cliente (rota publica). */
   async criarPublico(dados, { ip }) {
     await exigirCaixaAberto();
+    let mesaAbertaAutomaticamente = false;
 
     /* Passo 1 — rede fora da transacao.
      * A cotacao de entrega precisa da Mapbox; deixa-la aqui e o que mantem o
@@ -350,7 +351,6 @@ export const pedidosService = {
       throw new ErroApp("Informe o motivo do cancelamento.", 400, "motivo_obrigatorio");
     }
 
-    let mesaAbertaAutomaticamente = false;
     const pedido = await emTransacao(async () => {
       const atual = await pedidosRepo.buscar(id);
       if (!atual) throw naoEncontrado("Pedido não encontrado.");

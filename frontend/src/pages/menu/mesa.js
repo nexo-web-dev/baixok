@@ -68,17 +68,22 @@ export async function atualizarMesa() {
     comanda = null;   // mesa inexistente ou servidor fora
   }
   sessaoMesa.comanda = comanda;
-  const aberta = comanda?.aberta === true;
+  const statusMesa = comanda?.status || "";
+  const aberta = statusMesa === "aberta" || comanda?.aberta === true;
+  const podePedir = Boolean(comanda) && statusMesa !== "fechando";
 
   mostrar($("#table-bar"), true);
   $("#table-bar-title").textContent = `Mesa nº ${sessaoMesa.n}`;
   $("#table-bar-status").textContent = aberta
     ? "Comanda aberta"
     : comanda ? "Comanda fechada" : "Mesa não encontrada";
-  mostrar($("#table-nav"), aberta);
+  if (!aberta && statusMesa === "livre") {
+    $("#table-bar-status").textContent = "Pronta para pedir";
+  }
+  mostrar($("#table-nav"), podePedir);
 
-  if (!aberta) {
-    const fechando = comanda?.status === "fechando";
+  if (!podePedir) {
+    const fechando = statusMesa === "fechando";
     $("#blocked-title").textContent = fechando ? "Conta já fechada" : "Comanda fechada";
     $("#blocked-text").textContent = comanda
       ? fechando
@@ -93,8 +98,8 @@ export async function atualizarMesa() {
   /* A mesa acabou de ser aberta com o cliente na tela de bloqueio. O aviso do
    * servidor destrava a tela sozinho — antes ele precisava recarregar a pagina,
    * e ler o QR antes de o atendente abrir a mesa e o caso comum no salao. */
-  if (sessaoMesa.aberta !== true) {
-    sessaoMesa.aberta = true;
+  if (sessaoMesa.aberta !== podePedir) {
+    sessaoMesa.aberta = podePedir;
     mostrarVista(comanda.items.length ? "comanda" : "inicio");
   }
   desenharComanda(comanda);
