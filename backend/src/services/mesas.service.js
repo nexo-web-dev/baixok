@@ -7,6 +7,7 @@ import { emTransacao } from "../db/postgres.js";
 import { mesasRepo } from "../repositories/mesas.repo.js";
 import { pedidosRepo } from "../repositories/pedidos.repo.js";
 import { ajustesRepo } from "../repositories/ajustes.repo.js";
+import { mesasFechamentosRepo } from "../repositories/mesas-fechamentos.repo.js";
 import { caixaRepo } from "../repositories/caixa.repo.js";
 import { auditoriaRepo } from "../repositories/auditoria.repo.js";
 import { naoEncontrado, conflito } from "../lib/errors.js";
@@ -109,17 +110,35 @@ export const mesasService = {
   },
 
   /* Fechar a conta trava o QR e devolve o extrato para impressao. O pagamento
-   * acontece no balcao; liberar a mesa e um segundo passo, deliberadamente. */
-  async fecharConta(n, { usuario, ip }) {
+   * acontece no balcao; liberar a mesa e um segundo passo, deliberadamente.
+   *
+   * `cobrarServico` vem da pergunta que o balcao responde na hora de fechar: a
+   * taxa do garcom (taxa de servico) as vezes e negociada ou dispensada, e o
+   * total fechado precisa refletir isso — nao so a tela, mas o que fica
+   * registrado para o dashboard somar depois. */
+  async fecharConta(n, cobrarServico = true, { usuario, ip }) {
     const mesa = await this.buscar(n);
     if (mesa.status === "livre") throw conflito("Esta mesa não tem comanda aberta.");
 
     await mesasRepo.marcarFechando(n);
-    const conta = mesa.conta;
+    const contaCheia = mesa.conta;
+    const conta = cobrarServico
+      ? contaCheia
+      : { ...contaCheia, servico: 0, total: contaCheia.subtotal };
     const pedidos = await pedidosRepo.listarDaMesa(n);
+
+    await mesasFechamentosRepo.registrar({
+      mesaN: n,
+      subtotal: conta.subtotal,
+      percentual: conta.percentualServico,
+      servico: conta.servico,
+      servicoCobrado: cobrarServico,
+      total: conta.total,
+      usuario: usuario.usuario
+    });
     await auditoriaRepo.registrar({
       usuarioId: usuario.id, usuario: usuario.usuario, acao: "mesa_conta_fechada",
-      entidade: "mesa", entidadeId: n, detalhes: conta, ip
+      entidade: "mesa", entidadeId: n, detalhes: { ...conta, servicoCobrado: cobrarServico }, ip
     });
     publicar("mesas", [CANAL.OPERACAO, CANAL.PUBLICO]);
 
@@ -128,6 +147,7 @@ export const mesasService = {
       abertaEm: mesa.openedAt,
       items: mesa.items,
       pedidos: pedidos.map(pedido => pedido.id),
+      servicoCobrado: cobrarServico,
       ...conta
     };
   },

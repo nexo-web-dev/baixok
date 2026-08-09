@@ -433,6 +433,21 @@
     </div>
   </div>
 
+  <div class="modal hidden" id="service-fee-modal" role="dialog" aria-modal="true" aria-labelledby="service-fee-title">
+    <div class="modal-card">
+      <div>
+        <h2 id="service-fee-title">Fechar conta</h2>
+        <p id="service-fee-summary"></p>
+      </div>
+      <p class="modal-hint">A taxa do garçom foi cobrada do cliente nesta conta?</p>
+      <div class="field-row">
+        <button class="primary wide" type="button" id="service-fee-yes">Sim, cobrar taxa</button>
+        <button class="secondary wide" type="button" id="service-fee-no">Não, fechar sem taxa</button>
+      </div>
+      <button class="secondary wide" type="button" id="service-fee-cancel">Cancelar</button>
+    </div>
+  </div>
+
   <div class="modal hidden" id="qr-modal" role="dialog" aria-modal="true" aria-labelledby="qr-title">
     <div class="modal-card qr-card">
       <img class="qr-logo" src="/images/baixok-logo-v2.png" alt="Baixo K">

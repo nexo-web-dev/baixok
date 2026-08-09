@@ -77,7 +77,7 @@ export const apiMesas = {
   adicionar: () => http.post("/painel/mesas"),
   remover: n => http.delete(`/painel/mesas/${n}`),
   abrir: n => http.post(`/painel/mesas/${n}/abrir`),
-  fecharConta: n => http.post(`/painel/mesas/${n}/fechar`),
+  fecharConta: (n, cobrarServico = true) => http.post(`/painel/mesas/${n}/fechar`, { cobrarServico }),
   liberar: n => http.post(`/painel/mesas/${n}/liberar`)
 };
 

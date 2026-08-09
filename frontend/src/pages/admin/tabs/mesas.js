@@ -3,7 +3,7 @@
  * O QR fica sempre disponivel na mesa. Quando o cliente escaneia e envia o
  * primeiro pedido, o servidor abre a comanda automaticamente. Fechar a conta
  * trava novos pedidos ate o pagamento liberar a mesa. */
-import { el, render, $, delegar } from "../../../utils/dom.js";
+import { el, render, $, delegar, mostrar, ligarModal } from "../../../utils/dom.js";
 import { reais, minutosDesde, esperaLegivel } from "../../../utils/formato.js";
 import { apiMesas } from "../../../services/api.js";
 import { estado, carregar } from "../store.js";
@@ -89,9 +89,9 @@ async function recarregar() {
 /* Fechar a conta imprime a nota com o extrato que o SERVIDOR devolveu, e nao
  * com o que estava na tela. Se outro atendente lancou um item um segundo antes,
  * a nota impressa ja sai com ele. */
-async function fecharConta(n) {
+async function fecharConta(n, cobrarServico) {
   try {
-    const { conta } = await apiMesas.fecharConta(n);
+    const { conta } = await apiMesas.fecharConta(n, cobrarServico);
     imprimir({
       id: `mesa-${n}`,
       codeLabel: `MESA ${n}`,
@@ -101,7 +101,9 @@ async function fecharConta(n) {
       customer: `Mesa ${n}`,
       place: `Mesa ${n} - salão`,
       payment: "Conta fechada",
-      note: `Serviço (${Math.round(conta.percentualServico * 100)}%): ${reais(conta.servico)}`,
+      note: cobrarServico
+        ? `Serviço (${Math.round(conta.percentualServico * 100)}%): ${reais(conta.servico)}`
+        : "Taxa de serviço não cobrada nesta conta.",
       subtotal: conta.subtotal,
       discount: 0,
       total: conta.total,
@@ -114,6 +116,24 @@ async function fecharConta(n) {
   }
 }
 
+/* Pergunta se a taxa do garçom foi cobrada antes de fechar de fato — cancelar
+ * ali nao fecha a conta, so descarta a pergunta. */
+let mesaPendenteFechamento = null;
+
+function abrirFecharConta(n) {
+  const mesa = estado.mesas.find(item => item.n === n);
+  const percentual = Math.round((mesa?.conta?.percentualServico || 0) * 100);
+  mesaPendenteFechamento = n;
+  const resumo = $("#service-fee-summary");
+  if (resumo) resumo.textContent = `Mesa ${n} · taxa de serviço da casa: ${percentual}%.`;
+  mostrar($("#service-fee-modal"), true);
+}
+
+function fecharModalFechamento() {
+  mostrar($("#service-fee-modal"), false);
+  mesaPendenteFechamento = null;
+}
+
 export function ligarMesas() {
   const alvo = $("#tables-grid");
   if (!alvo) return;
@@ -121,7 +141,7 @@ export function ligarMesas() {
   delegar(alvo, "click", "[data-acao='qr']", (_e, botao) =>
     abrirQrMesa(Number(botao.dataset.n), estado.ajustes.menu_url));
 
-  delegar(alvo, "click", "[data-acao='fechar']", (_e, botao) => fecharConta(Number(botao.dataset.n)));
+  delegar(alvo, "click", "[data-acao='fechar']", (_e, botao) => abrirFecharConta(Number(botao.dataset.n)));
 
   delegar(alvo, "click", "[data-acao='liberar']", async (_e, botao) => {
     if (!confirm(`Liberar a mesa ${botao.dataset.n}? A comanda é zerada.`)) return;
@@ -152,5 +172,19 @@ export function ligarMesas() {
       /* O servidor recusa remover mesa com comanda aberta. */
       toastFalha(erro);
     }
+  });
+
+  const modalFechamento = $("#service-fee-modal");
+  ligarModal(modalFechamento, fecharModalFechamento);
+  $("#service-fee-cancel")?.addEventListener("click", fecharModalFechamento);
+  $("#service-fee-yes")?.addEventListener("click", () => {
+    const n = mesaPendenteFechamento;
+    fecharModalFechamento();
+    if (n !== null) fecharConta(n, true);
+  });
+  $("#service-fee-no")?.addEventListener("click", () => {
+    const n = mesaPendenteFechamento;
+    fecharModalFechamento();
+    if (n !== null) fecharConta(n, false);
   });
 }

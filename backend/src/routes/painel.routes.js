@@ -23,6 +23,7 @@ import { insumoSchema, ajusteInsumoSchema } from "../schemas/insumo.schema.js";
 import { configEntregaSchema } from "../schemas/entrega.schema.js";
 import { criarUsuarioSchema, atualizarUsuarioSchema, redefinirSenhaSchema } from "../schemas/auth.schema.js";
 import { ajustesSchema, auditoriaQuerySchema } from "../schemas/ajustes.schema.js";
+import { fecharContaSchema } from "../schemas/mesa.schema.js";
 
 export const rotasPainel = Router();
 
@@ -92,7 +93,7 @@ rotasPainel.get("/mesas", VER_MESAS, mesasController.listar);
 rotasPainel.post("/mesas", EDIT_MESAS, mesasController.adicionar);
 rotasPainel.delete("/mesas/:n", EDIT_MESAS, validarParams(paramsNumero), mesasController.remover);
 rotasPainel.post("/mesas/:n/abrir", EDIT_MESAS, validarParams(paramsNumero), mesasController.abrir);
-rotasPainel.post("/mesas/:n/fechar", EDIT_MESAS, validarParams(paramsNumero), mesasController.fecharConta);
+rotasPainel.post("/mesas/:n/fechar", EDIT_MESAS, validarParams(paramsNumero), validarCorpo(fecharContaSchema), mesasController.fecharConta);
 rotasPainel.post("/mesas/:n/liberar", EDIT_MESAS, validarParams(paramsNumero), mesasController.liberar);
 
 // ----------------------------------------------------------------- entrega ---

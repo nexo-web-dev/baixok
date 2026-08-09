@@ -8,6 +8,7 @@
  * acesso a base de pedidos, que carrega nome, telefone e endereco de clientes. */
 import { pedidosRepo } from "../repositories/pedidos.repo.js";
 import { produtosRepo } from "../repositories/produtos.repo.js";
+import { mesasFechamentosRepo } from "../repositories/mesas-fechamentos.repo.js";
 import { HORA_VIRADA } from "../config/constants.js";
 import { controlaEstoqueCategoria } from "../lib/estoque.js";
 
@@ -59,7 +60,7 @@ export const relatoriosService = {
      * ordem entre elas. */
     const [
       resumo, canceladosResumo, emFalta, porHora, porDia, porCanal, porPagamento, porModalidade, porMotoboy,
-      maisVendidos, menosVendidos, vendas, cancelados
+      maisVendidos, menosVendidos, vendas, cancelados, taxaServico
     ] = await Promise.all([
       pedidosRepo.resumoPeriodo(filtro),
       pedidosRepo.resumoCancelados(filtro),
@@ -73,7 +74,8 @@ export const relatoriosService = {
       pedidosRepo.maisVendidos({ ...filtro, limite: 10 }),
       pedidosRepo.menosVendidos({ ...filtro, limite: 10 }),
       pedidosRepo.listar({ ...filtro, status: "entregue", limite: 200 }),
-      pedidosRepo.listar({ ...filtro, status: "cancelado", limite: 100 })
+      pedidosRepo.listar({ ...filtro, status: "cancelado", limite: 100 }),
+      mesasFechamentosRepo.resumoPeriodo(filtro)
     ]);
 
     return {
@@ -86,6 +88,11 @@ export const relatoriosService = {
         taxasEntrega: Math.round(resumo.taxas_entrega * 100) / 100,
         cancelados: canceladosResumo.pedidos,
         valorCancelado: Math.round(canceladosResumo.valor * 100) / 100
+      },
+      taxaServico: {
+        total: Math.round(taxaServico.total * 100) / 100,
+        contasFechadas: taxaServico.contasFechadas,
+        contasSemCobranca: taxaServico.contasSemCobranca
       },
       porHora,
       porDia,

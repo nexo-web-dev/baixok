@@ -153,7 +153,13 @@ export const mesasController = {
     res.json({ mesa: await mesasService.abrir(req.validado.params.n, contexto(req)) });
   },
   async fecharConta(req, res) {
-    res.json({ conta: await mesasService.fecharConta(req.validado.params.n, contexto(req)) });
+    res.json({
+      conta: await mesasService.fecharConta(
+        req.validado.params.n,
+        req.validado.body.cobrarServico,
+        contexto(req)
+      )
+    });
   },
   async liberar(req, res) {
     res.json({ mesa: await mesasService.liberar(req.validado.params.n, contexto(req)) });
