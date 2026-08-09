@@ -382,6 +382,20 @@
   </main>
 
   <!-- ----------------------------------------------------------- modais -->
+  <div class="modal hidden" id="order-detail-modal" role="dialog" aria-modal="true" aria-labelledby="order-detail-title">
+    <div class="modal-card order-detail-card">
+      <div class="order-detail-head">
+        <div>
+          <span class="eyebrow">Detalhe do pedido</span>
+          <h2 id="order-detail-title">Pedido</h2>
+          <p id="order-detail-subtitle"></p>
+        </div>
+        <button class="icon-close" type="button" id="order-detail-close" aria-label="Fechar detalhes">×</button>
+      </div>
+      <div id="order-detail-body"></div>
+    </div>
+  </div>
+
   <div class="modal hidden" id="manual-modal" role="dialog" aria-modal="true" aria-labelledby="manual-title">
     <div class="modal-card">
       <div>
