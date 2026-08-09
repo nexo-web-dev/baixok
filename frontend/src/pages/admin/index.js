@@ -36,7 +36,7 @@ let abaAtual = null;
 const DESENHO = {
   pedidos: async () => {
     desenharPedidos();
-    await desenharCaixaStatus();
+    desenharCaixaStatus().catch(() => {});
   },
   motoboy: desenharMotoboy,
   mesas: desenharMesas,
@@ -65,7 +65,7 @@ const AFETADAS = {
 };
 
 const DEPENDENCIAS_ABA = {
-  pedidos: ["pedidos", "produtos", "caixa"],
+  pedidos: ["pedidos", "produtos"],
   motoboy: [],
   mesas: ["mesas", "produtos"],
   produtos: ["produtos", "promocoes"],
@@ -80,12 +80,16 @@ const DEPENDENCIAS_ABA = {
 
 function areasIniciais(usuario) {
   const areas = new Set(["pedidos"]);
-  if (podeVer("pedidos", usuario)) areas.add("caixa");
   if (podeVer("pedidos", usuario) || podeVer("produtos", usuario) || podeVer("estoque", usuario) || podeVer("mesas", usuario)) {
     areas.add("produtos");
   }
   if (podeVer("estoque", usuario)) areas.add("insumos");
   return [...areas];
+}
+
+function abaDaUrl(usuario) {
+  const chave = location.hash.replace(/^#/, "");
+  return chave && podeVer(chave, usuario) ? chave : abaInicial(usuario);
 }
 
 // ------------------------------------------------------------------- sessao ---
@@ -207,7 +211,7 @@ async function iniciar() {
   await carregar(...areasIniciais(sessao.usuario));
   desenharMetricas();
 
-  await abrirAba(abaInicial(sessao.usuario));
+  await abrirAba(abaDaUrl(sessao.usuario));
 
   conectarEventos({
     canal: "operacao",

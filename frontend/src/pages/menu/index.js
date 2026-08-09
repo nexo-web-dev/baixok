@@ -119,7 +119,7 @@ function atualizarCampoTroco() {
 }
 
 function lojaAberta() {
-  return estado.loja.caixaAberto !== false;
+  return estado.loja.caixaAberto === true;
 }
 
 function atualizarStatusLoja() {
@@ -128,11 +128,12 @@ function atualizarStatusLoja() {
   mostrar($("#closed-banner"), !aberta);
 
   const badge = document.querySelector(".live-badge");
-  if (badge) badge.textContent = aberta ? "Aberto para pedidos" : "Loja fechada";
+  if (badge) badge.textContent = aberta ? "Aberto para pedidos" : "Fechado para pedidos";
 
   const botao = $("#send-order");
   if (botao) {
-    botao.disabled = !aberta;
+    botao.disabled = false;
+    botao.setAttribute("aria-disabled", String(!aberta));
     botao.textContent = aberta
       ? (sessaoMesa.n ? "Enviar para a cozinha" : "Enviar pedido")
       : "Loja fechada";
@@ -140,7 +141,7 @@ function atualizarStatusLoja() {
 
   const quantidade = Number($("#cart-count")?.textContent || 0);
   document.body.classList.toggle("cart-has-items", quantidade > 0);
-  mostrar($("#open-cart"), aberta && quantidade > 0);
+  mostrar($("#open-cart"), quantidade > 0);
 }
 
 function adicionarAoCarrinho(id) {

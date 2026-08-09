@@ -41,6 +41,7 @@
 .closed-banner strong { color: var(--ink); font-family: var(--font-head); font-size: .98rem; }
 .closed-banner span { color: var(--muted-2); font-size: .86rem; line-height: 1.35; }
 body.store-closed .live-badge { color: var(--danger); background: var(--danger-bg); }
+body.store-closed .live-badge::before { background: var(--danger); box-shadow: 0 0 0 4px rgba(212,127,110,.18); }
 
 /* â€” signature strip â€” */
 .signature-strip { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
@@ -99,6 +100,13 @@ body.cart-open .shop-layout { padding-right: calc(var(--cart-width) + 18px); }
 .product .price-row span { color: var(--gold); font-size: 1rem; font-weight: 800; }
 .product .primary { min-height: 34px; padding: 0 14px; box-shadow: none; }
 .product .primary:disabled { opacity: .62; cursor: not-allowed; box-shadow: none; }
+
+body.store-closed #send-order {
+  border: 1.5px solid rgba(212,127,110,.45);
+  background: var(--danger-bg);
+  color: var(--danger);
+  box-shadow: none;
+}
 
 /* â€” cart â€” */
 .cart {

@@ -43,9 +43,14 @@ function atualizarStatusCaixa() {
 
 export async function desenharCaixaStatus() {
   try {
-    await carregar("caixa");
+    const carregou = await Promise.race([
+      carregar("caixa").then(() => true),
+      new Promise(resolve => setTimeout(() => resolve(false), 3500))
+    ]);
+    if (!carregou) estado.caixaAtual = null;
     atualizarStatusCaixa();
   } catch (erro) {
+    atualizarStatusCaixa();
     toastFalha(erro, "Caixa");
   }
 }
