@@ -58,6 +58,7 @@ function redesenhar() {
     cotacao: entrega.cotacao,
     modoMesa: Boolean(sessaoMesa.n)
   });
+  atualizarResumoTroco(resumo.total);
   atualizarStatusLoja();
   return resumo;
 }
@@ -89,11 +90,32 @@ function normalizarTroco(valor) {
   return Number.isFinite(numero) && numero > 0 ? numero : null;
 }
 
+function totalAtualDaTela() {
+  const texto = $("#cart-total")?.textContent || "0";
+  const numero = Number(texto.replace(/\./g, "").replace(",", ".").trim());
+  return Number.isFinite(numero) ? numero : 0;
+}
+
+function atualizarResumoTroco(totalAtual = totalAtualDaTela()) {
+  const pagamento = $("#payment-method")?.value || "";
+  const trocoPara = normalizarTroco($("#change-for")?.value);
+  const mostrarResumo = pagamento === "Dinheiro" && !sessaoMesa.n && Boolean(trocoPara);
+  mostrar($("#change-summary"), mostrarResumo);
+  if (!mostrarResumo) return;
+
+  const troco = Math.max(0, trocoPara - Number(totalAtual || 0));
+  const rotulo = $("#cart-change-label");
+  const valor = $("#cart-change");
+  if (rotulo) rotulo.textContent = `Troco para ${reais(trocoPara)}`;
+  if (valor) valor.textContent = `Devolver ${reais(troco)}`;
+}
+
 function atualizarCampoTroco() {
   const pagamento = $("#payment-method")?.value || "";
   const mostrarCampo = pagamento === "Dinheiro" && !sessaoMesa.n;
   mostrar($("#change-field"), mostrarCampo);
   if (!mostrarCampo && $("#change-for")) $("#change-for").value = "";
+  atualizarResumoTroco();
 }
 
 function lojaAberta() {
