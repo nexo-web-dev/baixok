@@ -24,11 +24,29 @@ function avisoCupom(mensagem, ok = false) {
   alvo.classList.toggle("ok", ok);
 }
 
+function fotoCarrinho(item) {
+  if (!item?.image) return el("div.no-photo", {}, "Sem foto");
+  return el("span.fit-media", {},
+    el("img.fit-media-bg", {
+      src: item.image,
+      alt: "",
+      loading: "lazy",
+      decoding: "async",
+      "aria-hidden": "true"
+    }),
+    el("img.fit-media-main", {
+      src: item.image,
+      alt: item.name || "Produto",
+      loading: "lazy",
+      decoding: "async",
+      onerror: evento => evento.target.closest(".fit-media")?.replaceWith(el("div.no-photo", {}, "Sem foto"))
+    })
+  );
+}
+
 function linhaItem(item) {
   return el("div.cart-row", { dataset: { id: item.id } },
-    el("div.cart-thumb", {}, item.image
-      ? el("img", { src: item.image, alt: item.name, loading: "lazy" })
-      : el("div.no-photo", {}, "Sem foto")),
+    el("div.cart-thumb", {}, fotoCarrinho(item)),
     el("div.cart-row-body", {},
       el("div.price-row", {},
         el("strong", {}, `${item.qty}x ${item.name}`),

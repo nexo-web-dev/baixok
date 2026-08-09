@@ -15,6 +15,29 @@ import { caixaRepo } from "../repositories/caixa.repo.js";
 import { tokenPublico, temToken } from "../lib/mapbox.js";
 import { ipDe } from "./contexto.js";
 
+const CACHE_CARDAPIO_MS = 1200;
+let cacheCardapio = { ate: 0, payload: null };
+let cardapioEmVoo = null;
+
+async function montarPayloadCardapio() {
+  const [ajustes, produtos, entrega, caixa] = await Promise.all([
+    ajustesRepo.todos(),
+    produtosService.cardapioPublico(),
+    entregaService.configPublica(),
+    caixaRepo.atual()
+  ]);
+  return {
+    produtos,
+    entrega,
+    loja: {
+      nome: ajustes.nome_loja,
+      endereco: ajustes.endereco_loja,
+      whatsapp: ajustes.whatsapp_entrega,
+      caixaAberto: Boolean(caixa)
+    }
+  };
+}
+
 export const publicoController = {
   /* Tudo que o cardapio precisa para desenhar, numa chamada.
    *
@@ -22,22 +45,20 @@ export const publicoController = {
    * por aqui. As tres consultas nao dependem uma da outra, entao vao juntas: em
    * fila seriam tres idas ao Postgres antes do primeiro byte. */
   async cardapio(_req, res) {
-    const [ajustes, produtos, entrega, caixa] = await Promise.all([
-      ajustesRepo.todos(),
-      produtosService.cardapioPublico(),
-      entregaService.configPublica(),
-      caixaRepo.atual()
-    ]);
-    res.json({
-      produtos,
-      entrega,
-      loja: {
-        nome: ajustes.nome_loja,
-        endereco: ajustes.endereco_loja,
-        whatsapp: ajustes.whatsapp_entrega,
-        caixaAberto: Boolean(caixa)
-      }
-    });
+    const agora = Date.now();
+    if (cacheCardapio.payload && cacheCardapio.ate > agora) {
+      return res.set("Cache-Control", "no-store").json(cacheCardapio.payload);
+    }
+
+    cardapioEmVoo ??= montarPayloadCardapio()
+      .then(payload => {
+        cacheCardapio = { ate: Date.now() + CACHE_CARDAPIO_MS, payload };
+        return payload;
+      })
+      .finally(() => { cardapioEmVoo = null; });
+
+    const payload = await cardapioEmVoo;
+    res.set("Cache-Control", "no-store").json(payload);
   },
 
   async imagemProduto(req, res) {

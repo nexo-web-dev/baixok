@@ -11,11 +11,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/admin-BdAVJwtG.js"></script>
+  <script type="module" crossorigin src="/assets/admin-P4d1G7uV.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/api-DmBccviS.js">
   <link rel="modulepreload" crossorigin href="/assets/estoque-CrifzjOz.js">
   <link rel="modulepreload" crossorigin href="/assets/categorias-BWVpYey5.js">
-  <link rel="stylesheet" crossorigin href="/assets/admin-DJuUcHJY.css">
+  <link rel="stylesheet" crossorigin href="/assets/admin-DQqR9ckH.css">
 </head>
 <body data-page="admin">
   <div class="aviso-offline" role="alert">Sem conexão com o servidor. As alterações não estão sendo salvas.</div>
@@ -75,6 +75,7 @@
       </div>
       <div class="tab-actions">
         <div class="cash-status" id="cash-status">Caixa: carregando</div>
+        <div class="orders-clock" id="orders-clock" aria-live="polite">HorÃ¡rio de BrasÃ­lia: --:--:--</div>
         <button class="secondary" type="button" id="open-cash">Abrir caixa</button>
         <button class="secondary" type="button" id="close-cash">Fechar caixa</button>
         <button class="secondary" type="button" id="print-test-kitchen">Teste cozinha</button>
@@ -99,7 +100,7 @@
     <section class="admin-tab hidden" id="tab-mesas">
       <div class="tab-guide">
         <strong>Como usar esta aba</strong>
-        <p>Comanda por mesa com QR code: o atendente abre a mesa para liberar os pedidos, acompanha o parcial e o tempo, e fecha a conta imprimindo a nota no balcão.</p>
+        <p>Comanda por mesa com QR code: o cliente escaneia, envia o primeiro pedido e a mesa abre automaticamente no sistema. O balcão acompanha o parcial, recebe alerta e fecha a conta imprimindo a nota.</p>
       </div>
       <div class="tables-bar">
         <strong>Mesas no salão</strong>
@@ -111,7 +112,7 @@
         <span class="tables-note">Cada mesa tem um QR code exclusivo. Toque em QR no card para ver e imprimir.</span>
       </div>
       <div class="tables-grid" id="tables-grid"></div>
-      <p class="tab-hint">Segurança da comanda: o QR code da mesa só aceita pedidos enquanto a mesa estiver aberta pelo atendente. Fechou a conta, quem fotografou o QR não consegue pedir de fora.</p>
+      <p class="tab-hint">Segurança da comanda: mesa livre aceita o primeiro pedido e abre sozinha. Mesa com conta fechada fica bloqueada até o pagamento liberar novamente.</p>
     </section>
 
     <!-- ----------------------------------------------------------- produtos -->
@@ -137,9 +138,11 @@
           <input id="product-id" type="hidden">
           <input id="product-name" required placeholder="Nome do produto" maxlength="80">
           <input id="product-description" required placeholder="Descrição curta" maxlength="300">
+          <input id="product-category" required maxlength="60" list="product-category-options" placeholder="Categoria (ex: Pizzas, Burguers, Combos)">
+          <datalist id="product-category-options"></datalist>
           <div class="field-row">
             <input id="product-price" type="number" step="0.01" min="0" required placeholder="Preço (R$)">
-            <input id="product-stock" type="number" step="1" min="0" placeholder="Estoque so para bebidas">
+            <input id="product-stock" type="number" step="1" min="0" placeholder="Estoque só para bebidas">
           </div>
           <div class="field-row">
             <input id="product-order" type="number" step="1" min="1" placeholder="Ordem no cardápio (ex: 1)">
@@ -150,8 +153,6 @@
               <option value="3">Destaque 3</option>
             </select>
           </div>
-          <input id="product-category" required maxlength="60" list="product-category-options" placeholder="Categoria (ex: Pizzas, Burguers, Combos)">
-          <datalist id="product-category-options"></datalist>
           <div class="photo-block">
             <span class="field-label">Foto do produto</span>
             <div class="photo-presets" id="photo-presets"></div>

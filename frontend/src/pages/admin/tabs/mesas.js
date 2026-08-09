@@ -121,14 +121,6 @@ export function ligarMesas() {
   delegar(alvo, "click", "[data-acao='qr']", (_e, botao) =>
     abrirQrMesa(Number(botao.dataset.n), estado.ajustes.menu_url));
 
-  delegar(alvo, "click", "[data-acao='abrir']", async (_e, botao) => {
-    try {
-      await apiMesas.abrir(Number(botao.dataset.n));
-      await recarregar();
-      toast(`Mesa ${botao.dataset.n} aberta. QR liberado.`);
-    } catch (erro) { toastFalha(erro); }
-  });
-
   delegar(alvo, "click", "[data-acao='fechar']", (_e, botao) => fecharConta(Number(botao.dataset.n)));
 
   delegar(alvo, "click", "[data-acao='liberar']", async (_e, botao) => {

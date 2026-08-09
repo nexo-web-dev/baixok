@@ -94,15 +94,33 @@ function atualizarPreview(valor) {
   if (vazio) vazio.classList.toggle("hidden", Boolean(normalizado));
 }
 
+function fotoProdutoAdmin(produto) {
+  if (!produto?.image) return el("div.no-photo", {}, "Sem foto");
+  return el("span.fit-media", {},
+    el("img.fit-media-bg", {
+      src: produto.image,
+      alt: "",
+      loading: "lazy",
+      decoding: "async",
+      "aria-hidden": "true"
+    }),
+    el("img.fit-media-main", {
+      src: produto.image,
+      alt: produto.name || "Produto",
+      loading: "lazy",
+      decoding: "async",
+      onerror: evento => evento.target.closest(".fit-media")?.replaceWith(el("div.no-photo", {}, "Sem foto"))
+    })
+  );
+}
+
 function cardProduto(produto) {
   const promocao = promocaoDoProduto(produto.id);
   const controlaEstoque = controlaEstoqueCategoria(produto.category);
   const semEstoque = controlaEstoque && produto.stock <= 0;
 
   return el("article.admin-product-card", { dataset: { id: produto.id } },
-    el("div.admin-product-thumb", {}, produto.image
-      ? el("img", { src: produto.image, alt: produto.name, loading: "lazy" })
-      : el("div.no-photo", {}, "Sem foto")),
+    el("div.admin-product-thumb", {}, fotoProdutoAdmin(produto)),
     el("div.admin-product-main", {},
       el("div.admin-product-title", {},
         el("span.pill.order-pill", {}, `Ordem ${produto.order || "-"}`),

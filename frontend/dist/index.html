@@ -21,11 +21,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/index-n-tRJ8ud.js"></script>
+  <script type="module" crossorigin src="/assets/index-BLmV3jPe.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/api-DmBccviS.js">
   <link rel="modulepreload" crossorigin href="/assets/estoque-CrifzjOz.js">
   <link rel="modulepreload" crossorigin href="/assets/categorias-BWVpYey5.js">
-  <link rel="stylesheet" crossorigin href="/assets/index-DyS_pzEh.css">
+  <link rel="stylesheet" crossorigin href="/assets/index-CiWN3Yl1.css">
 </head>
 <body data-page="menu">
   <header class="table-bar hidden" id="table-bar">
@@ -163,7 +163,7 @@
 
       <div class="cart-items" id="cart-items"></div>
 
-      <div class="service-mode" role="group" aria-label="Tipo do pedido">
+      <div class="service-mode" id="service-mode" role="group" aria-label="Tipo do pedido">
         <button class="mode-btn active" id="mode-retirada" type="button">Retirada</button>
         <button class="mode-btn" id="mode-entrega" type="button">Entrega</button>
       </div>
@@ -174,7 +174,7 @@
         Cliente
         <input id="customer-name" placeholder="Nome para chamar no telão" autocomplete="name">
       </label>
-      <label>
+      <label id="phone-label">
         Telefone
         <input id="customer-phone" placeholder="WhatsApp ou telefone" autocomplete="tel" inputmode="tel">
       </label>
@@ -185,7 +185,7 @@
       </label>
       <div class="sugestoes" id="endereco-sugestoes"></div>
       <p class="entrega-aviso hidden" id="entrega-aviso" role="status"></p>
-      <label>
+      <label id="payment-label">
         Pagamento
         <select id="payment-method">
           <option value="">Selecione</option>

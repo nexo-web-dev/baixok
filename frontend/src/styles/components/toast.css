@@ -6,4 +6,26 @@
   border: 1px solid rgba(217,154,104,.3); box-shadow: var(--shadow-lg); opacity: 0; transform: translateY(12px); pointer-events: none; transition: .2s ease;
 }
 .toast.show { opacity: 1; transform: translateY(0); }
+.toast-alerta {
+  top: 18px;
+  right: 18px;
+  bottom: auto;
+  max-width: min(520px, calc(100vw - 28px));
+  padding: 16px 18px;
+  color: #1b120c;
+  background: linear-gradient(135deg, #f3bb75, #d2763f);
+  border-color: rgba(255, 222, 169, .72);
+  box-shadow: 0 22px 60px rgba(210, 118, 63, .32);
+  font-weight: 900;
+  transform: translateY(-12px);
+}
+.toast-alerta.show { transform: translateY(0); }
 
+@media (max-width: 720px) {
+  .toast-alerta {
+    left: 14px;
+    right: 14px;
+    max-width: none;
+    text-align: center;
+  }
+}

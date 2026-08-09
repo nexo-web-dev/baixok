@@ -13,6 +13,7 @@ import { imprimirAmbas, imprimirTeste } from "../../../components/impressao.js";
 import { registrarMotoboyLocal } from "./motoboy.js";
 
 const MINUTOS_ATRASO = 15;
+let relogioPedidosTimer = null;
 
 const COLUNAS = [
   ["novo", "Aguardando aprovação"],
@@ -37,6 +38,28 @@ const normalizar = valor => String(valor || "")
   .trim()
   .toLowerCase();
 
+function atualizarRelogioPedidos() {
+  const alvo = $("#orders-clock");
+  if (!alvo) return;
+  const partes = new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  }).formatToParts(new Date());
+  const valor = tipo => partes.find(parte => parte.type === tipo)?.value || "";
+  alvo.textContent = `Horário de Brasília: ${valor("weekday")} ${valor("day")}/${valor("month")} ${valor("hour")}:${valor("minute")}:${valor("second")}`;
+}
+
+function ligarRelogioPedidos() {
+  if (relogioPedidosTimer) return;
+  atualizarRelogioPedidos();
+  relogioPedidosTimer = window.setInterval(atualizarRelogioPedidos, 1000);
+}
+
 function produtoDoItem(item) {
   const id = String(item?.id || "");
   const nome = normalizar(item?.name);
@@ -49,13 +72,22 @@ function miniFotoItem(item) {
   const produto = produtoDoItem(item);
   const imagem = item?.image || produto?.image || "";
   if (!imagem) return el("div.order-detail-thumb.no-photo", {}, "Sem foto");
-  return el("img.order-detail-thumb", {
-    src: imagem,
-    alt: item.name || produto?.name || "Produto",
-    loading: "lazy",
-    decoding: "async",
-    onerror: evento => evento.target.replaceWith(el("div.order-detail-thumb.no-photo", {}, "Sem foto"))
-  });
+  return el("span.fit-media.order-detail-thumb", {},
+    el("img.fit-media-bg", {
+      src: imagem,
+      alt: "",
+      loading: "lazy",
+      decoding: "async",
+      "aria-hidden": "true"
+    }),
+    el("img.fit-media-main", {
+      src: imagem,
+      alt: item.name || produto?.name || "Produto",
+      loading: "lazy",
+      decoding: "async",
+      onerror: evento => evento.target.closest(".fit-media")?.replaceWith(el("div.order-detail-thumb.no-photo", {}, "Sem foto"))
+    })
+  );
 }
 
 function rotuloPronto(pedido) {
@@ -254,6 +286,7 @@ function abrirDetalhePedido(id) {
 export function desenharPedidos() {
   const alvo = $("#orders-kanban");
   if (!alvo) return;
+  ligarRelogioPedidos();
 
   const papel = estado.usuario?.papel;
   const pedidos = pedidosDoPapel(

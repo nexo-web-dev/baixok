@@ -60,7 +60,13 @@ export const mesasService = {
       n: mesa.n,
       status: mesa.status,
       aberta: mesa.status === "aberta",
-      items: mesa.items.map(item => ({ name: item.name, qty: item.qty, price: item.price })),
+      items: mesa.items.map(item => ({
+        id: item.id,
+        name: item.name,
+        qty: item.qty,
+        price: item.price,
+        image: item.image
+      })),
       conta: montarConta(mesa, percentual)
     };
   },

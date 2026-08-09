@@ -9,7 +9,14 @@ import { reais } from "../../utils/formato.js";
 import { apiPublica } from "../../services/api.js";
 
 export function mesaDaUrl() {
-  const bruto = new URLSearchParams(location.search).get("mesa");
+  const parametros = new URLSearchParams(location.search);
+  let bruto = parametros.get("mesa");
+
+  if (!bruto && location.hash) {
+    const hash = location.hash.replace(/^#\/?/, "");
+    bruto = new URLSearchParams(hash.includes("?") ? hash.split("?").pop() : hash).get("mesa");
+  }
+
   const numero = Number(bruto);
   return Number.isInteger(numero) && numero > 0 ? numero : null;
 }
@@ -19,6 +26,7 @@ export const sessaoMesa = { n: null, aberta: null, comanda: null };
 export function iniciarModoMesa(numero) {
   sessaoMesa.n = numero;
   document.body.dataset.mode = "mesa";
+  document.body.classList.add("table-mode");
 
   const botaoEnviar = $("#send-order");
   if (botaoEnviar) botaoEnviar.textContent = "Enviar para a cozinha";
@@ -32,6 +40,10 @@ export function iniciarModoMesa(numero) {
   const subtituloMenu = $("#menu-subtitle");
   if (subtituloMenu) {
     subtituloMenu.textContent = "Toque em + para enviar itens para a cozinha. A conta fecha com o garçom no final.";
+  }
+
+  for (const seletor of ["#phone-label", "#payment-label", "#service-mode", "#pickup-banner"]) {
+    $(seletor)?.classList.add("mesa-hidden-field");
   }
 }
 
@@ -122,9 +134,30 @@ function desenharComanda(comanda) {
   if (titulo) titulo.textContent = `Mesa ${comanda.n}`;
 
   render($("#comanda-items"), ...itens.map(item =>
-    el("div.comanda-line", {},
-      el("span", {}, `${item.qty}x ${item.name}`),
-      el("span", {}, reais(item.price * item.qty))
+    el("div.comanda-item-line", {},
+      item.image
+        ? el("span.fit-media.comanda-thumb", {},
+            el("img.fit-media-bg", {
+              src: item.image,
+              alt: "",
+              loading: "lazy",
+              decoding: "async",
+              "aria-hidden": "true"
+            }),
+            el("img.fit-media-main", {
+              src: item.image,
+              alt: item.name || "Produto",
+              loading: "lazy",
+              decoding: "async",
+              onerror: evento => evento.target.closest(".fit-media")?.replaceWith(el("div.comanda-thumb.no-photo", {}, "Sem foto"))
+            })
+          )
+        : el("div.comanda-thumb.no-photo", {}, "Sem foto"),
+      el("div", {},
+        el("strong", {}, `${item.qty}x ${item.name}`),
+        el("span", {}, `${reais(item.price)} cada`)
+      ),
+      el("strong", {}, reais(item.price * item.qty))
     )
   ));
 

@@ -101,9 +101,15 @@ function avisarPedidosNovos() {
   idsPedidosConhecidos = new Set(estado.pedidos.map(pedido => pedido.id));
 
   if (!novos.length) return;
+  const pedido = novos[0];
+  const codigo = String(pedido.id).slice(-3).toUpperCase();
+  const origemMesa = pedido.fulfillment === "mesa" && pedido.tableNumber
+    ? `Mesa ${pedido.tableNumber}`
+    : pedido.customer || "Cliente";
   toast(novos.length === 1
-    ? `Novo pedido ${String(novos[0].id).slice(-3).toUpperCase()} recebido.`
-    : `${novos.length} novos pedidos recebidos.`);
+    ? `${origemMesa} enviou o pedido ${codigo}. A comanda abriu automaticamente.`
+    : `${novos.length} novos pedidos recebidos.`,
+    { tipo: "alerta", duracao: 7000 });
 }
 
 // ------------------------------------------------------------------- sessao ---

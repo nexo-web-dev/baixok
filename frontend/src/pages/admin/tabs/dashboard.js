@@ -93,13 +93,22 @@ function vendaTag(texto) {
 
 function fotoVenda(item) {
   if (!item?.image) return el("div.sale-item-thumb.no-photo", {}, "Sem foto");
-  return el("img.sale-item-thumb", {
-    src: item.image,
-    alt: item.name || "Produto",
-    loading: "lazy",
-    decoding: "async",
-    onerror: evento => evento.target.replaceWith(el("div.sale-item-thumb.no-photo", {}, "Sem foto"))
-  });
+  return el("span.fit-media.sale-item-thumb", {},
+    el("img.fit-media-bg", {
+      src: item.image,
+      alt: "",
+      loading: "lazy",
+      decoding: "async",
+      "aria-hidden": "true"
+    }),
+    el("img.fit-media-main", {
+      src: item.image,
+      alt: item.name || "Produto",
+      loading: "lazy",
+      decoding: "async",
+      onerror: evento => evento.target.closest(".fit-media")?.replaceWith(el("div.sale-item-thumb.no-photo", {}, "Sem foto"))
+    })
+  );
 }
 
 function itemVenda(item) {

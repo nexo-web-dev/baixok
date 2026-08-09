@@ -147,12 +147,29 @@ function atualizarStatusLoja() {
   mostrar($("#open-cart"), quantidade > 0);
 }
 
+function telaPequena() {
+  return window.matchMedia?.("(max-width: 900px)").matches ?? window.innerWidth <= 900;
+}
+
+function abrirCarrinho({ forcar = false } = {}) {
+  document.body.classList.add("cart-has-items");
+  if (forcar || !telaPequena()) {
+    document.body.classList.add("cart-open");
+    requestAnimationFrame(() => {
+      const carrinhoEl = $("#cart");
+      const itensEl = $("#cart-items");
+      if (carrinhoEl) carrinhoEl.scrollTop = 0;
+      if (itensEl) itensEl.scrollTop = 0;
+    });
+  }
+}
+
 function adicionarAoCarrinho(id) {
   if (!lojaAberta()) return toast("Estabelecimento fechado no momento. O cardápio está disponível só para consulta.");
   const produto = estado.produtosPorId.get(id);
   if (!produto) return toast("Item indisponível.");
   carrinho.adicionar(id);
-  document.body.classList.add("cart-open");
+  abrirCarrinho();
   mostrar($("#product-modal"), false);
   toast("Item adicionado ao pedido.");
 }
@@ -390,7 +407,7 @@ function ligarEventos() {
     if ($("#change-for")) $("#change-for").value = "";
     redesenhar();
   });
-  $("#open-cart")?.addEventListener("click", () => document.body.classList.add("cart-open"));
+  $("#open-cart")?.addEventListener("click", () => abrirCarrinho({ forcar: true }));
   $("#close-cart")?.addEventListener("click", () => document.body.classList.remove("cart-open"));
   ligarRolagemDoCarrinho();
 

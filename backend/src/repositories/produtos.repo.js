@@ -48,6 +48,14 @@ function imagemPublica(linha) {
   return imagem;
 }
 
+function manterImagemAtual(id, imagem) {
+  const valor = String(imagem || "");
+  if (!valor) return false;
+  const simples = `/api/publico/produtos/${encodeURIComponent(id)}/imagem`;
+  const cru = `/api/publico/produtos/${id}/imagem`;
+  return valor.includes(simples) || valor.includes(cru);
+}
+
 let suporteDestaque = null;
 
 async function temDestaqueOrdem() {
@@ -172,29 +180,30 @@ export const produtosRepo = {
 
   async atualizar(id, produto) {
     const destaque = await temDestaqueOrdem();
+    const preservarImagem = manterImagemAtual(id, produto.image);
     if (!destaque) {
       return paraApi(await um(`
         UPDATE produtos
            SET nome = ?, categoria = ?, preco = ?, estoque = ?, estoque_min = ?, ordem = ?,
-               ativo = ?, imagem = ?, selo = ?, descricao = ?, atualizado_em = now()
+               ativo = ?, imagem = CASE WHEN ? = 1 THEN imagem ELSE ? END, selo = ?, descricao = ?, atualizado_em = now()
          WHERE id = ?
         RETURNING *
       `, [
         produto.name, produto.category, produto.price, produto.stock, produto.minStock,
         produto.order || 9999,
-        paraBanco(produto.active), produto.image, produto.badge, produto.description, id
+        paraBanco(produto.active), preservarImagem ? 1 : 0, produto.image, produto.badge, produto.description, id
       ]));
     }
     return paraApi(await um(`
       UPDATE produtos
          SET nome = ?, categoria = ?, preco = ?, estoque = ?, estoque_min = ?, ordem = ?, destaque_ordem = ?,
-             ativo = ?, imagem = ?, selo = ?, descricao = ?, atualizado_em = now()
+             ativo = ?, imagem = CASE WHEN ? = 1 THEN imagem ELSE ? END, selo = ?, descricao = ?, atualizado_em = now()
        WHERE id = ?
       RETURNING *
     `, [
       produto.name, produto.category, produto.price, produto.stock, produto.minStock,
       produto.order || 9999, produto.featuredOrder || 0,
-      paraBanco(produto.active), produto.image, produto.badge, produto.description, id
+      paraBanco(produto.active), preservarImagem ? 1 : 0, produto.image, produto.badge, produto.description, id
     ]));
   },
 

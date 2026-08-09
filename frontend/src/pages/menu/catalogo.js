@@ -17,20 +17,40 @@ function categoriasFiltro(produtos) {
   return categorias;
 }
 
+function semFoto() {
+  return el("div.no-photo", {}, "Sem foto", el("br"), el("small", {}, "Cadastre no painel"));
+}
+
+function classeFoto(produto) {
+  const categoria = normalizarBusca(produto?.category || produto?.badge || produto?.name || "");
+  const comida = /(pizza|burguer|hamburg|massa|porcao|porcoes|batata)/.test(categoria);
+  const bebida = /(drink|bebida|refri|refrigerante|cerveja|coca|guarana|agua|suco|item)/.test(categoria);
+  if (bebida && !comida) return "is-beverage";
+  if (comida) return "is-food";
+  return "";
+}
+
 /* Sem foto cadastrada mostramos um espaco marcado, nao uma imagem quebrada. */
 export function foto(produto, alt = "") {
   if (!produto?.image) {
-    return el("div.no-photo", {}, "Sem foto", el("br"), el("small", {}, "Cadastre no painel"));
+    return semFoto();
   }
-  return el("img", {
-    src: produto.image,
-    alt: alt || produto.name || "",
-    loading: "lazy",
-    decoding: "async",
-    onerror: evento => evento.target.replaceWith(
-      el("div.no-photo", {}, "Sem foto", el("br"), el("small", {}, "Cadastre no painel"))
-    )
-  });
+  return el("span.photo-frame.fit-media", { class: classeFoto(produto) },
+    el("img.photo-bg.fit-media-bg", {
+      src: produto.image,
+      alt: "",
+      loading: "lazy",
+      decoding: "async",
+      "aria-hidden": "true"
+    }),
+    el("img.photo-main.fit-media-main", {
+      src: produto.image,
+      alt: alt || produto.name || "",
+      loading: "lazy",
+      decoding: "async",
+      onerror: evento => evento.target.closest(".photo-frame")?.replaceWith(semFoto())
+    })
+  );
 }
 
 function cartaoProduto(produto, { lojaAberta = true } = {}) {
@@ -66,22 +86,13 @@ function cartaoProduto(produto, { lojaAberta = true } = {}) {
   );
 }
 
-/* Prioriza os tres destaques escolhidos no painel. Se faltar algum, completa
- * sozinho para a vitrine nunca ficar vazia. */
+/* Destaque nunca e preenchido automaticamente: so aparece o que foi marcado no
+ * cadastro do produto, com a foto cadastrada nele. */
 function destaques(produtos) {
-  const escolhidos = [];
-  const juntar = produto => {
-    if (produto && !escolhidos.some(item => item.id === produto.id)) escolhidos.push(produto);
-  };
-
-  produtos
+  return produtos
     .filter(produto => Number(produto.featuredOrder || 0) > 0)
     .sort((a, b) => Number(a.featuredOrder || 0) - Number(b.featuredOrder || 0))
-    .forEach(juntar);
-  juntar(produtos.find(produto => /baixo k|mais pedida|especial/i.test(`${produto.name} ${produto.badge || ""}`)));
-  for (const categoria of ["burgues", "drinks", "pizzas", "massas"]) juntar(produtos.find(produto => produto.category === categoria));
-  produtos.forEach(juntar);
-  return escolhidos.slice(0, 3);
+    .slice(0, 3);
 }
 
 export function desenharDestaques(produtos) {

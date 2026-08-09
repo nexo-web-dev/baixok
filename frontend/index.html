@@ -158,7 +158,7 @@
 
       <div class="cart-items" id="cart-items"></div>
 
-      <div class="service-mode" role="group" aria-label="Tipo do pedido">
+      <div class="service-mode" id="service-mode" role="group" aria-label="Tipo do pedido">
         <button class="mode-btn active" id="mode-retirada" type="button">Retirada</button>
         <button class="mode-btn" id="mode-entrega" type="button">Entrega</button>
       </div>
@@ -169,7 +169,7 @@
         Cliente
         <input id="customer-name" placeholder="Nome para chamar no telão" autocomplete="name">
       </label>
-      <label>
+      <label id="phone-label">
         Telefone
         <input id="customer-phone" placeholder="WhatsApp ou telefone" autocomplete="tel" inputmode="tel">
       </label>
@@ -180,7 +180,7 @@
       </label>
       <div class="sugestoes" id="endereco-sugestoes"></div>
       <p class="entrega-aviso hidden" id="entrega-aviso" role="status"></p>
-      <label>
+      <label id="payment-label">
         Pagamento
         <select id="payment-method">
           <option value="">Selecione</option>
