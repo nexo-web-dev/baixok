@@ -40,6 +40,9 @@ async function carregarCardapio() {
     estado.loja = loja || {};
     return true;
   } catch (erro) {
+    estado.produtos = [];
+    estado.produtosPorId = new Map();
+    estado.loja = { ...estado.loja, caixaAberto: false };
     toastFalha(erro, "Cardápio");
     return false;
   }
@@ -322,9 +325,6 @@ async function buscarHistorico() {
       ? pedidos.map(pedidoHistorico)
       : el("p.faint", {}, "Nenhum pedido encontrado para este telefone."));
   } catch (erro) {
-    estado.produtos = [];
-    estado.produtosPorId = new Map();
-    estado.loja = { ...estado.loja, caixaAberto: false };
     toastFalha(erro, "Histórico");
     render(alvo);
   }
