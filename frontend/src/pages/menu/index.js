@@ -366,6 +366,7 @@ function ligarEventos() {
   $("#mode-retirada")?.addEventListener("click", () => definirModalidade("retirada"));
   $("#mode-entrega")?.addEventListener("click", () => definirModalidade("entrega"));
   $("#payment-method")?.addEventListener("change", atualizarCampoTroco);
+  $("#change-for")?.addEventListener("input", () => atualizarResumoTroco());
 
   $("#customer-place")?.addEventListener("input", evento => entrega.buscarEndereco(evento.target.value, redesenhar));
   $("#apply-coupon")?.addEventListener("click", async () => {
