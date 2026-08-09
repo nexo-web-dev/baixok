@@ -11,7 +11,7 @@
  *    protegidas por sessao: guardar o HTML delas no aparelho de um cliente nao
  *    tem proposito nenhum.
  */
-const CACHE = "baixok-v4";
+const CACHE = "baixok-v5";
 
 /* So o esqueleto do cardapio. Os assets com hash no nome sao guardados sob
  * demanda, na primeira visita. */

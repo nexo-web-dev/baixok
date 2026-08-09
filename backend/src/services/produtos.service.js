@@ -23,6 +23,8 @@ function normalizarEstoqueDoProduto(dados) {
 
 export const produtosService = {
   listar: () => produtosRepo.listar(),
+  imagemPublica: id => produtosRepo.imagemPublica(id),
+
   async emFalta() {
     return (await produtosRepo.emFalta()).filter(produto => controlaEstoqueCategoria(produto.category));
   },

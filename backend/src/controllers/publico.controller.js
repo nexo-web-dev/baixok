@@ -40,6 +40,15 @@ export const publicoController = {
     });
   },
 
+  async imagemProduto(req, res) {
+    const imagem = await produtosService.imagemPublica(req.validado.params.id);
+    if (!imagem) return res.status(404).end();
+    res
+      .set("Content-Type", imagem.contentType)
+      .set("Cache-Control", "public, max-age=604800, immutable")
+      .send(imagem.buffer);
+  },
+
   /* Situacao da mesa: so o suficiente para o QR saber se pode aceitar pedido. */
   async statusMesa(req, res) {
     const comanda = await mesasService.comandaPublica(req.validado.params.n);

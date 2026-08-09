@@ -65,7 +65,7 @@ const AFETADAS = {
 };
 
 const DEPENDENCIAS_ABA = {
-  pedidos: ["pedidos", "caixa"],
+  pedidos: [],
   motoboy: [],
   mesas: ["mesas", "produtos"],
   produtos: ["produtos", "promocoes"],
@@ -198,15 +198,27 @@ async function iniciar() {
   montarMenu(sessao.usuario);
   ligarShell();
 
-  await carregar(...areasIniciais(sessao.usuario));
-  desenharMetricas();
-
   await abrirAba(abaInicial(sessao.usuario));
+
+  carregar(...areasIniciais(sessao.usuario)).then(async () => {
+    desenharMetricas();
+    if (abaAtual === "pedidos") await DESENHO.pedidos?.();
+  });
 
   conectarEventos({
     canal: "operacao",
     aoMudar: async assunto => {
-      const areas = { pedidos: ["pedidos", "mesas", "produtos"], produtos: ["produtos"], insumos: ["insumos"], promocoes: ["promocoes"], cupons: ["cupons"], mesas: ["mesas"], entrega: ["entrega"], caixa: ["caixa", "fechamentos"] }[assunto];
+      const areas = {
+        pedidos: ["pedidos", "mesas", "caixa"],
+        produtos: ["produtos"],
+        insumos: ["insumos"],
+        promocoes: ["promocoes"],
+        cupons: ["cupons"],
+        mesas: ["mesas"],
+        entrega: ["entrega"],
+        caixa: ["caixa", "fechamentos"],
+        retomada: ["pedidos", "mesas", "caixa"]
+      }[assunto];
       await carregar(...(areas || []));
       if (assunto === "entrega") recarregarRascunhoEntrega();
       desenharMetricas();

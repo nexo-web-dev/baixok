@@ -16,12 +16,24 @@
  *    delas em toda operacao de escrita. */
 import { todos, um, alteradas, paraBanco, doBanco } from "../db/postgres.js";
 
-const LIMITE_IMAGEM_API = 260_000;
+const LIMITE_IMAGEM_API = 180_000;
+const DATA_IMAGE_RE = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/s;
 
 function imagemParaApi(valor) {
   const imagem = String(valor || "");
   if (!imagem.startsWith("data:image/")) return imagem;
   return imagem.length <= LIMITE_IMAGEM_API ? imagem : "";
+}
+
+function imagemPublica(linha) {
+  if (!linha) return "";
+  const imagem = String(linha.imagem || "");
+  if (!imagem) return "";
+  if (DATA_IMAGE_RE.test(imagem)) {
+    const versao = encodeURIComponent(linha.atualizado_em || "");
+    return `/api/publico/produtos/${encodeURIComponent(linha.id)}/imagem${versao ? `?v=${versao}` : ""}`;
+  }
+  return imagem;
 }
 
 let suporteDestaque = null;
@@ -81,10 +93,11 @@ export const produtosRepo = {
     const linhas = await todos(`
       SELECT id, nome, categoria, preco,
              CASE
-               WHEN imagem LIKE 'data:image/%' AND length(imagem) > ${LIMITE_IMAGEM_API} THEN ''
+               WHEN imagem LIKE 'data:image/%;base64,%' THEN ''
                ELSE imagem
              END AS imagem,
-             selo, descricao, estoque, ordem, ${destaque ? "destaque_ordem" : "0 AS destaque_ordem"}
+             imagem LIKE 'data:image/%;base64,%' AS imagem_embutida,
+             selo, descricao, estoque, ordem, atualizado_em, ${destaque ? "destaque_ordem" : "0 AS destaque_ordem"}
         FROM produtos
        WHERE ativo = 1
        ORDER BY ordem ASC, categoria, nome
@@ -94,7 +107,7 @@ export const produtosRepo = {
       name: linha.nome,
       category: linha.categoria,
       price: linha.preco,
-      image: imagemParaApi(linha.imagem),
+      image: linha.imagem_embutida ? imagemPublica(linha) : imagemParaApi(linha.imagem),
       badge: linha.selo,
       description: linha.descricao,
       order: linha.ordem ?? 9999,
@@ -106,6 +119,17 @@ export const produtosRepo = {
 
   async buscar(id) {
     return paraApi(await um("SELECT * FROM produtos WHERE id = ?", [id]));
+  },
+
+  async imagemPublica(id) {
+    const linha = await um("SELECT imagem, atualizado_em FROM produtos WHERE id = ? AND ativo = 1", [id]);
+    const match = String(linha?.imagem || "").match(DATA_IMAGE_RE);
+    if (!match) return null;
+    return {
+      contentType: match[1],
+      buffer: Buffer.from(match[2].replace(/\s/g, ""), "base64"),
+      updatedAt: linha.atualizado_em
+    };
   },
 
   async criar(produto) {
