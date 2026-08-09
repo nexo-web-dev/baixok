@@ -418,6 +418,7 @@
 .location-card small { color: var(--muted); font-size: .74rem; line-height: 1.35; }
 .location-card .location-order { color: var(--gold-light); font-weight: 700; }
 .location-card.empty { border-style: dashed; border-color: var(--line-soft); }
+.location-card .small { white-space: nowrap; }
 .motoboy-list { display: grid; gap: 12px; }
 .motoboy-card {
   display: grid; gap: 12px; padding: 16px 18px; border-radius: var(--radius-md);
@@ -431,6 +432,19 @@
 .motoboy-grid span, .motoboy-actions label span { color: var(--muted); font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
 .motoboy-grid strong { color: var(--muted-2); font-size: .78rem; overflow-wrap: anywhere; }
 .motoboy-items { color: var(--muted-2); font-size: .82rem; line-height: 1.45; }
+.motoboy-items-grid { display: grid; gap: 8px; }
+.motoboy-item-row {
+  display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; gap: 10px; align-items: center;
+  padding: 8px; border-radius: var(--radius-sm); background: rgba(0,0,0,.14); border: 1px solid var(--line-soft);
+}
+.motoboy-item-row div { display: grid; gap: 3px; min-width: 0; }
+.motoboy-item-row strong { color: var(--ink); overflow-wrap: anywhere; }
+.motoboy-item-row span { color: var(--muted); font-size: .76rem; }
+.motoboy-item-thumb {
+  width: 58px; height: 58px; border-radius: 12px; object-fit: contain; object-position: center;
+  background: var(--soft); border: 1px solid var(--line-soft);
+}
+.motoboy-item-thumb.no-photo { display: grid; place-items: center; color: var(--gold); font-size: .62rem; font-weight: 800; text-align: center; }
 .motoboy-actions { display: grid; grid-template-columns: minmax(220px, 1fr) auto minmax(76px, auto) auto; gap: 8px; align-items: end; }
 .motoboy-actions label { display: grid; gap: 5px; }
 .motoboy-save-state { align-self: center; color: var(--muted); font-size: .76rem; font-weight: 700; white-space: nowrap; }
@@ -503,6 +517,27 @@
 .sale-main strong { color: var(--ink); font-size: .9rem; }
 .sale-main span, .sale-main em, .sale-side span { color: var(--muted); font-style: normal; font-size: .76rem; }
 .sale-main em { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sale-title { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.sale-title span { color: var(--faint); }
+.sale-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.sale-tag {
+  width: max-content; padding: 4px 8px; border-radius: var(--radius-pill);
+  color: var(--gold-light) !important; background: rgba(217,154,104,.12); font-weight: 800;
+}
+.money-text { color: var(--gold-light) !important; font-weight: 800; }
+.sale-items { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin-top: 6px; }
+.sale-item {
+  display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 9px; align-items: center;
+  padding: 8px; border-radius: var(--radius-sm); background: rgba(0,0,0,.14); border: 1px solid var(--line-soft);
+}
+.sale-item div { display: grid; gap: 2px; min-width: 0; }
+.sale-item strong { overflow-wrap: anywhere; }
+.sale-item span { color: var(--muted); font-size: .72rem; }
+.sale-item-thumb {
+  width: 52px; height: 52px; border-radius: 11px; object-fit: contain; object-position: center;
+  background: var(--soft); border: 1px solid var(--line-soft);
+}
+.sale-item-thumb.no-photo { display: grid; place-items: center; color: var(--gold); font-size: .58rem; font-weight: 800; text-align: center; }
 .sale-side { display: grid; justify-items: end; gap: 6px; }
 .sale-side strong { color: var(--gold-light); font-family: var(--font-head); font-size: .95rem; }
 .sale-detail {
@@ -588,6 +623,9 @@
   .user-row, .permission-row, .audit-row, .sale-row, .closing-row { grid-template-columns: 1fr; }
   .permission-group, .sale-side, .closing-side { justify-content: flex-start; justify-items: start; }
   .sale-main em { white-space: normal; }
+  .sale-items { grid-template-columns: 1fr; }
+  .sale-item, .motoboy-item-row { grid-template-columns: 52px minmax(0, 1fr); }
+  .sale-item > strong, .motoboy-item-row > strong { grid-column: 2; justify-self: start; }
   .stock-cards { grid-template-columns: 1fr; }
   .motoboy-card-head, .motoboy-actions { grid-template-columns: 1fr; }
   .motoboy-card-head { display: grid; }
