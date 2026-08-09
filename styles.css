@@ -41,7 +41,7 @@
 
 /* — reset / base — */
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; overflow-x: hidden; }
 body {
   margin: 0; min-height: 100vh; overflow-x: hidden;
   color: var(--ink); font-family: var(--font-body);
@@ -504,7 +504,7 @@ body.cart-open .mobile-cart { opacity: 0; pointer-events: none; transform: trans
 .order-row .order-num { color: var(--gold); font-weight: 800; }
 
 /* — modais (venda manual + QR) — */
-.modal { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 24px; background: rgba(10,8,6,.8); }
+.modal { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 24px; background: rgba(10,8,6,.8); overflow: auto; }
 .modal.hidden { display: none; }
 .modal-card {
   display: grid; gap: 12px; width: 560px; max-width: 100%; max-height: 84vh; overflow-y: auto;
@@ -856,6 +856,11 @@ body[data-page="menu"] { background: radial-gradient(circle at 50% -10%, rgba(20
   .filter-bar select, .period-group { width: 100%; }
   .period-btn { flex: 1; }
   .export-btn { margin-left: 0; width: 100%; }
+  .modal { align-items: start; padding: 12px; }
+  .modal-card { width: 100%; max-height: calc(100dvh - 24px); padding: 18px; border-radius: var(--radius-md); }
+  .manual-product-list { max-height: 36dvh; overscroll-behavior: contain; }
+  .manual-product { display: grid; grid-template-columns: minmax(0, 1fr) auto 34px; gap: 8px; padding: 10px; }
+  .round-add { width: 34px; height: 34px; }
   .screen-page { padding: 18px 14px; }
   .screen-header { align-items: flex-start; flex-direction: column; gap: 8px; }
   .screen-board { gap: 14px; }
