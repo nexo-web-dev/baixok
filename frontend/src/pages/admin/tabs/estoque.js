@@ -21,13 +21,15 @@ const quantidade = valor => new Intl.NumberFormat("pt-BR", {
 }).format(Number(valor || 0));
 
 function cartaoProduto(produto) {
-  const critico = produto.stock <= produto.minStock;
+  const estoqueAtual = Number(produto.stock || 0);
+  const estoqueMinimo = Number(produto.minStock || 0);
+  const critico = estoqueAtual <= estoqueMinimo;
 
   return el("article.stock-card.beverage-stock", { class: critico ? "low" : "", dataset: { id: produto.id } },
     el("strong", {}, produto.name),
     critico ? el("span.stock-alert", {}, "ALERTA DE ESTOQUE") : null,
-    el("span.stock-value", { class: critico ? "danger-text" : "" }, String(produto.stock)),
-    el("span.small", {}, `minimo ${produto.minStock}`),
+    el("span.stock-value", { class: critico ? "danger-text" : "" }, String(estoqueAtual)),
+    el("span.small", {}, `minimo ${estoqueMinimo}`),
     el("div.counter", {},
       el("button", { type: "button", dataset: { acao: "estoque", id: produto.id, delta: "-1" }, "aria-label": `Tirar uma unidade de ${produto.name}` }, "-"),
       el("input", {
@@ -42,7 +44,9 @@ function cartaoProduto(produto) {
 }
 
 function cartaoInsumo(insumo) {
-  const critico = insumo.qty <= insumo.minQty;
+  const qtdAtual = Number(insumo.qty || 0);
+  const qtdMinima = Number(insumo.minQty || 0);
+  const critico = qtdAtual <= qtdMinima;
 
   return el("article.stock-card.insumo-card", { class: critico ? "low" : "", dataset: { id: String(insumo.id) } },
     el("div.stock-headline", {},
@@ -51,8 +55,8 @@ function cartaoInsumo(insumo) {
     ),
     critico ? el("span.stock-alert", {}, "ALERTA DE INSUMO") : null,
     el("span.small", {}, `${insumo.category || "Geral"} | ${insumo.unit || "un"}`),
-    el("span.stock-value", { class: critico ? "danger-text" : "" }, `${quantidade(insumo.qty)} ${insumo.unit || ""}`.trim()),
-    el("span.small", {}, `minimo ${quantidade(insumo.minQty)} ${insumo.unit || ""}`.trim()),
+    el("span.stock-value", { class: critico ? "danger-text" : "" }, `${quantidade(qtdAtual)} ${insumo.unit || ""}`.trim()),
+    el("span.small", {}, `minimo ${quantidade(qtdMinima)} ${insumo.unit || ""}`.trim()),
     el("div.counter", {},
       el("button", { type: "button", dataset: { acao: "insumo-estoque", id: String(insumo.id), delta: "-1" }, "aria-label": `Tirar uma unidade de ${insumo.name}` }, "-"),
       el("input", {
