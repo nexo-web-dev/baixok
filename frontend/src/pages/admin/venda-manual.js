@@ -17,6 +17,11 @@ const PAGAMENTOS = ["Dinheiro", "Pix", "Cartão", "Online"];
 const rascunho = { itens: [], canal: "loja", pagamento: "Dinheiro", modalidade: "retirada", mesa: null };
 let aoConcluir = null;
 
+const normalizarBusca = valor => String(valor || "")
+  .normalize("NFD")
+  .replace(/\p{Diacritic}/gu, "")
+  .toLowerCase();
+
 /* Cotacao de entrega e so previa: quem manda de verdade e o servidor, na hora
  * de registrar (mesma regra do cardapio do cliente). */
 let cotacaoManual = null;
@@ -158,10 +163,10 @@ function desenharChips() {
 }
 
 function desenharProdutos() {
-  const termo = ($("#manual-search")?.value || "").trim().toLowerCase();
+  const termo = normalizarBusca($("#manual-search")?.value).trim();
   const lista = estado.produtos
     .filter(produto => produto.active && (!controlaEstoqueCategoria(produto.category) || produto.stock > 0))
-    .filter(produto => !termo || produto.name.toLowerCase().includes(termo))
+    .filter(produto => !termo || normalizarBusca(`${produto.name} ${produto.category || ""}`).includes(termo))
     .slice(0, 40);
 
   render($("#manual-products"), ...(lista.length
