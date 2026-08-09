@@ -38,7 +38,7 @@ async function carregarCardapio() {
     estado.loja = loja || {};
     return true;
   } catch (erro) {
-    toastFalha(erro, "Cardapio");
+    toastFalha(erro, "Cardápio");
     return false;
   }
 }
@@ -94,10 +94,28 @@ function atualizarCampoTroco() {
 
 function adicionarAoCarrinho(id) {
   const produto = estado.produtosPorId.get(id);
-  if (!produto) return toast("Item indisponivel.");
+  if (!produto) return toast("Item indisponível.");
   carrinho.adicionar(id);
   document.body.classList.add("cart-open");
   toast("Item adicionado ao pedido.");
+}
+
+function ligarRolagemDoCarrinho() {
+  const cart = $("#cart");
+  if (!cart) return;
+
+  cart.addEventListener("wheel", evento => {
+    if (!document.body.classList.contains("cart-open")) return;
+    const noTopo = cart.scrollTop <= 0;
+    const noFim = Math.ceil(cart.scrollTop + cart.clientHeight) >= cart.scrollHeight;
+    const tentandoSubir = evento.deltaY < 0;
+    const tentandoDescer = evento.deltaY > 0;
+
+    if ((tentandoSubir && noTopo) || (tentandoDescer && noFim)) {
+      evento.preventDefault();
+      window.scrollBy({ top: evento.deltaY, behavior: "auto" });
+    }
+  }, { passive: false });
 }
 
 // -------------------------------------------------------------- checkout ---
@@ -137,8 +155,8 @@ async function enviarPedido() {
   const corpo = {
     customer: cliente || (modoMesa ? `Mesa ${sessaoMesa.n}` : "Cliente"),
     phone: telefone,
-    place: modoMesa ? `Mesa ${sessaoMesa.n} - salao` : estado.modalidade === "entrega" ? endereco : "Retirada",
-    payment: modoMesa ? "Pagar no balcao" : pagamento,
+    place: modoMesa ? `Mesa ${sessaoMesa.n} - salão` : estado.modalidade === "entrega" ? endereco : "Retirada",
+    payment: modoMesa ? "Pagar no balcão" : pagamento,
     trocoPara: modoMesa ? null : trocoPara,
     note: observacao,
     coupon: modoMesa ? "" : codigoAplicado(),
@@ -171,7 +189,7 @@ async function enviarPedido() {
     if (modoMesa) {
       await atualizarMesa();
       mostrarVista("comanda");
-      toast("Pedido enviado para a cozinha.");
+      toast("Pedido enviado para a cozinha. Chame o garçom para fechar a conta.");
     } else {
       if (estado.modalidade === "entrega") montarWhatsapp(pedido);
       toast(`Pedido ${String(pedido.id).slice(-5)} enviado para a cozinha.`);
@@ -218,7 +236,7 @@ async function buscarHistorico() {
       ? pedidos.map(pedidoHistorico)
       : el("p.faint", {}, "Nenhum pedido encontrado para este telefone."));
   } catch (erro) {
-    toastFalha(erro, "Historico");
+    toastFalha(erro, "Histórico");
     render(alvo);
   }
 }
@@ -271,6 +289,7 @@ function ligarEventos() {
   });
   $("#open-cart")?.addEventListener("click", () => document.body.classList.add("cart-open"));
   $("#close-cart")?.addEventListener("click", () => document.body.classList.remove("cart-open"));
+  ligarRolagemDoCarrinho();
 
   const modalPagamento = $("#payment-modal");
   $("#open-payment-info")?.addEventListener("click", () => mostrar(modalPagamento, true));

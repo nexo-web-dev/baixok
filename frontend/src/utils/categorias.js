@@ -7,10 +7,10 @@
 
 export const CATEGORIAS_ROTULO = Object.freeze({
   pizzas: "Pizzas",
-  burgues: "Burgues",
+  burgues: "Burguers",
   massas: "Massas",
   drinks: "Drinks",
-  porcoes: "Porcoes"
+  porcoes: "Porções"
 });
 
 export function rotuloCategoria(categoria) {
@@ -20,7 +20,7 @@ export function rotuloCategoria(categoria) {
 }
 
 export const CANAIS_ROTULO = Object.freeze({
-  cardapio: "Cardapio",
+  cardapio: "Cardápio",
   loja: "Loja",
   ifood: "iFood",
   "99food": "99Food",

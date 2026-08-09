@@ -92,7 +92,7 @@ body.cart-open .shop-layout { padding-right: calc(var(--cart-width) + 18px); }
 .cart {
   position: fixed; top: clamp(62px, 9svh, 78px); right: 0; bottom: 0; z-index: 100; display: grid; align-content: start; gap: 12px;
   width: min(var(--cart-width), calc(100vw - 16px)); max-height: none;
-  overflow: auto; overscroll-behavior: contain; padding: 16px; border-radius: var(--radius-lg) 0 0 0;
+  overflow: auto; overscroll-behavior-y: auto; padding: 16px; border-radius: var(--radius-lg) 0 0 0;
   background: var(--panel); box-shadow: var(--shadow-lg); opacity: 0; pointer-events: none;
   transform: translateX(100%); transition: opacity .22s ease, transform .24s cubic-bezier(.2,.8,.2,1);
 }
@@ -219,6 +219,15 @@ body.cart-open .mobile-cart { opacity: 0; pointer-events: none; transform: trans
 
 /* a barra da mesa substitui a topbar: o cliente do salao nao ve o link do painel */
 body[data-mode="mesa"] .menu-topbar { display: none; }
+body[data-mode="mesa"] .hero,
+body[data-mode="mesa"] .signature-strip,
+body[data-mode="mesa"] .experience-strip,
+body[data-mode="mesa"] .nexo-footer { display: none !important; }
+
+body[data-mode="mesa"] .shop-layout {
+  padding-top: 18px;
+  padding-bottom: calc(124px + env(safe-area-inset-bottom, 0px));
+}
 
 /* na mesa o cliente nao escolhe entrega nem paga no app: a conta fecha no balcao */
 body[data-mode="mesa"] .service-mode,

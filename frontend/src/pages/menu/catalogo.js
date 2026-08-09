@@ -37,7 +37,7 @@ function cartaoProduto(produto) {
   const promocional = produto.emPromocao && produto.precoOriginal > produto.price;
 
   return el("article.product", { class: promocional ? "on-sale" : "", dataset: { id: produto.id } },
-    el("span.badge", {}, promocional ? "Promocao" : (produto.badge || rotuloCategoria(produto.category) || "Item")),
+    el("span.badge", {}, promocional ? "Promoção" : (produto.badge || rotuloCategoria(produto.category) || "Item")),
     foto(produto),
     el("div.product-body", {},
       el("strong", {}, produto.name),
@@ -114,5 +114,5 @@ export function desenharGrade(produtos, { categoria, busca }) {
 
   render(alvo, lista.length
     ? lista.map(cartaoProduto)
-    : el("p.faint", {}, "Nenhum item disponivel nesse filtro."));
+    : el("p.faint", {}, "Nenhum item disponível nesse filtro."));
 }

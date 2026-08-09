@@ -11,7 +11,7 @@ import { apiPedidos, apiPublica } from "../../services/api.js";
 import { estado, carregar, precoEfetivo } from "./store.js";
 import { toast, toastFalha } from "../../components/toast.js";
 
-const PAGAMENTOS = ["Dinheiro", "Pix", "Cartao", "Online"];
+const PAGAMENTOS = ["Dinheiro", "Pix", "Cartão", "Online"];
 
 const rascunho = { itens: [], canal: "loja", pagamento: "Dinheiro", modalidade: "retirada", mesa: null };
 let aoConcluir = null;
@@ -34,8 +34,8 @@ function limparCotacaoManual() {
 
 function descreverCotacaoManual(resultado) {
   if (!resultado?.configurado) return "";
-  if (!resultado.dentro) return `Esse endereco esta a ${resultado.km} km da loja, fora da area de entrega.`;
-  const minimo = resultado.minimo ? ` · pedido minimo ${reais(resultado.minimo)}` : "";
+  if (!resultado.dentro) return `Esse endereço está a ${resultado.km} km da loja, fora da área de entrega.`;
+  const minimo = resultado.minimo ? ` · pedido mínimo ${reais(resultado.minimo)}` : "";
   return `Entrega ${resultado.zona} · taxa ${reais(resultado.taxa)}${minimo}`;
 }
 
@@ -212,7 +212,15 @@ function redesenhar() {
   desenharCarrinho();
 }
 
-export function abrirVendaManual(mesa = null, callback = null) {
+export async function abrirVendaManual(mesa = null, callback = null) {
+  if (!estado.caixaAtual) {
+    try { await carregar("caixa"); } catch { /* o toast abaixo explica a acao necessaria */ }
+  }
+  if (!estado.caixaAtual) {
+    toastFalha(new Error("Abra o caixa antes de registrar vendas."), "Caixa");
+    return;
+  }
+
   rascunho.itens = [];
   rascunho.mesa = mesa;
   rascunho.canal = mesa === null ? "loja" : "loja";
@@ -220,7 +228,7 @@ export function abrirVendaManual(mesa = null, callback = null) {
   rascunho.modalidade = mesa === null ? "retirada" : "mesa";
   aoConcluir = callback;
 
-  $("#manual-title").textContent = mesa ? `Lancar pedido na mesa ${mesa}` : "Lancar pedido manual";
+  $("#manual-title").textContent = mesa ? `Lançar pedido na mesa ${mesa}` : "Lançar pedido manual";
   $("#manual-customer").value = "";
   if ($("#manual-phone")) $("#manual-phone").value = "";
   if ($("#manual-address")) $("#manual-address").value = "";
@@ -247,7 +255,7 @@ async function registrar() {
   const trocoPara = normalizarTroco($("#manual-change-for")?.value);
   if (rascunho.mesa === null && rascunho.modalidade === "entrega") {
     if (!telefone) return definirErro("Informe o telefone do cliente para entrega.");
-    if (!endereco) return definirErro("Informe o endereco de entrega.");
+    if (!endereco) return definirErro("Informe o endereço de entrega.");
   }
   if (rascunho.pagamento === "Dinheiro" && rascunho.mesa === null && !trocoPara) {
     return definirErro("Informe troco para quanto.");
@@ -257,7 +265,7 @@ async function registrar() {
     customer: nome || (rascunho.mesa ? `Mesa ${rascunho.mesa}` : CANAIS_ROTULO[rascunho.canal]),
     phone: telefone,
     place: rascunho.mesa
-      ? `Mesa ${rascunho.mesa} - salao`
+      ? `Mesa ${rascunho.mesa} - salão`
       : rascunho.modalidade === "entrega" ? endereco : "Retirada",
     note: "",
     payment: rascunho.pagamento,
@@ -277,7 +285,7 @@ async function registrar() {
     }
     await carregar("pedidos", "produtos", "mesas");
     fecharVendaManual();
-    toast(rascunho.mesa ? `Pedido lancado na mesa ${rascunho.mesa}.` : "Venda registrada na fila.");
+    toast(rascunho.mesa ? `Pedido lançado na mesa ${rascunho.mesa}.` : "Venda registrada na fila.");
     aoConcluir?.();
   } catch (erro) {
     definirErro(erro.message);

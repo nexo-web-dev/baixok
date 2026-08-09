@@ -102,6 +102,11 @@ async function entrar(usuario, senha) {
 const sessaoAdmin = await entrar("admin", "senha-do-teste-1234");
 const sessaoCaixa = await entrar("caixa1", "senha-do-caixa-1234");
 const sessaoCozinha = await entrar("cozinha1", "senha-cozinha-1234");
+await chamar("/api/painel/caixa/abrir", {
+  metodo: "POST",
+  sessao: sessaoAdmin,
+  corpo: { senha: "senha-do-teste-1234" }
+});
 
 // ===================================================== superficie publica ===
 test("cardapio publico nao vaza cupons, estoque nem faixas de entrega", async () => {

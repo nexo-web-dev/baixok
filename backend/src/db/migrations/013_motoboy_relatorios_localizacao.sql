@@ -1,0 +1,2 @@
+-- Referencia SQLite: a pasta raiz de migrations nao e mais executada.
+-- Em Postgres, os dados de motoboy e localizacao sao criados por migrations/postgres/013_motoboy_relatorios_localizacao.sql.

@@ -11,11 +11,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/admin-miwGPW6Y.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/api-DEKr3VnT.js">
-  <link rel="modulepreload" crossorigin href="/assets/toast-BeiLEQAS.js">
-  <link rel="modulepreload" crossorigin href="/assets/categorias-BdpHgxAa.js">
-  <link rel="stylesheet" crossorigin href="/assets/admin-DlUYYSVZ.css">
+  <script type="module" crossorigin src="/assets/admin-CqtcgENe.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/api-D6oV9jl-.js">
+  <link rel="modulepreload" crossorigin href="/assets/toast-5Sfis4rA.js">
+  <link rel="modulepreload" crossorigin href="/assets/categorias-DnEkn7Ue.js">
+  <link rel="stylesheet" crossorigin href="/assets/admin-7lYJup-w.css">
 </head>
 <body data-page="admin">
   <div class="aviso-offline" role="alert">Sem conexao com o servidor. As alteracoes nao estao sendo salvas.</div>
@@ -31,7 +31,8 @@
 
     <nav class="nav-list" id="nav-list" aria-label="Secoes">
       <button class="nav-item active" type="button" data-tab="pedidos"><span class="nav-icon" aria-hidden="true">☰</span>Pedidos<span class="nav-badge hidden" id="nav-badge">0</span></button>
-      <button class="nav-item" type="button" data-tab="mesas"><span class="nav-icon" aria-hidden="true">▢</span>Mesas (salao)</button>
+      <button class="nav-item" type="button" data-tab="motoboy"><span class="nav-icon" aria-hidden="true">MB</span>Motoboy</button>
+      <button class="nav-item" type="button" data-tab="mesas"><span class="nav-icon" aria-hidden="true">▢</span>Mesas (salão)</button>
       <button class="nav-item" type="button" data-tab="produtos"><span class="nav-icon" aria-hidden="true">◱</span>Produtos</button>
       <button class="nav-item" type="button" data-tab="promos"><span class="nav-icon" aria-hidden="true">✦</span>Promocoes</button>
       <button class="nav-item" type="button" data-tab="entrega"><span class="nav-icon" aria-hidden="true">◈</span>Area de entrega</button>
@@ -39,6 +40,7 @@
       <button class="nav-item" type="button" data-tab="dashboard"><span class="nav-icon" aria-hidden="true">◔</span>Dashboard</button>
       <button class="nav-item" type="button" data-tab="plano"><span class="nav-icon" aria-hidden="true">PL</span>Plano do sistema</button>
       <button class="nav-item" type="button" data-tab="usuarios"><span class="nav-icon" aria-hidden="true">◍</span>Usuarios</button>
+      <button class="nav-item" type="button" data-tab="fechamentos"><span class="nav-icon" aria-hidden="true">FC</span>Fechamentos</button>
     </nav>
 
     <div class="nav-foot">
@@ -48,7 +50,7 @@
       </div>
       <button class="secondary" type="button" id="sair">Sair</button>
       <button class="secondary" type="button" id="abrir-suporte">◈ Suporte Nexo</button>
-      <a class="admin-link" href="/telao.html" target="_blank" rel="noopener">▦ Telao do salao ↗</a>
+      <a class="admin-link" href="/telao.html" target="_blank" rel="noopener">▦ Telão do salão ↗</a>
       <a class="secondary" href="/index.html" target="_blank" rel="noopener">← Catálogo</a>
       <a class="nav-credit" href="https://portfolio-nexo.netlify.app/" target="_blank" rel="noopener">
         desenvolvido por <span>Nexo Developer</span>
@@ -69,25 +71,38 @@
     <section class="admin-tab" id="tab-pedidos">
       <div class="tab-guide">
         <strong>Como usar esta aba</strong>
-        <p>Tudo que entra pelo cardapio, WhatsApp ou lancamento manual cai aqui. Aprovar imprime nas duas impressoras; arraste os cards entre as colunas, para frente ou para tras, para corrigir o status.</p>
+        <p>Tudo que entra pelo cardápio, WhatsApp ou lançamento manual cai aqui. Aprovar imprime nas duas impressoras; arraste os cards entre as colunas, para frente ou para trás, para corrigir o status.</p>
       </div>
       <div class="tab-actions">
+        <div class="cash-status" id="cash-status">Caixa: carregando</div>
+        <button class="secondary" type="button" id="open-cash">Abrir caixa</button>
+        <button class="secondary" type="button" id="close-cash">Fechar caixa</button>
         <button class="secondary" type="button" id="print-test-kitchen">Teste cozinha</button>
-        <button class="secondary" type="button" id="print-test-counter">Teste balcao</button>
-        <button class="primary" type="button" id="open-manual-sale">+ Lancar pedido manual</button>
+        <button class="secondary" type="button" id="print-test-counter">Teste balcão</button>
+        <button class="primary" type="button" id="open-manual-sale">+ Lançar pedido manual</button>
       </div>
       <div class="kanban" id="orders-kanban"></div>
       <p class="tab-hint">Dica: arraste um card para qualquer coluna, para frente ou para tras, para corrigir o status.</p>
+    </section>
+
+    <!-- ------------------------------------------------------------ motoboy -->
+    <section class="admin-tab hidden" id="tab-motoboy">
+      <div class="tab-guide">
+        <strong>Como usar esta aba</strong>
+        <p>Mostra apenas pedidos de entrega que estao prontos ou ja foram entregues. Salve o nome do motoboy responsavel para ficar registrado no historico da venda.</p>
+      </div>
+      <div class="motoboy-location-panel" id="motoboy-location-panel"></div>
+      <div class="motoboy-list" id="motoboy-list"></div>
     </section>
 
     <!-- -------------------------------------------------------------- mesas -->
     <section class="admin-tab hidden" id="tab-mesas">
       <div class="tab-guide">
         <strong>Como usar esta aba</strong>
-        <p>Comanda por mesa com QR code: o atendente abre a mesa para liberar os pedidos, acompanha o parcial e o tempo, e fecha a conta imprimindo a nota no balcao.</p>
+        <p>Comanda por mesa com QR code: o atendente abre a mesa para liberar os pedidos, acompanha o parcial e o tempo, e fecha a conta imprimindo a nota no balcão.</p>
       </div>
       <div class="tables-bar">
-        <strong>Mesas no salao</strong>
+        <strong>Mesas no salão</strong>
         <div class="counter">
           <button type="button" id="remove-table" aria-label="Remover mesa">−</button>
           <span id="table-count">0</span>
@@ -96,17 +111,20 @@
         <span class="tables-note">Cada mesa tem um QR code exclusivo. Toque em QR no card para ver e imprimir.</span>
       </div>
       <div class="tables-grid" id="tables-grid"></div>
-      <p class="tab-hint">Seguranca da comanda: o QR code da mesa so aceita pedidos enquanto a mesa estiver aberta pelo atendente. Fechou a conta, quem fotografou o QR nao consegue pedir de fora.</p>
+      <p class="tab-hint">Segurança da comanda: o QR code da mesa só aceita pedidos enquanto a mesa estiver aberta pelo atendente. Fechou a conta, quem fotografou o QR não consegue pedir de fora.</p>
     </section>
 
     <!-- ----------------------------------------------------------- produtos -->
     <section class="admin-tab hidden" id="tab-produtos">
       <div class="tab-guide">
         <strong>Como usar esta aba</strong>
-        <p>Cadastre e edite o cardapio que o cliente ve. Pausar ou zerar o estoque tira o item do ar na hora, sem apagar o cadastro. Fotos enviadas sao reduzidas automaticamente antes de subir.</p>
+        <p>Cadastre produtos, fotos, categoria e ordem do cardapio. Pausar ou zerar estoque tira o item do ar sem apagar o cadastro.</p>
       </div>
       <div class="products-layout">
         <div class="data-table" id="product-table">
+          <div class="product-tools">
+            <input id="product-search" type="search" placeholder="Filtrar por nome, categoria ou descricao">
+          </div>
           <div class="filters product-category-filters" id="product-category-filters" aria-label="Filtrar produtos por categoria"></div>
           <div class="data-head product-row">
             <span></span><span>Produto</span><span>Categoria</span><span>Preco</span><span>Estoque</span><span>Status</span><span class="right">Acoes</span>
@@ -123,13 +141,9 @@
             <input id="product-price" type="number" step="0.01" min="0" required placeholder="Preco (R$)">
             <input id="product-stock" type="number" step="1" min="0" required placeholder="Estoque">
           </div>
-          <select id="product-category" aria-label="Categoria">
-            <option value="pizzas">Pizzas</option>
-            <option value="burgues">Burgues</option>
-            <option value="massas">Massas</option>
-            <option value="drinks">Drinks</option>
-            <option value="porcoes">Porcoes</option>
-          </select>
+          <input id="product-order" type="number" step="1" min="1" placeholder="Ordem no cardapio (ex: 1)">
+          <input id="product-category" required maxlength="60" list="product-category-options" placeholder="Categoria (ex: Pizzas, Burgues, Combos)">
+          <datalist id="product-category-options"></datalist>
           <div class="photo-block">
             <span class="field-label">Foto do produto</span>
             <div class="photo-presets" id="photo-presets"></div>
@@ -138,7 +152,7 @@
               <img class="hidden" id="product-photo-preview" src="" alt="Previa da foto">
               <span class="photo-empty">Sem foto cadastrada</span>
             </div>
-            <input id="product-image" type="hidden">
+            <input id="product-image" type="text" placeholder="Escreva a foto: images/produto-pizza.png ou envie pelo botao">
             <input id="product-photo-file" type="file" accept="image/*" capture="environment" class="hidden">
           </div>
           <label class="check-field"><input id="product-active" type="checkbox" checked> Ativo no cardapio</label>
@@ -185,7 +199,7 @@
             </div>
             <div class="field-row">
               <input id="coupon-amount" placeholder="Desconto (%)" inputmode="decimal">
-              <input id="coupon-min" placeholder="Pedido minimo (R$)" inputmode="decimal">
+              <input id="coupon-min" placeholder="Pedido mínimo (R$)" inputmode="decimal">
               <input id="coupon-until" placeholder="Validade" maxlength="20">
             </div>
             <button class="chip-toggle" type="button" id="coupon-once">Uso unico por cliente</button>
@@ -200,7 +214,7 @@
     <section class="admin-tab hidden" id="tab-entrega">
       <div class="tab-guide">
         <strong>Como usar esta aba</strong>
-        <p>Marque onde fica a loja e crie faixas de raio. A distancia e medida em linha reta a partir da loja, e o cliente paga a taxa da primeira faixa que alcanca. Endereco alem da ultima faixa e recusado.</p>
+        <p>Marque onde fica a loja e crie faixas de raio. A distância é medida em linha reta a partir da loja, e o cliente paga a taxa da primeira faixa que alcança. Endereço além da última faixa é recusado.</p>
       </div>
       <div id="entrega-painel"></div>
     </section>
@@ -209,7 +223,7 @@
     <section class="admin-tab hidden" id="tab-estoque">
       <div class="tab-guide">
         <strong>Como usar esta aba</strong>
-        <p>Contador por produto para a entrada de mercadoria. Quando um item zera, ele sai do cardapio automaticamente. Cada ajuste fica registrado com quem fez.</p>
+        <p>Controle produtos do cardapio e insumos internos. Produto zerado sai do cardapio automaticamente; cada ajuste fica registrado com quem fez.</p>
       </div>
       <div class="stock-grid" id="stock-grid"></div>
     </section>
@@ -262,6 +276,10 @@
           <div id="worst-items"></div>
         </div>
         <div class="chart-card">
+          <h2>Entregas por motoboy</h2>
+          <div id="motoboy-chart"></div>
+        </div>
+        <div class="chart-card">
           <h2>Alerta de estoque</h2>
           <div id="stock-alert-chart"></div>
         </div>
@@ -271,10 +289,38 @@
         <div class="sales-head">
           <div>
             <h2>Todas as vendas</h2>
-            <p class="small faint">Confira pedidos do periodo e cancele lancamentos errados.</p>
+            <p class="small faint">Confira pedidos do período e cancele lançamentos errados.</p>
           </div>
         </div>
         <div class="sales-list" id="dashboard-sales"></div>
+      </div>
+
+      <div class="panel all-sales-card">
+        <div class="sales-head">
+          <div>
+            <h2>Pedidos cancelados</h2>
+            <p class="small faint">Cancelamentos ficam fora do faturamento. Aqui aparece quem cancelou, o motivo e os itens para conferencia.</p>
+          </div>
+        </div>
+        <div class="sales-list" id="dashboard-canceled"></div>
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------------ fechamentos -->
+    <section class="admin-tab hidden" id="tab-fechamentos">
+      <div class="tab-guide">
+        <strong>Como usar esta aba</strong>
+        <p>Todo caixa fechado fica salvo aqui. Abra o relatorio para imprimir ou salvar como PDF quando precisar conferir o movimento do dia.</p>
+      </div>
+      <div class="panel">
+        <div class="sales-head">
+          <div>
+            <h2>Historico de fechamentos</h2>
+            <p class="small faint">Mostra horario de abertura, fechamento, total vendido, cancelados e resumo do periodo.</p>
+          </div>
+          <button class="secondary small" type="button" id="refresh-closings">Atualizar</button>
+        </div>
+        <div class="closing-list" id="closing-list"></div>
       </div>
     </section>
 
@@ -303,7 +349,7 @@
             <p class="small faint" id="user-form-hint">Use um e-mail valido e uma senha com pelo menos 10 caracteres.</p>
             <div class="field-row" id="user-credentials">
               <input id="user-login" type="email" required autocomplete="off" placeholder="E-mail de acesso" maxlength="80">
-              <input id="user-password" type="password" required autocomplete="new-password" placeholder="Senha (minimo 10 caracteres)" minlength="10" maxlength="200">
+              <input id="user-password" type="password" required autocomplete="new-password" placeholder="Senha (mínimo 10 caracteres)" minlength="10" maxlength="200">
             </div>
             <div class="field-row">
               <input id="user-name" required placeholder="Nome da pessoa" maxlength="80">
@@ -336,7 +382,7 @@
   <div class="modal hidden" id="manual-modal" role="dialog" aria-modal="true" aria-labelledby="manual-title">
     <div class="modal-card">
       <div>
-        <h2 id="manual-title">Lancar pedido manual</h2>
+        <h2 id="manual-title">Lançar pedido manual</h2>
         <p>Balcao ou venda de outra plataforma (iFood, WhatsApp...). Consolida o faturamento no dashboard.</p>
       </div>
       <div class="chip-row" id="manual-channels"></div>
@@ -347,7 +393,7 @@
       <input id="manual-customer" placeholder="Nome do cliente (opcional)" maxlength="80">
       <div class="manual-section hidden" id="manual-delivery-fields">
         <input id="manual-phone" placeholder="Telefone do cliente" inputmode="tel" maxlength="30">
-        <input id="manual-address" placeholder="Endereco de entrega" maxlength="160" autocomplete="off">
+        <input id="manual-address" placeholder="Endereço de entrega" maxlength="160" autocomplete="off">
         <div class="sugestoes" id="manual-address-sugestoes"></div>
         <p class="entrega-aviso hidden" id="manual-entrega-aviso" role="status"></p>
       </div>

@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { texto } from "./comum.schema.js";
 
+export const abrirCaixaSchema = z.object({
+  senha: texto(200, { obrigatorio: true })
+}).strict();
+
 export const fecharCaixaSchema = z.object({
   observacao: texto(500)
 }).strict();

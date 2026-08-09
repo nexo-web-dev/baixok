@@ -53,11 +53,11 @@ export const relatoriosService = {
     const intervalo = resolverPeriodo({ periodo, desde, ate });
     const filtro = { desde: intervalo.desde, ate: intervalo.ate, canal: canal || null };
 
-    /* Sete agregacoes independentes. Em fila seriam sete idas ao Postgres, uma
+    /* Agregacoes independentes. Em fila seriam varias idas ao Postgres, uma
      * esperando a outra — o dashboard e a tela mais lenta do painel e nao ha
      * ordem entre elas. */
     const [
-      resumo, canceladosResumo, emFalta, porHora, porDia, porCanal, porPagamento, porModalidade,
+      resumo, canceladosResumo, emFalta, porHora, porDia, porCanal, porPagamento, porModalidade, porMotoboy,
       maisVendidos, menosVendidos, vendas, cancelados
     ] = await Promise.all([
       pedidosRepo.resumoPeriodo(filtro),
@@ -68,6 +68,7 @@ export const relatoriosService = {
       pedidosRepo.agruparPor("canal", filtro),
       pedidosRepo.agruparPor("pagamento", filtro),
       pedidosRepo.agruparPor("modalidade", filtro),
+      pedidosRepo.porMotoboy(filtro),
       pedidosRepo.maisVendidos({ ...filtro, limite: 10 }),
       pedidosRepo.menosVendidos({ ...filtro, limite: 10 }),
       pedidosRepo.listar({ ...filtro, status: "entregue", limite: 200 }),
@@ -90,6 +91,7 @@ export const relatoriosService = {
       porCanal,
       porPagamento,
       porModalidade,
+      porMotoboy,
       maisVendidos,
       menosVendidos,
       vendas: vendas.filter(pedido => !canal || pedido.channel === canal),

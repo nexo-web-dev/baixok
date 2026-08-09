@@ -74,8 +74,10 @@
   body[data-page="menu"] .menu-shell .section-head h2 {
     width: 100%;
     max-width: 100%;
+    padding-left: 2px;
     font-size: clamp(1.5rem, 7vw, 2rem);
     line-height: 1.08;
+    overflow: visible;
     overflow-wrap: normal;
   }
   body[data-page="menu"] .menu-shell .section-head input { max-width: none; width: 100%; min-width: 0; }
@@ -83,7 +85,7 @@
     flex-wrap: nowrap;
     max-width: 100%;
     overflow-x: auto;
-    padding-bottom: 8px;
+    padding: 0 max(18px, env(safe-area-inset-right, 0px)) 8px 0;
     scrollbar-width: none;
   }
   body[data-page="menu"] .filters::-webkit-scrollbar { display: none; }
@@ -134,7 +136,7 @@
   }
   body[data-page="menu"] .product .primary::before { content: "+"; font-size: 1.25rem; font-weight: 800; }
   body[data-page="menu"] .cart {
-    top: 76px; left: 0; right: 0; bottom: 0; width: auto; height: auto; max-height: none;
+    top: 76px; left: 0; right: 0; bottom: 0; width: auto; height: auto; max-height: calc(100dvh - 76px);
     padding: 14px 14px calc(20px + env(safe-area-inset-bottom, 0px));
     border-radius: var(--radius-md) var(--radius-md) 0 0;
     transform: translateY(100%);
@@ -153,8 +155,14 @@
   body[data-page="menu"] .mobile-cart { display: flex; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
   body[data-page="menu"] .nexo-footer {
     margin-top: 22px;
-    padding: 26px 22px calc(230px + env(safe-area-inset-bottom, 0px));
+    padding: 26px 22px calc(118px + env(safe-area-inset-bottom, 0px));
     line-height: 1.45;
+  }
+  body[data-page="menu"][data-mode="mesa"] .shop-layout {
+    padding: 18px max(18px, env(safe-area-inset-right, 0px)) calc(124px + env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px));
+  }
+  body[data-page="menu"][data-mode="mesa"] .menu-shell .section-head {
+    margin-bottom: 12px;
   }
   body[data-page="admin"] {
     width: 100%;
@@ -233,6 +241,11 @@
   .product-row, .order-row { grid-template-columns: 56px minmax(0, 1fr); row-gap: 6px; }
   .product-row > span:nth-child(n + 3), .order-row > span:nth-child(n + 3) { grid-column: 2; }
   .product-row .row-actions, .order-row .right { grid-column: 1 / -1; justify-content: flex-start; text-align: left; }
+  .motoboy-grid { grid-template-columns: 1fr; }
+  .motoboy-actions { grid-template-columns: 1fr; align-items: stretch; }
+  .motoboy-actions .small { width: 100%; }
+  .motoboy-save-state { min-height: 18px; }
+  .location-card { align-items: stretch; flex-direction: column; }
   .data-head { display: none; }
   .filter-bar select, .period-group { width: 100%; }
   .period-btn { flex: 1; }

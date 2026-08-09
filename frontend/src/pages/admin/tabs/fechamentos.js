@@ -1,4 +1,4 @@
-import { el, render, $ } from "../../../utils/dom.js";
+import { el, render, $, mostrar } from "../../../utils/dom.js";
 import { reais, dataHora } from "../../../utils/formato.js";
 import { apiCaixa } from "../../../services/api.js";
 import { estado, carregar } from "../store.js";
@@ -12,6 +12,7 @@ function atualizarStatusCaixa() {
   const alvo = $("#cash-status");
   const abrir = $("#open-cash");
   const fechar = $("#close-cash");
+  const manual = $("#open-manual-sale");
   if (!alvo) return;
 
   const permitido = podeOperarCaixa();
@@ -23,6 +24,10 @@ function atualizarStatusCaixa() {
     alvo.classList.remove("open");
     if (abrir) abrir.disabled = !permitido;
     if (fechar) fechar.disabled = true;
+    if (manual) {
+      manual.disabled = true;
+      manual.title = "Abra o caixa para registrar vendas.";
+    }
     return;
   }
 
@@ -30,6 +35,10 @@ function atualizarStatusCaixa() {
   alvo.classList.add("open");
   if (abrir) abrir.disabled = true;
   if (fechar) fechar.disabled = !permitido;
+  if (manual) {
+    manual.disabled = false;
+    manual.title = "";
+  }
 }
 
 export async function desenharCaixaStatus() {
@@ -74,10 +83,13 @@ export async function desenharFechamentos() {
 
 async function abrirCaixa() {
   const botao = $("#open-cash");
-  if (!confirm("Abrir o caixa de hoje? As vendas ate o fechamento entram neste movimento.")) return;
+  const senha = await pedirSenhaCaixa();
+  if (senha === null) return;
+  if (!senha.trim()) return toastFalha(new Error("Informe sua senha para abrir o caixa."), "Caixa");
+  if (!confirm("Abrir o caixa de hoje? As vendas até o fechamento entram neste movimento.")) return;
   if (botao) botao.disabled = true;
   try {
-    await apiCaixa.abrir();
+    await apiCaixa.abrir(senha);
     toastOk("Caixa aberto.");
     await desenharCaixaStatus();
   } catch (erro) {
@@ -89,9 +101,9 @@ async function abrirCaixa() {
 }
 
 async function fecharCaixa() {
-  if (!estado.caixaAtual) return toastFalha(new Error("Nao ha caixa aberto."), "Caixa");
-  const observacao = prompt("Observacao do fechamento (opcional):", "") ?? "";
-  if (!confirm("Fechar o caixa agora e gerar o relatorio do periodo?")) return;
+  if (!estado.caixaAtual) return toastFalha(new Error("Não há caixa aberto."), "Caixa");
+  const observacao = prompt("Observação do fechamento (opcional):", "") ?? "";
+  if (!confirm("Fechar o caixa agora e gerar o relatório do período?")) return;
 
   const botao = $("#close-cash");
   if (botao) botao.disabled = true;
@@ -110,8 +122,42 @@ async function fecharCaixa() {
   }
 }
 
+let resolverSenhaCaixa = null;
+
+function fecharModalSenhaCaixa(valor) {
+  const modal = $("#cash-password-modal");
+  const campo = $("#cash-password");
+  mostrar(modal, false);
+  if (campo) campo.value = "";
+  resolverSenhaCaixa?.(valor);
+  resolverSenhaCaixa = null;
+}
+
+function pedirSenhaCaixa() {
+  return new Promise(resolve => {
+    const modal = $("#cash-password-modal");
+    const campo = $("#cash-password");
+    if (!modal || !campo) {
+      resolve(prompt("Digite sua senha para abrir o caixa:"));
+      return;
+    }
+    resolverSenhaCaixa = resolve;
+    campo.value = "";
+    mostrar(modal, true);
+    setTimeout(() => campo.focus(), 30);
+  });
+}
+
 export function ligarFechamentos() {
   $("#open-cash")?.addEventListener("click", abrirCaixa);
   $("#close-cash")?.addEventListener("click", fecharCaixa);
   $("#refresh-closings")?.addEventListener("click", desenharFechamentos);
+  $("#cash-password-form")?.addEventListener("submit", evento => {
+    evento.preventDefault();
+    fecharModalSenhaCaixa($("#cash-password")?.value || "");
+  });
+  $("#cash-password-cancel")?.addEventListener("click", () => fecharModalSenhaCaixa(null));
+  $("#cash-password-modal")?.addEventListener("click", evento => {
+    if (evento.target?.id === "cash-password-modal") fecharModalSenhaCaixa(null);
+  });
 }

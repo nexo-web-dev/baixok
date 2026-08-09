@@ -8,16 +8,16 @@ import { Router } from "express";
 import {
   pedidosController, produtosController, promocoesController, cuponsController,
   mesasController, entregaController, relatoriosController, usuariosController, ajustesController,
-  insumosController, caixaController
+  insumosController, caixaController, motoboysController
 } from "../controllers/painel.controller.js";
 import { exigirLogin, exigirPapel, exigirAba } from "../middlewares/auth.js";
 import { validarCorpo, validarQuery, validarParams } from "../middlewares/validate.js";
 import { paramsId, paramsNumero } from "../schemas/comum.schema.js";
 import {
   criarPedidoManualSchema, mudarStatusSchema, cancelarPedidoSchema, motoboyPedidoSchema,
-  listarPedidosSchema, relatorioSchema
+  listarPedidosSchema, relatorioSchema, localizacaoMotoboySchema
 } from "../schemas/pedido.schema.js";
-import { fecharCaixaSchema, listarFechamentosSchema } from "../schemas/caixa.schema.js";
+import { abrirCaixaSchema, fecharCaixaSchema, listarFechamentosSchema } from "../schemas/caixa.schema.js";
 import { produtoSchema, ajusteEstoqueSchema, reordenarProdutoSchema, promocaoSchema, cupomSchema } from "../schemas/catalogo.schema.js";
 import { insumoSchema, ajusteInsumoSchema } from "../schemas/insumo.schema.js";
 import { configEntregaSchema } from "../schemas/entrega.schema.js";
@@ -35,6 +35,8 @@ const EDIT_MESAS = exigirAba("mesas", "editar");
 const VER_ESTOQUE = exigirAba("estoque", "ver");
 const EDIT_ESTOQUE = exigirAba("estoque", "editar");
 const VER_FECHAMENTOS = exigirAba("fechamentos", "ver");
+const VER_MOTOBOY = exigirAba("motoboy", "ver");
+const EDIT_MOTOBOY = exigirAba("motoboy", "editar");
 const ADMIN = exigirPapel("admin");
 
 // ------------------------------------------------------------------ pedidos ---
@@ -47,9 +49,13 @@ rotasPainel.post("/pedidos/:id/cancelar", EDIT_PEDIDOS, validarParams(paramsId),
 rotasPainel.patch("/pedidos/:id/motoboy", EDIT_PEDIDOS, validarParams(paramsId), validarCorpo(motoboyPedidoSchema), pedidosController.definirMotoboy);
 rotasPainel.post("/pedidos", EDIT_PEDIDOS, validarCorpo(criarPedidoManualSchema), pedidosController.criarManual);
 
+// ----------------------------------------------------------------- motoboy ---
+rotasPainel.get("/motoboys/localizacoes", exigirPapel("admin", "caixa"), motoboysController.localizacoes);
+rotasPainel.post("/motoboys/localizacao", VER_MOTOBOY, EDIT_MOTOBOY, validarCorpo(localizacaoMotoboySchema), motoboysController.salvarLocalizacao);
+
 // -------------------------------------------------------------------- caixa ---
 rotasPainel.get("/caixa/atual", VER_PEDIDOS, caixaController.atual);
-rotasPainel.post("/caixa/abrir", EDIT_PEDIDOS, caixaController.abrir);
+rotasPainel.post("/caixa/abrir", EDIT_PEDIDOS, validarCorpo(abrirCaixaSchema), caixaController.abrir);
 rotasPainel.post("/caixa/fechar", EDIT_PEDIDOS, validarCorpo(fecharCaixaSchema), caixaController.fechar);
 rotasPainel.get("/caixa/fechamentos", VER_FECHAMENTOS, validarQuery(listarFechamentosSchema), caixaController.listar);
 rotasPainel.get("/caixa/fechamentos/:id", VER_FECHAMENTOS, validarParams(paramsId), caixaController.buscar);

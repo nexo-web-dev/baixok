@@ -44,13 +44,13 @@ function cartao(mesa) {
     return el("article.table-card.is-aberta", {},
       cabecalho(mesa),
       el("div.order-flags", {},
-        el("span.flag", {}, `aberta ha ${esperaLegivel(minutosDesde(mesa.openedAt))}`),
+        el("span.flag", {}, `aberta há ${esperaLegivel(minutosDesde(mesa.openedAt))}`),
         el("span.flag", {}, `${mesa.items.length} ${mesa.items.length === 1 ? "item" : "itens"}`)
       ),
       el("div.table-lines", {}, linhas.length ? linhas : el("p.faint", {}, "Nenhum pedido ainda. QR ativo.")),
       el("div.table-total", {}, el("span", {}, "Parcial"), el("span", {}, reais(conta.subtotal))),
       el("div.field-row", {},
-        el("button.secondary", { type: "button", dataset: { acao: "lancar", n: String(mesa.n) } }, "+ Lancar pedido"),
+        el("button.secondary", { type: "button", dataset: { acao: "lancar", n: String(mesa.n) } }, "+ Lançar pedido"),
         el("button.primary", { type: "button", dataset: { acao: "fechar", n: String(mesa.n) } }, "Fechar conta")
       )
     );
@@ -61,12 +61,12 @@ function cartao(mesa) {
     el("div.table-lines", {},
       el("div.table-line", {}, el("span", {}, "Consumo"), el("span", {}, reais(conta.subtotal))),
       el("div.table-line", {},
-        el("span", {}, `Servico (${Math.round(conta.percentualServico * 100)}%)`),
+        el("span", {}, `Serviço (${Math.round(conta.percentualServico * 100)}%)`),
         el("span", {}, reais(conta.servico))
       )
     ),
     el("div.table-total", {}, el("span", {}, "Total"), el("span", {}, reais(conta.total))),
-    el("p.ok-text.small", {}, "🖨 Nota impressa no balcao. QR desativado."),
+    el("p.ok-text.small", {}, "Nota impressa no balcão. QR desativado."),
     el("button.ghost-green.wide", { type: "button", dataset: { acao: "liberar", n: String(mesa.n) } }, "Pago - liberar mesa")
   );
 }
@@ -99,16 +99,16 @@ async function fecharConta(n) {
       channel: "loja",
       fulfillment: "mesa",
       customer: `Mesa ${n}`,
-      place: `Mesa ${n} - salao`,
+      place: `Mesa ${n} - salão`,
       payment: "Conta fechada",
-      note: `Servico (${Math.round(conta.percentualServico * 100)}%): ${reais(conta.servico)}`,
+      note: `Serviço (${Math.round(conta.percentualServico * 100)}%): ${reais(conta.servico)}`,
       subtotal: conta.subtotal,
       discount: 0,
       total: conta.total,
       items: conta.items
     }, "counter");
     await recarregar();
-    toast(`Conta da mesa ${n} fechada. Nota impressa no balcao.`);
+    toast(`Conta da mesa ${n} fechada. Nota impressa no balcão.`);
   } catch (erro) {
     toastFalha(erro);
   }
@@ -132,7 +132,7 @@ export function ligarMesas() {
   delegar(alvo, "click", "[data-acao='fechar']", (_e, botao) => fecharConta(Number(botao.dataset.n)));
 
   delegar(alvo, "click", "[data-acao='liberar']", async (_e, botao) => {
-    if (!confirm(`Liberar a mesa ${botao.dataset.n}? A comanda e zerada.`)) return;
+    if (!confirm(`Liberar a mesa ${botao.dataset.n}? A comanda é zerada.`)) return;
     try {
       await apiMesas.liberar(Number(botao.dataset.n));
       await recarregar();

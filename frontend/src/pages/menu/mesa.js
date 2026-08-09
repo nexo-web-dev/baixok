@@ -24,7 +24,7 @@ export function iniciarModoMesa(numero) {
   if (botaoEnviar) botaoEnviar.textContent = "Enviar para a cozinha";
 
   const campoNome = $("#customer-name");
-  if (campoNome) campoNome.placeholder = "Nome de quem esta pedindo (opcional)";
+  if (campoNome) campoNome.placeholder = "Nome de quem está pedindo (opcional)";
 }
 
 export function mostrarVista(vista) {
@@ -61,17 +61,17 @@ export async function atualizarMesa() {
   $("#table-bar-title").textContent = `Mesa nº ${sessaoMesa.n}`;
   $("#table-bar-status").textContent = aberta
     ? "Comanda aberta"
-    : comanda ? "Comanda fechada" : "Mesa nao encontrada";
+    : comanda ? "Comanda fechada" : "Mesa não encontrada";
   mostrar($("#table-nav"), aberta);
 
   if (!aberta) {
     const fechando = comanda?.status === "fechando";
-    $("#blocked-title").textContent = fechando ? "Conta ja fechada" : "Comanda fechada";
+    $("#blocked-title").textContent = fechando ? "Conta já fechada" : "Comanda fechada";
     $("#blocked-text").textContent = comanda
       ? fechando
-        ? "A conta desta mesa ja foi fechada no balcao. Para pedir de novo, chame o atendente."
+        ? "A conta desta mesa já foi fechada no balcão. Para pedir de novo, chame o garçom."
         : "Chame o atendente para abrir a mesa e liberar os pedidos por aqui."
-      : "Nao encontramos essa mesa. Confira o QR code ou chame o atendente.";
+      : "Não encontramos essa mesa. Confira o QR code ou chame o atendente.";
     sessaoMesa.aberta = false;
     mostrarVista("blocked");
     return;
@@ -116,7 +116,7 @@ function desenharComanda(comanda) {
   render($("#comanda-totals"),
     el("div.comanda-line", {}, el("span", {}, "Consumo"), el("span", {}, reais(conta.subtotal))),
     el("div.comanda-line", {},
-      el("span", {}, `Servico (${Math.round(conta.percentualServico * 100)}%)`),
+      el("span", {}, `Serviço (${Math.round(conta.percentualServico * 100)}%)`),
       el("span", {}, reais(conta.servico))
     ),
     el("div.comanda-line.total", {}, el("span", {}, "Total da comanda"), el("span", {}, reais(conta.total)))

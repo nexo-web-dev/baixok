@@ -217,7 +217,7 @@ async function iniciar() {
   conectarEventos({
     canal: "operacao",
     aoMudar: async assunto => {
-      const areas = { pedidos: ["pedidos"], produtos: ["produtos"], insumos: ["insumos"], promocoes: ["promocoes"], cupons: ["cupons"], mesas: ["mesas"], entrega: ["entrega"], caixa: ["caixa", "fechamentos"] }[assunto];
+      const areas = { pedidos: ["pedidos", "mesas", "produtos", "caixa"], produtos: ["produtos"], insumos: ["insumos"], promocoes: ["promocoes"], cupons: ["cupons"], mesas: ["mesas"], entrega: ["entrega"], caixa: ["caixa", "fechamentos"] }[assunto];
       await carregar(...(areas || []));
       if (assunto === "entrega") recarregarRascunhoEntrega();
       desenharMetricas();

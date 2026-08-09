@@ -7,6 +7,7 @@ import { emTransacao } from "../db/postgres.js";
 import { mesasRepo } from "../repositories/mesas.repo.js";
 import { pedidosRepo } from "../repositories/pedidos.repo.js";
 import { ajustesRepo } from "../repositories/ajustes.repo.js";
+import { caixaRepo } from "../repositories/caixa.repo.js";
 import { auditoriaRepo } from "../repositories/auditoria.repo.js";
 import { naoEncontrado, conflito } from "../lib/errors.js";
 import { publicar, CANAL } from "../lib/events.js";
@@ -28,6 +29,12 @@ function montarConta(mesa, percentual) {
 }
 
 const taxaServico = () => ajustesRepo.lerNumero("taxa_servico_mesa");
+
+async function exigirCaixaAberto() {
+  const caixa = await caixaRepo.atual();
+  if (!caixa) throw conflito("Abra o caixa antes de abrir mesa ou registrar vendas.");
+  return caixa;
+}
 
 export const mesasService = {
   async listar() {
@@ -82,6 +89,8 @@ export const mesasService = {
 
   /* Abrir a mesa e o que libera o QR code a aceitar pedido. */
   async abrir(n, { usuario, ip }) {
+    await exigirCaixaAberto();
+
     const mesa = await this.buscar(n);
     if (mesa.status === "aberta") return mesa;
     const aberta = await mesasRepo.abrir(n);

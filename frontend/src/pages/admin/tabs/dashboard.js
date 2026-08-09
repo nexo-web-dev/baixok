@@ -124,11 +124,12 @@ export async function desenharDashboard() {
 
   const {
     resumo, porHora, porDia = [], porCanal, porPagamento, porModalidade = [],
-    maisVendidos, menosVendidos = [], estoqueBaixo, periodo, vendas = [], cancelados = []
+    porMotoboy = [], maisVendidos, menosVendidos = [], estoqueBaixo, periodo, vendas = [], cancelados = []
   } = ultimoRelatorio;
   const pagamentoTop = primeiro(porPagamento);
   const plataformaTop = primeiro(porCanal);
   const modalidades = resumoModalidade(porModalidade);
+  const motoboyTop = primeiro(porMotoboy);
 
   render($("#dashboard-metrics"),
     metrica("Faturamento", reais(resumo.faturamento), periodo.rotulo),
@@ -139,6 +140,7 @@ export async function desenharDashboard() {
     metrica("Pagamento lider", pagamentoTop ? pagamentoTop.rotulo || "nao informado" : "Sem dados", pagamentoTop ? reais(pagamentoTop.faturamento) : null),
     metrica("Entrega x loja", `${modalidades.entrega} / ${modalidades.loja}`, "entrega / loja"),
     metrica("Plataforma lider", plataformaTop ? CANAIS_ROTULO[plataformaTop.rotulo] || plataformaTop.rotulo : "Sem dados", plataformaTop ? reais(plataformaTop.faturamento) : null),
+    metrica("Motoboy lider", motoboyTop ? motoboyTop.rotulo : "Sem entrega", motoboyTop ? `${motoboyTop.pedidos} entregas` : null),
     metrica("Cancelados", String(resumo.cancelados || 0), (resumo.valorCancelado || 0) ? `valor ${reais(resumo.valorCancelado)}` : "nenhum no periodo",
       (resumo.cancelados || 0) ? "alert-danger" : ""),
     metrica("Descontos", reais(resumo.descontos), resumo.taxasEntrega ? `taxas entrega ${reais(resumo.taxasEntrega)}` : null),
@@ -193,6 +195,13 @@ export async function desenharDashboard() {
     valor => `${valor}x`,
     "Sem itens para comparar.",
     "Quando houver mais vendas, os itens fracos aparecem aqui."
+  ));
+
+  render($("#motoboy-chart"), barras(
+    porMotoboy.map(linha => ({ rotulo: linha.rotulo, valor: linha.pedidos })),
+    valor => `${valor} entregas`,
+    "Nenhuma entrega com motoboy no periodo.",
+    "Quando salvar o nome do motoboy na aba Motoboy, o resumo aparece aqui."
   ));
 
   render($("#stock-alert-chart"), estoqueBaixo.length

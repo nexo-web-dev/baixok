@@ -154,6 +154,29 @@ export function limparFalhasVencidas() {
 }
 
 export const authService = {
+  async confirmarSenha({ usuarioAtual, senha }) {
+    const login = normalizarEmail(usuarioAtual?.usuario);
+    const encontrado = await usuariosRepo.buscarPorUsuarioComHash(login);
+    if (!encontrado || (encontrado.ativo !== 1 && encontrado.ativo !== true)) {
+      await gastarTempoDeHash();
+      throw naoAutenticado("Senha incorreta.");
+    }
+
+    if (supabaseAuth.ativo()) {
+      try {
+        await supabaseAuth.autenticarComSenha(login, senha);
+        return true;
+      } catch {
+        throw naoAutenticado("Senha incorreta.");
+      }
+    }
+
+    if (!(await conferirSenha(senha, encontrado.senha_hash))) {
+      throw naoAutenticado("Senha incorreta.");
+    }
+    return true;
+  },
+
   async login({ usuario, senha, ip, agente }) {
     if (contaTravada(usuario)) {
       throw new ErroApp("Conta bloqueada por tentativas seguidas. Espere 15 minutos.", 429, "conta_travada");

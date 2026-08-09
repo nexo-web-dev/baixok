@@ -35,6 +35,11 @@ export const apiPedidos = {
   marcarImpresso: id => http.post(`/painel/pedidos/${id}/impresso`)
 };
 
+export const apiMotoboys = {
+  localizacoes: () => http.get("/painel/motoboys/localizacoes"),
+  salvarLocalizacao: dados => http.post("/painel/motoboys/localizacao", dados)
+};
+
 export const apiProdutos = {
   listar: () => http.get("/painel/produtos"),
   emFalta: () => http.get("/painel/produtos/em-falta"),
@@ -89,7 +94,7 @@ export const apiRelatorios = {
 
 export const apiCaixa = {
   atual: () => http.get("/painel/caixa/atual"),
-  abrir: () => http.post("/painel/caixa/abrir"),
+  abrir: senha => http.post("/painel/caixa/abrir", { senha }),
   fechar: observacao => http.post("/painel/caixa/fechar", { observacao }),
   fechamentos: filtros => http.get("/painel/caixa/fechamentos", filtros),
   relatorioUrl: id => `/api/painel/caixa/fechamentos/${encodeURIComponent(id)}/pdf`

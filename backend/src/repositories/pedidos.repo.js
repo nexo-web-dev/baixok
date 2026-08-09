@@ -311,6 +311,23 @@ export const pedidosRepo = {
     `, [desde, ate, canal, canal]);
   },
 
+  async porMotoboy({ desde, ate, canal = null }) {
+    return await todos(`
+      SELECT btrim(motoboy) AS rotulo,
+             COUNT(*)::int AS pedidos,
+             COALESCE(SUM(total), 0) AS faturamento,
+             COALESCE(SUM(taxa_entrega), 0) AS taxas_entrega
+        FROM pedidos
+       WHERE criado_em >= ?::timestamptz AND criado_em <= ?::timestamptz
+         AND status = 'entregue'
+         AND modalidade = 'entrega'
+         AND btrim(COALESCE(motoboy, '')) <> ''
+         AND (?::text IS NULL OR canal = ?::text)
+       GROUP BY btrim(motoboy)
+       ORDER BY pedidos DESC, faturamento DESC, rotulo ASC
+    `, [desde, ate, canal, canal]);
+  },
+
   async maisVendidos({ desde, ate, canal = null, limite = 10 }) {
     return await todos(`
       SELECT i.nome AS rotulo,

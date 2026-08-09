@@ -26,6 +26,7 @@ import { pedidosRepo } from "../repositories/pedidos.repo.js";
 import { produtosRepo } from "../repositories/produtos.repo.js";
 import { promocoesRepo } from "../repositories/promocoes.repo.js";
 import { mesasRepo } from "../repositories/mesas.repo.js";
+import { caixaRepo } from "../repositories/caixa.repo.js";
 import { auditoriaRepo } from "../repositories/auditoria.repo.js";
 import { cuponsService } from "./cupons.service.js";
 import { entregaService } from "./entrega.service.js";
@@ -90,6 +91,12 @@ async function baixarEstoque(itens) {
   }
 }
 
+async function exigirCaixaAberto() {
+  const caixa = await caixaRepo.atual();
+  if (!caixa) throw conflito("Abra o caixa antes de registrar vendas.");
+  return caixa;
+}
+
 export const pedidosService = {
   listar: filtros => pedidosRepo.listar(filtros),
   listarAbertos: () => pedidosRepo.listarAbertos(),
@@ -121,6 +128,8 @@ export const pedidosService = {
 
   /* Pedido vindo do cardapio do cliente (rota publica). */
   async criarPublico(dados, { ip }) {
+    await exigirCaixaAberto();
+
     /* Passo 1 — rede fora da transacao.
      * A cotacao de entrega precisa da Mapbox; deixa-la aqui e o que mantem o
      * passo 2 falando so com o banco. */
@@ -202,6 +211,8 @@ export const pedidosService = {
 
   /* Lancamento manual pelo balcao: iFood, WhatsApp, venda de salao. */
   async criarManual(dados, { usuario, ip }) {
+    await exigirCaixaAberto();
+
     /* Mesma regra do pedido publico, fora da transacao pelo mesmo motivo:
      * a cotacao faz I/O de rede (Mapbox). */
     const entrega = await cotarEntregaSeNecessario(dados);

@@ -13,6 +13,7 @@ import { entregaService } from "../services/entrega.service.js";
 import { relatoriosService } from "../services/relatorios.service.js";
 import { caixaService } from "../services/caixa.service.js";
 import { usuariosService } from "../services/usuarios.service.js";
+import { motoboysService } from "../services/motoboys.service.js";
 import { ajustesRepo } from "../repositories/ajustes.repo.js";
 import { mapaEstatico } from "../lib/mapbox.js";
 import { contexto } from "./contexto.js";
@@ -49,6 +50,15 @@ export const pedidosController = {
   async marcarImpresso(req, res) {
     await pedidosService.marcarImpresso(req.validado.params.id);
     res.json({ ok: true });
+  }
+};
+
+export const motoboysController = {
+  async localizacoes(_req, res) {
+    res.json({ localizacoes: await motoboysService.listarLocalizacoes() });
+  },
+  async salvarLocalizacao(req, res) {
+    res.json({ localizacao: await motoboysService.salvarLocalizacao(req.validado.body, contexto(req)) });
   }
 };
 
@@ -188,7 +198,7 @@ export const caixaController = {
     res.json({ fechamento: await caixaService.buscar(req.validado.params.id) });
   },
   async abrir(req, res) {
-    res.status(201).json({ caixa: await caixaService.abrir(contexto(req)) });
+    res.status(201).json({ caixa: await caixaService.abrir(contexto(req), req.validado.body) });
   },
   async fechar(req, res) {
     res.json({ caixa: await caixaService.fechar(contexto(req), req.validado.body) });

@@ -13,9 +13,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body data-page="admin">
-  <div class="aviso-offline" role="alert">Sem conexao com o servidor. As alteracoes nao estao sendo salvas.</div>
+  <div class="aviso-offline" role="alert">Sem conexão com o servidor. As alterações não estão sendo salvas.</div>
 
-  <aside class="side-nav" aria-label="Navegacao do sistema">
+  <aside class="side-nav" aria-label="Navegação do sistema">
     <div class="brand">
       <img src="/images/baixok-logo-v2.png" alt="Baixo K">
       <div>
@@ -24,17 +24,17 @@
       </div>
     </div>
 
-    <nav class="nav-list" id="nav-list" aria-label="Secoes">
+    <nav class="nav-list" id="nav-list" aria-label="Seções">
       <button class="nav-item active" type="button" data-tab="pedidos"><span class="nav-icon" aria-hidden="true">☰</span>Pedidos<span class="nav-badge hidden" id="nav-badge">0</span></button>
       <button class="nav-item" type="button" data-tab="motoboy"><span class="nav-icon" aria-hidden="true">MB</span>Motoboy</button>
-      <button class="nav-item" type="button" data-tab="mesas"><span class="nav-icon" aria-hidden="true">▢</span>Mesas (salao)</button>
+      <button class="nav-item" type="button" data-tab="mesas"><span class="nav-icon" aria-hidden="true">▢</span>Mesas (salão)</button>
       <button class="nav-item" type="button" data-tab="produtos"><span class="nav-icon" aria-hidden="true">◱</span>Produtos</button>
-      <button class="nav-item" type="button" data-tab="promos"><span class="nav-icon" aria-hidden="true">✦</span>Promocoes</button>
-      <button class="nav-item" type="button" data-tab="entrega"><span class="nav-icon" aria-hidden="true">◈</span>Area de entrega</button>
+      <button class="nav-item" type="button" data-tab="promos"><span class="nav-icon" aria-hidden="true">✦</span>Promoções</button>
+      <button class="nav-item" type="button" data-tab="entrega"><span class="nav-icon" aria-hidden="true">◈</span>Área de entrega</button>
       <button class="nav-item" type="button" data-tab="estoque"><span class="nav-icon" aria-hidden="true">▤</span>Estoque</button>
       <button class="nav-item" type="button" data-tab="dashboard"><span class="nav-icon" aria-hidden="true">◔</span>Dashboard</button>
       <button class="nav-item" type="button" data-tab="plano"><span class="nav-icon" aria-hidden="true">PL</span>Plano do sistema</button>
-      <button class="nav-item" type="button" data-tab="usuarios"><span class="nav-icon" aria-hidden="true">◍</span>Usuarios</button>
+      <button class="nav-item" type="button" data-tab="usuarios"><span class="nav-icon" aria-hidden="true">◍</span>Usuários</button>
       <button class="nav-item" type="button" data-tab="fechamentos"><span class="nav-icon" aria-hidden="true">FC</span>Fechamentos</button>
     </nav>
 
@@ -45,7 +45,7 @@
       </div>
       <button class="secondary" type="button" id="sair">Sair</button>
       <button class="secondary" type="button" id="abrir-suporte">◈ Suporte Nexo</button>
-      <a class="admin-link" href="/telao.html" target="_blank" rel="noopener">▦ Telao do salao ↗</a>
+      <a class="admin-link" href="/telao.html" target="_blank" rel="noopener">▦ Telão do salão ↗</a>
       <a class="secondary" href="/index.html" target="_blank" rel="noopener">← Catálogo</a>
       <a class="nav-credit" href="https://portfolio-nexo.netlify.app/" target="_blank" rel="noopener">
         desenvolvido por <span>Nexo Developer</span>
@@ -66,15 +66,15 @@
     <section class="admin-tab" id="tab-pedidos">
       <div class="tab-guide">
         <strong>Como usar esta aba</strong>
-        <p>Tudo que entra pelo cardapio, WhatsApp ou lancamento manual cai aqui. Aprovar imprime nas duas impressoras; arraste os cards entre as colunas, para frente ou para tras, para corrigir o status.</p>
+        <p>Tudo que entra pelo cardápio, WhatsApp ou lançamento manual cai aqui. Aprovar imprime nas duas impressoras; arraste os cards entre as colunas, para frente ou para trás, para corrigir o status.</p>
       </div>
       <div class="tab-actions">
         <div class="cash-status" id="cash-status">Caixa: carregando</div>
         <button class="secondary" type="button" id="open-cash">Abrir caixa</button>
         <button class="secondary" type="button" id="close-cash">Fechar caixa</button>
         <button class="secondary" type="button" id="print-test-kitchen">Teste cozinha</button>
-        <button class="secondary" type="button" id="print-test-counter">Teste balcao</button>
-        <button class="primary" type="button" id="open-manual-sale">+ Lancar pedido manual</button>
+        <button class="secondary" type="button" id="print-test-counter">Teste balcão</button>
+        <button class="primary" type="button" id="open-manual-sale">+ Lançar pedido manual</button>
       </div>
       <div class="kanban" id="orders-kanban"></div>
       <p class="tab-hint">Dica: arraste um card para qualquer coluna, para frente ou para tras, para corrigir o status.</p>
@@ -86,6 +86,7 @@
         <strong>Como usar esta aba</strong>
         <p>Mostra apenas pedidos de entrega que estao prontos ou ja foram entregues. Salve o nome do motoboy responsavel para ficar registrado no historico da venda.</p>
       </div>
+      <div class="motoboy-location-panel" id="motoboy-location-panel"></div>
       <div class="motoboy-list" id="motoboy-list"></div>
     </section>
 
@@ -93,10 +94,10 @@
     <section class="admin-tab hidden" id="tab-mesas">
       <div class="tab-guide">
         <strong>Como usar esta aba</strong>
-        <p>Comanda por mesa com QR code: o atendente abre a mesa para liberar os pedidos, acompanha o parcial e o tempo, e fecha a conta imprimindo a nota no balcao.</p>
+        <p>Comanda por mesa com QR code: o atendente abre a mesa para liberar os pedidos, acompanha o parcial e o tempo, e fecha a conta imprimindo a nota no balcão.</p>
       </div>
       <div class="tables-bar">
-        <strong>Mesas no salao</strong>
+        <strong>Mesas no salão</strong>
         <div class="counter">
           <button type="button" id="remove-table" aria-label="Remover mesa">−</button>
           <span id="table-count">0</span>
@@ -105,23 +106,23 @@
         <span class="tables-note">Cada mesa tem um QR code exclusivo. Toque em QR no card para ver e imprimir.</span>
       </div>
       <div class="tables-grid" id="tables-grid"></div>
-      <p class="tab-hint">Seguranca da comanda: o QR code da mesa so aceita pedidos enquanto a mesa estiver aberta pelo atendente. Fechou a conta, quem fotografou o QR nao consegue pedir de fora.</p>
+      <p class="tab-hint">Segurança da comanda: o QR code da mesa só aceita pedidos enquanto a mesa estiver aberta pelo atendente. Fechou a conta, quem fotografou o QR não consegue pedir de fora.</p>
     </section>
 
     <!-- ----------------------------------------------------------- produtos -->
     <section class="admin-tab hidden" id="tab-produtos">
       <div class="tab-guide">
         <strong>Como usar esta aba</strong>
-        <p>Cadastre produtos, fotos, categoria e ordem do cardapio. Pausar ou zerar estoque tira o item do ar sem apagar o cadastro.</p>
+        <p>Cadastre produtos, fotos, categoria e ordem do cardápio. Pausar ou zerar estoque tira o item do ar sem apagar o cadastro.</p>
       </div>
       <div class="products-layout">
         <div class="data-table" id="product-table">
           <div class="product-tools">
-            <input id="product-search" type="search" placeholder="Filtrar por nome, categoria ou descricao">
+            <input id="product-search" type="search" placeholder="Filtrar por nome, categoria ou descrição">
           </div>
           <div class="filters product-category-filters" id="product-category-filters" aria-label="Filtrar produtos por categoria"></div>
           <div class="data-head product-row">
-            <span></span><span>Produto</span><span>Categoria</span><span>Preco</span><span>Estoque</span><span>Status</span><span class="right">Acoes</span>
+            <span></span><span>Produto</span><span>Categoria</span><span>Preço</span><span>Estoque</span><span>Status</span><span class="right">Ações</span>
           </div>
           <div id="product-admin-list"></div>
         </div>
@@ -130,13 +131,13 @@
           <h2 id="product-form-title">Novo produto</h2>
           <input id="product-id" type="hidden">
           <input id="product-name" required placeholder="Nome do produto" maxlength="80">
-          <input id="product-description" required placeholder="Descricao curta" maxlength="300">
+          <input id="product-description" required placeholder="Descrição curta" maxlength="300">
           <div class="field-row">
-            <input id="product-price" type="number" step="0.01" min="0" required placeholder="Preco (R$)">
+            <input id="product-price" type="number" step="0.01" min="0" required placeholder="Preço (R$)">
             <input id="product-stock" type="number" step="1" min="0" required placeholder="Estoque">
           </div>
-          <input id="product-order" type="number" step="1" min="1" placeholder="Ordem no cardapio (ex: 1)">
-          <input id="product-category" required maxlength="60" list="product-category-options" placeholder="Categoria (ex: Pizzas, Burgues, Combos)">
+          <input id="product-order" type="number" step="1" min="1" placeholder="Ordem no cardápio (ex: 1)">
+          <input id="product-category" required maxlength="60" list="product-category-options" placeholder="Categoria (ex: Pizzas, Burguers, Combos)">
           <datalist id="product-category-options"></datalist>
           <div class="photo-block">
             <span class="field-label">Foto do produto</span>
@@ -146,10 +147,10 @@
               <img class="hidden" id="product-photo-preview" src="" alt="Previa da foto">
               <span class="photo-empty">Sem foto cadastrada</span>
             </div>
-            <input id="product-image" type="text" placeholder="Escreva a foto: images/produto-pizza.png ou envie pelo botao">
+            <input id="product-image" type="text" placeholder="Escreva a foto: images/produto-pizza.png ou envie pelo botão">
             <input id="product-photo-file" type="file" accept="image/*" capture="environment" class="hidden">
           </div>
-          <label class="check-field"><input id="product-active" type="checkbox" checked> Ativo no cardapio</label>
+          <label class="check-field"><input id="product-active" type="checkbox" checked> Ativo no cardápio</label>
           <div class="field-row">
             <button class="primary wide" type="submit" id="product-save-label">Cadastrar produto</button>
             <button class="secondary" type="button" id="product-reset">Limpar</button>
@@ -162,22 +163,22 @@
     <section class="admin-tab hidden" id="tab-promos">
       <div class="tab-guide">
         <strong>Como usar esta aba</strong>
-        <p>Preco promocional com validade e cupons com valor ou percentual. Cupons nunca aparecem no cardapio: o cliente precisa saber o codigo.</p>
+        <p>Preço promocional com validade e cupons com valor ou percentual. Cupons nunca aparecem no cardápio: o cliente precisa saber o código.</p>
       </div>
       <div class="promo-tips" id="promo-tips"></div>
       <div class="promo-layout">
         <section class="panel">
-          <h2>Promocoes ativas</h2>
+          <h2>Promoções ativas</h2>
           <div class="promo-list" id="promo-list"></div>
           <div class="panel-divider">
-            <strong class="field-label gold">Nova promocao</strong>
-            <select id="promo-product" aria-label="Produto em promocao"></select>
+            <strong class="field-label gold">Nova promoção</strong>
+            <select id="promo-product" aria-label="Produto em promoção"></select>
             <div class="field-row">
-              <input id="promo-price" placeholder="Preco promocional (R$)" inputmode="decimal">
-              <input id="promo-until" placeholder="Valida ate (ex: 10/08)" maxlength="20">
+              <input id="promo-price" placeholder="Preço promocional (R$)" inputmode="decimal">
+              <input id="promo-until" placeholder="Válida até (ex: 10/08)" maxlength="20">
             </div>
             <p class="form-error hidden" id="promo-error" role="alert"></p>
-            <button class="primary wide" type="button" id="save-promo">Ativar promocao</button>
+            <button class="primary wide" type="button" id="save-promo">Ativar promoção</button>
           </div>
         </section>
 
@@ -187,16 +188,16 @@
           <div class="panel-divider">
             <strong class="field-label gold">Novo cupom</strong>
             <div class="field-row">
-              <input id="coupon-code" class="code-input" placeholder="CODIGO (ex: BAIXO10)" maxlength="30">
+              <input id="coupon-code" class="code-input" placeholder="CÓDIGO (ex: BAIXO10)" maxlength="30">
               <button class="kind-btn active" type="button" id="coupon-kind-pct">%</button>
               <button class="kind-btn" type="button" id="coupon-kind-val">R$</button>
             </div>
             <div class="field-row">
               <input id="coupon-amount" placeholder="Desconto (%)" inputmode="decimal">
-              <input id="coupon-min" placeholder="Pedido minimo (R$)" inputmode="decimal">
+              <input id="coupon-min" placeholder="Pedido mínimo (R$)" inputmode="decimal">
               <input id="coupon-until" placeholder="Validade" maxlength="20">
             </div>
-            <button class="chip-toggle" type="button" id="coupon-once">Uso unico por cliente</button>
+            <button class="chip-toggle" type="button" id="coupon-once">Uso único por cliente</button>
             <p class="form-error hidden" id="coupon-error" role="alert"></p>
             <button class="primary wide" type="button" id="save-coupon">Criar cupom</button>
           </div>
@@ -208,7 +209,7 @@
     <section class="admin-tab hidden" id="tab-entrega">
       <div class="tab-guide">
         <strong>Como usar esta aba</strong>
-        <p>Marque onde fica a loja e crie faixas de raio. A distancia e medida em linha reta a partir da loja, e o cliente paga a taxa da primeira faixa que alcanca. Endereco alem da ultima faixa e recusado.</p>
+        <p>Marque onde fica a loja e crie faixas de raio. A distância é medida em linha reta a partir da loja, e o cliente paga a taxa da primeira faixa que alcança. Endereço além da última faixa é recusado.</p>
       </div>
       <div id="entrega-painel"></div>
     </section>
@@ -217,7 +218,7 @@
     <section class="admin-tab hidden" id="tab-estoque">
       <div class="tab-guide">
         <strong>Como usar esta aba</strong>
-        <p>Controle produtos do cardapio e insumos internos. Produto zerado sai do cardapio automaticamente; cada ajuste fica registrado com quem fez.</p>
+        <p>Controle produtos do cardápio e insumos internos. Produto zerado sai do cardápio automaticamente; cada ajuste fica registrado com quem fez.</p>
       </div>
       <div class="stock-grid" id="stock-grid"></div>
     </section>
@@ -226,18 +227,18 @@
     <section class="admin-tab hidden" id="tab-dashboard">
       <div class="tab-guide">
         <strong>Como usar esta aba</strong>
-        <p>Resultado do caixa no periodo. Pedidos cancelados ficam fora do faturamento. Exporte em planilha quando precisar fechar o mes.</p>
+        <p>Resultado do caixa no período. Pedidos cancelados ficam fora do faturamento. Exporte em planilha quando precisar fechar o mês.</p>
       </div>
       <div class="filter-bar">
         <div class="period-group" id="period-group">
           <button class="period-btn active" type="button" data-period="hoje">Hoje</button>
           <button class="period-btn" type="button" data-period="7dias">7 dias</button>
           <button class="period-btn" type="button" data-period="30dias">30 dias</button>
-          <button class="period-btn" type="button" data-period="mes">Este mes</button>
+          <button class="period-btn" type="button" data-period="mes">Este mês</button>
         </div>
         <div class="custom-period" id="custom-period">
           <label><span>De</span><input id="filter-from" type="date"></label>
-          <label><span>Ate</span><input id="filter-to" type="date"></label>
+          <label><span>Até</span><input id="filter-to" type="date"></label>
           <button class="secondary small" type="button" id="apply-period">Aplicar</button>
         </div>
         <select id="filter-channel" aria-label="Filtrar por canal"></select>
@@ -270,6 +271,10 @@
           <div id="worst-items"></div>
         </div>
         <div class="chart-card">
+          <h2>Entregas por motoboy</h2>
+          <div id="motoboy-chart"></div>
+        </div>
+        <div class="chart-card">
           <h2>Alerta de estoque</h2>
           <div id="stock-alert-chart"></div>
         </div>
@@ -279,7 +284,7 @@
         <div class="sales-head">
           <div>
             <h2>Todas as vendas</h2>
-            <p class="small faint">Confira pedidos do periodo e cancele lancamentos errados.</p>
+            <p class="small faint">Confira pedidos do período e cancele lançamentos errados.</p>
           </div>
         </div>
         <div class="sales-list" id="dashboard-sales"></div>
@@ -289,7 +294,7 @@
         <div class="sales-head">
           <div>
             <h2>Pedidos cancelados</h2>
-            <p class="small faint">Cancelamentos ficam fora do faturamento. Aqui aparece quem cancelou, o motivo e os itens para conferencia.</p>
+            <p class="small faint">Cancelamentos ficam fora do faturamento. Aqui aparece quem cancelou, o motivo e os itens para conferência.</p>
           </div>
         </div>
         <div class="sales-list" id="dashboard-canceled"></div>
@@ -300,13 +305,13 @@
     <section class="admin-tab hidden" id="tab-fechamentos">
       <div class="tab-guide">
         <strong>Como usar esta aba</strong>
-        <p>Todo caixa fechado fica salvo aqui. Abra o relatorio para imprimir ou salvar como PDF quando precisar conferir o movimento do dia.</p>
+        <p>Todo caixa fechado fica salvo aqui. Abra o relatório para imprimir ou salvar como PDF quando precisar conferir o movimento do dia.</p>
       </div>
       <div class="panel">
         <div class="sales-head">
           <div>
-            <h2>Historico de fechamentos</h2>
-            <p class="small faint">Mostra horario de abertura, fechamento, total vendido, cancelados e resumo do periodo.</p>
+            <h2>Histórico de fechamentos</h2>
+            <p class="small faint">Mostra horário de abertura, fechamento, total vendido, cancelados e resumo do período.</p>
           </div>
           <button class="secondary small" type="button" id="refresh-closings">Atualizar</button>
         </div>
@@ -318,7 +323,7 @@
     <section class="admin-tab hidden" id="tab-plano">
       <div class="tab-guide">
         <strong>Como usar esta aba</strong>
-        <p>Mostra a mensalidade do sistema, o vencimento fixo todo dia 15 e quantos dias faltam para a proxima cobranca.</p>
+        <p>Mostra a mensalidade do sistema, o vencimento fixo todo dia 15 e quantos dias faltam para a próxima cobrança.</p>
       </div>
       <div id="plano-sistema"></div>
     </section>
@@ -327,19 +332,19 @@
     <section class="admin-tab hidden" id="tab-usuarios">
       <div class="tab-guide">
         <strong>Como usar esta aba</strong>
-        <p>Crie o acesso de cada pessoa aqui. <strong>Administrador</strong> mexe em cadastro, precos, cupons, entrega e permissoes; <strong>caixa</strong> e <strong>cozinha</strong> veem e editam apenas o que voce liberar.</p>
+        <p>Crie o acesso de cada pessoa aqui. <strong>Administrador</strong> mexe em cadastro, preços, cupons, entrega e permissões; <strong>caixa</strong> e <strong>cozinha</strong> veem e editam apenas o que você liberar.</p>
       </div>
       <div class="promo-layout">
         <section class="panel">
           <h2>Quem tem acesso</h2>
-          <p class="small faint">Cadastre um novo acesso ou selecione alguem da lista para ajustar suas permissoes.</p>
+          <p class="small faint">Cadastre um novo acesso ou selecione alguém da lista para ajustar suas permissões.</p>
           <div class="user-list" id="user-list"></div>
           <form class="panel-divider" id="form-usuario">
-            <strong class="field-label gold" id="user-form-title">Novo usuario</strong>
-            <p class="small faint" id="user-form-hint">Use um e-mail valido e uma senha com pelo menos 10 caracteres.</p>
+            <strong class="field-label gold" id="user-form-title">Novo usuário</strong>
+            <p class="small faint" id="user-form-hint">Use um e-mail válido e uma senha com pelo menos 10 caracteres.</p>
             <div class="field-row" id="user-credentials">
               <input id="user-login" type="email" required autocomplete="off" placeholder="E-mail de acesso" maxlength="80">
-              <input id="user-password" type="password" required autocomplete="new-password" placeholder="Senha (minimo 10 caracteres)" minlength="10" maxlength="200">
+              <input id="user-password" type="password" required autocomplete="new-password" placeholder="Senha (mínimo 10 caracteres)" minlength="10" maxlength="200">
             </div>
             <div class="field-row">
               <input id="user-name" required placeholder="Nome da pessoa" maxlength="80">
@@ -353,15 +358,15 @@
             <div class="permission-grid" id="user-permissions"></div>
             <p class="form-error hidden" id="user-error" role="alert"></p>
             <div class="field-row">
-              <button class="primary wide" type="submit" id="user-submit">Criar usuario</button>
-              <button class="secondary hidden" type="button" id="user-cancel">Cancelar edicao</button>
+              <button class="primary wide" type="submit" id="user-submit">Criar usuário</button>
+              <button class="secondary hidden" type="button" id="user-cancel">Cancelar edição</button>
             </div>
           </form>
         </section>
 
         <section class="panel">
           <h2>Auditoria</h2>
-          <p class="small faint">Ultimas 100 acoes. Responde quem cancelou um pedido, mudou um preco ou fechou uma conta.</p>
+          <p class="small faint">Últimas 100 ações. Responde quem cancelou um pedido, mudou um preço ou fechou uma conta.</p>
           <div class="audit-list" id="audit-list"></div>
         </section>
       </div>
@@ -372,8 +377,8 @@
   <div class="modal hidden" id="manual-modal" role="dialog" aria-modal="true" aria-labelledby="manual-title">
     <div class="modal-card">
       <div>
-        <h2 id="manual-title">Lancar pedido manual</h2>
-        <p>Balcao ou venda de outra plataforma (iFood, WhatsApp...). Consolida o faturamento no dashboard.</p>
+        <h2 id="manual-title">Lançar pedido manual</h2>
+        <p>Balcão ou venda de outra plataforma (iFood, WhatsApp...). Consolida o faturamento no dashboard.</p>
       </div>
       <div class="chip-row" id="manual-channels"></div>
       <div class="manual-section hidden" id="manual-fulfillment-section">
@@ -383,7 +388,7 @@
       <input id="manual-customer" placeholder="Nome do cliente (opcional)" maxlength="80">
       <div class="manual-section hidden" id="manual-delivery-fields">
         <input id="manual-phone" placeholder="Telefone do cliente" inputmode="tel" maxlength="30">
-        <input id="manual-address" placeholder="Endereco de entrega" maxlength="160" autocomplete="off">
+        <input id="manual-address" placeholder="Endereço de entrega" maxlength="160" autocomplete="off">
         <div class="sugestoes" id="manual-address-sugestoes"></div>
         <p class="entrega-aviso hidden" id="manual-entrega-aviso" role="status"></p>
       </div>
@@ -411,7 +416,7 @@
       <h2 id="qr-title">Mesa</h2>
       <div class="qr-frame"><img id="qr-image" src="" alt="QR code da mesa"></div>
       <p class="qr-url" id="qr-url"></p>
-      <p class="modal-hint">Escaneie para testar: abre o cardapio ja identificado nesta mesa. Imprima, plastifique e fixe na mesa.</p>
+      <p class="modal-hint">Escaneie para testar: abre o cardápio já identificado nesta mesa. Imprima, plastifique e fixe na mesa.</p>
       <div class="field-row">
         <a class="primary" id="qr-print" href="#" download>Baixar para imprimir ⇩</a>
         <button class="secondary" type="button" id="qr-close">Fechar</button>
@@ -421,20 +426,37 @@
 
   <iframe class="print-frame" id="print-frame" title="Impressao"></iframe>
 
+  <div class="modal hidden" id="cash-password-modal" role="dialog" aria-modal="true" aria-labelledby="cash-password-title">
+    <form class="modal-card" id="cash-password-form">
+      <div>
+        <h2 id="cash-password-title">Abrir caixa</h2>
+        <p>Digite sua senha para confirmar a abertura do movimento.</p>
+      </div>
+      <label>
+        Senha
+        <input id="cash-password" type="password" autocomplete="current-password" placeholder="Sua senha de acesso">
+      </label>
+      <div class="field-row">
+        <button class="primary wide" type="submit">Confirmar abertura</button>
+        <button class="secondary" type="button" id="cash-password-cancel">Cancelar</button>
+      </div>
+    </form>
+  </div>
+
   <div class="support-modal hidden" id="support-modal" role="dialog" aria-modal="true" aria-labelledby="support-title">
     <div class="support-panel">
       <div class="support-head">
         <div>
           <h2 id="support-title">Suporte Nexo</h2>
-          <p>Canais oficiais para atendimento, ajustes e informacoes da Nexo Developer.</p>
+          <p>Canais oficiais para atendimento, ajustes e informações da Nexo Developer.</p>
         </div>
         <button class="secondary" type="button" id="fechar-suporte">Fechar</button>
       </div>
       <div class="support-hero">
         <img src="/images/nexo sem fundo.png" alt="Nexo Developer">
         <div>
-          <h3>Suporte tecnico do sistema</h3>
-          <p>Use estes canais para tirar duvidas, solicitar ajustes ou acompanhar novas entregas.</p>
+          <h3>Suporte técnico do sistema</h3>
+          <p>Use estes canais para tirar dúvidas, solicitar ajustes ou acompanhar novas entregas.</p>
         </div>
       </div>
       <div class="support-grid">
@@ -447,7 +469,7 @@
         <div class="support-card">
           <span>WhatsApp alternativo</span>
           <strong>(21) 96956-5614</strong>
-          <p>Canal alternativo para contato quando necessario.</p>
+          <p>Canal alternativo para contato quando necessário.</p>
           <a class="secondary" href="https://wa.me/5521969565614" target="_blank" rel="noopener">Chamar</a>
         </div>
         <div class="support-card">

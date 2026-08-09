@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { CANAIS, MODALIDADES, STATUS_PEDIDO, LIMITES } from "../config/constants.js";
-import { texto, idTexto, quantidade, dataIso } from "./comum.schema.js";
+import { texto, idTexto, quantidade, dataIso, latitude, longitude } from "./comum.schema.js";
 
 /* O item que o cliente manda diz O QUE foi pedido, nunca QUANTO custa.
  *
@@ -52,6 +52,12 @@ export const cancelarPedidoSchema = z.object({
 export const motoboyPedidoSchema = z.object({
   motoboy: texto(80, { obrigatorio: true })
 });
+
+export const localizacaoMotoboySchema = z.object({
+  lat: latitude,
+  lng: longitude,
+  accuracy: z.coerce.number().min(0).max(10000).nullable().optional()
+}).strict();
 
 export const listarPedidosSchema = z.object({
   status: z.enum(STATUS_PEDIDO).optional(),

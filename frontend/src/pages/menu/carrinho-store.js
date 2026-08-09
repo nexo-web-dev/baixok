@@ -52,7 +52,7 @@ export const carrinho = {
       const produto = produtosPorId.get(linha.id);
       if (!produto) {
         mudou = true;
-        avisos.push("Um item saiu do cardapio e foi retirado do seu pedido.");
+        avisos.push("Um item saiu do cardápio e foi retirado do seu pedido.");
         continue;
       }
       validas.push({ id: produto.id, qty: linha.qty, name: produto.name, price: produto.price, image: produto.image });

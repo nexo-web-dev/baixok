@@ -26,6 +26,7 @@ const paraApi = linha => linha && ({
   pagamentos: json(linha.pagamentos),
   canais: json(linha.canais),
   modalidades: json(linha.modalidades),
+  motoboys: json(linha.motoboys),
   observacao: linha.observacao || ""
 });
 
@@ -80,6 +81,7 @@ export const caixaRepo = {
              pagamentos = ?,
              canais = ?,
              modalidades = ?,
+             motoboys = ?,
              observacao = ?,
              atualizado_em = now()
        WHERE id = ? AND status = 'aberto'
@@ -88,7 +90,7 @@ export const caixaRepo = {
       resumo.pedidos, resumo.faturamento, resumo.descontos, resumo.taxasEntrega, resumo.ticketMedio,
       resumo.cancelados, resumo.valorCancelado, resumo.entregas, resumo.retiradas, resumo.mesas,
       JSON.stringify(resumo.pagamentos), JSON.stringify(resumo.canais), JSON.stringify(resumo.modalidades),
-      observacao, id
+      JSON.stringify(resumo.motoboys), observacao, id
     ]);
     return this.buscar(id);
   }

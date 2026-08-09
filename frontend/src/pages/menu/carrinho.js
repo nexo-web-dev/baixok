@@ -96,7 +96,7 @@ export async function aplicarCupom(subtotal, telefone) {
   const campo = $("#coupon-code-input");
   const code = (campo?.value || "").trim().toUpperCase();
 
-  if (!code) return avisoCupom("Digite o codigo do cupom.");
+  if (!code) return avisoCupom("Digite o código do cupom.");
   if (!carrinho.linhas().length) return avisoCupom("Adicione itens antes de aplicar o cupom.");
 
   try {
@@ -104,7 +104,7 @@ export async function aplicarCupom(subtotal, telefone) {
     if (!resposta.valido) {
       cupomAplicado = null;
       cupomGuardado.limpar();
-      return avisoCupom(resposta.motivo || "Cupom invalido.");
+      return avisoCupom(resposta.motivo || "Cupom inválido.");
     }
     cupomAplicado = resposta;
     cupomGuardado.gravar(code);
@@ -112,7 +112,7 @@ export async function aplicarCupom(subtotal, telefone) {
     avisoCupom("");
     toast("Cupom aplicado.");
   } catch (erro) {
-    avisoCupom(erro.message || "Nao foi possivel validar o cupom agora.");
+    avisoCupom(erro.message || "Não foi possível validar o cupom agora.");
   }
 }
 

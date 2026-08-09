@@ -1,6 +1,8 @@
 import { pedidosRepo } from "../repositories/pedidos.repo.js";
 import { caixaRepo } from "../repositories/caixa.repo.js";
+import { mesasRepo } from "../repositories/mesas.repo.js";
 import { auditoriaRepo } from "../repositories/auditoria.repo.js";
+import { authService } from "./auth.service.js";
 import { uid } from "../lib/ids.js";
 import { naoEncontrado, conflito } from "../lib/errors.js";
 import { publicar, CANAL } from "../lib/events.js";
@@ -29,12 +31,13 @@ function contarModalidades(linhas) {
 
 async function resumoFechamento(caixa, fechadoEm = new Date()) {
   const filtro = { desde: paraSql(new Date(caixa.abertoEm)), ate: paraSql(fechadoEm) };
-  const [resumo, cancelados, pagamentos, canais, modalidades] = await Promise.all([
+  const [resumo, cancelados, pagamentos, canais, modalidades, motoboys] = await Promise.all([
     pedidosRepo.resumoPeriodo(filtro),
     pedidosRepo.resumoCancelados(filtro),
     pedidosRepo.agruparPor("pagamento", filtro),
     pedidosRepo.agruparPor("canal", filtro),
-    pedidosRepo.agruparPor("modalidade", filtro)
+    pedidosRepo.agruparPor("modalidade", filtro),
+    pedidosRepo.porMotoboy(filtro)
   ]);
   const contagem = contarModalidades(modalidades);
 
@@ -64,6 +67,12 @@ async function resumoFechamento(caixa, fechadoEm = new Date()) {
       rotulo: rotuloModalidade[linha.rotulo] || linha.rotulo || "Nao informado",
       pedidos: linha.pedidos,
       faturamento: arredondar(linha.faturamento)
+    })),
+    motoboys: motoboys.map(linha => ({
+      rotulo: linha.rotulo || "Sem motoboy",
+      pedidos: linha.pedidos,
+      faturamento: arredondar(linha.faturamento),
+      taxasEntrega: arredondar(linha.taxas_entrega)
     }))
   };
 }
@@ -91,6 +100,18 @@ function linhasTabela(linhas) {
     <tr>
       <td>${escapar(linha.rotulo)}</td>
       <td class="num">${Number(linha.pedidos || 0)}</td>
+      <td class="num money">${moeda(linha.faturamento)}</td>
+    </tr>
+  `).join("");
+}
+
+function linhasMotoboy(linhas) {
+  if (!linhas?.length) return "<tr><td colspan=\"4\" class=\"empty-row\">Sem entrega com motoboy neste caixa.</td></tr>";
+  return linhas.map(linha => `
+    <tr>
+      <td>${escapar(linha.rotulo)}</td>
+      <td class="num">${Number(linha.pedidos || 0)}</td>
+      <td class="num money">${moeda(linha.taxasEntrega)}</td>
       <td class="num money">${moeda(linha.faturamento)}</td>
     </tr>
   `).join("");
@@ -318,6 +339,11 @@ function htmlRelatorio(caixa) {
           <div class="section-title"><h2>Retirada, entrega e mesa</h2><span>operacao</span></div>
           <table><thead><tr><th>Tipo</th><th class="num">Pedidos</th><th class="num">Total</th></tr></thead><tbody>${linhasTabela(caixa.modalidades)}</tbody></table>
         </div>
+
+        <div class="table-card full">
+          <div class="section-title"><h2>Entregas por motoboy</h2><span>repasse</span></div>
+          <table><thead><tr><th>Motoboy</th><th class="num">Entregas</th><th class="num">Taxas</th><th class="num">Total vendido</th></tr></thead><tbody>${linhasMotoboy(caixa.motoboys)}</tbody></table>
+        </div>
       </section>
 
       ${caixa.observacao ? `<section class="obs"><strong>Observacao do fechamento:</strong> ${escapar(caixa.observacao)}</section>` : ""}
@@ -342,9 +368,10 @@ export const caixaService = {
     return caixa;
   },
 
-  async abrir({ usuario, ip }) {
+  async abrir({ usuario, ip }, { senha } = {}) {
     const aberto = await caixaRepo.atual();
     if (aberto) throw conflito("Ja existe um caixa aberto.");
+    await authService.confirmarSenha({ usuarioAtual: usuario, senha });
 
     const caixa = await caixaRepo.abrir({ id: uid("cx"), usuario });
     await auditoriaRepo.registrar({
@@ -363,6 +390,19 @@ export const caixaService = {
   async fechar({ usuario, ip }, { observacao = "" } = {}) {
     const aberto = await caixaRepo.atual();
     if (!aberto) throw naoEncontrado("Nao existe caixa aberto para fechar.");
+
+    const [pedidosAbertos, mesas] = await Promise.all([
+      pedidosRepo.listarAbertos(),
+      mesasRepo.listar()
+    ]);
+    if (pedidosAbertos.length) {
+      throw conflito(`Finalize ou cancele ${pedidosAbertos.length} pedido(s) aberto(s) antes de fechar o caixa.`);
+    }
+
+    const mesasAbertas = mesas.filter(mesa => mesa.status !== "livre");
+    if (mesasAbertas.length) {
+      throw conflito(`Feche e libere ${mesasAbertas.length} mesa(s) antes de fechar o caixa.`);
+    }
 
     const resumo = await resumoFechamento(aberto);
     const caixa = await caixaRepo.fechar(aberto.id, resumo, {

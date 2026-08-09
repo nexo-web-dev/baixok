@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Baixo K - Cardapio</title>
-  <meta name="description" content="Cardapio digital do Baixo K: pizzas, burgues, massas e drinks.">
-  <meta property="og:title" content="Baixo K - Cardapio">
-  <meta property="og:description" content="Peca pelo cardapio digital do Baixo K. Pizza, burgues, massas e drinks.">
+  <title>Baixo K - Cardápio</title>
+  <meta name="description" content="Cardápio digital do Baixo K: pizzas, burguers, massas e drinks.">
+  <meta property="og:title" content="Baixo K - Cardápio">
+  <meta property="og:description" content="Peça pelo cardápio digital do Baixo K. Pizza, burguers, massas e drinks.">
   <meta property="og:type" content="website">
   <meta property="og:image" content="/images/loja-baixo-k-hero.png">
   <meta property="og:image:alt" content="Fachada do Baixo K">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Baixo K - Cardapio">
-  <meta name="twitter:description" content="Peca pelo cardapio digital do Baixo K.">
+  <meta name="twitter:title" content="Baixo K - Cardápio">
+  <meta name="twitter:description" content="Peça pelo cardápio digital do Baixo K.">
   <meta name="twitter:image" content="/images/loja-baixo-k-hero.png">
   <meta name="theme-color" content="#f3c66b">
   <link rel="icon" href="/images/baixok-logo-v2.png">
@@ -31,33 +31,33 @@
     <img src="/images/baixok-logo-v2.png" alt="Baixo K">
   </header>
 
-  <nav class="table-nav hidden" id="table-nav" aria-label="Navegacao da mesa">
-    <button class="table-tab active" type="button" data-view="inicio" aria-selected="true">Inicio</button>
+  <nav class="table-nav hidden" id="table-nav" aria-label="Navegação da mesa">
+    <button class="table-tab active" type="button" data-view="inicio" aria-selected="true">Início</button>
     <button class="table-tab" type="button" data-view="comanda" aria-selected="false">
       Comanda <span class="table-tab-count hidden" id="comanda-count">0</span>
     </button>
   </nav>
 
   <section class="table-blocked hidden" id="table-blocked">
-    <span class="blocked-icon" aria-hidden="true">▢</span>
+    <span class="blocked-icon" aria-hidden="true">□</span>
     <h1 id="blocked-title">Comanda fechada</h1>
     <p id="blocked-text">Chame o atendente para abrir a mesa e liberar os pedidos por aqui.</p>
-    <a class="secondary" href="/index.html">Ver o cardapio mesmo assim</a>
+    <a class="secondary" href="/index.html">Ver o cardápio mesmo assim</a>
   </section>
 
   <section class="table-comanda hidden" id="table-comanda">
     <div class="comanda-empty hidden" id="comanda-empty">
-      <span class="comanda-icon" aria-hidden="true">🍽</span>
-      <strong>Voce ainda nao fez nenhum pedido</strong>
-      <p>Tudo que voce pedir por aqui vai somando nesta comanda ate o fechamento da conta.</p>
-      <button class="primary wide" type="button" data-view="inicio">Comecar a pedir</button>
+      <span class="comanda-icon" aria-hidden="true">□</span>
+      <strong>Você ainda não fez nenhum pedido</strong>
+      <p>Tudo que você pedir por aqui vai somando nesta comanda até o fechamento da conta.</p>
+      <button class="primary wide" type="button" data-view="inicio">Começar a pedir</button>
     </div>
     <div class="comanda-body hidden" id="comanda-body">
       <div class="section-head">
         <div>
           <span class="eyebrow">Sua comanda</span>
           <h2 id="comanda-title">Mesa</h2>
-          <p>Itens ja enviados para a cozinha. A conta e paga no balcao no fim.</p>
+          <p>Itens já enviados para a cozinha. Para fechar a conta, chame o garçom.</p>
         </div>
       </div>
       <div class="comanda-items" id="comanda-items"></div>
@@ -71,14 +71,14 @@
     <div class="modal-card">
       <div>
         <h2 id="payment-title">Formas de pagamento</h2>
-        <p>A conta e fechada no balcao. Avise o atendente quando quiser encerrar a comanda.</p>
+        <p>A conta é fechada no balcão. Chame o garçom quando quiser encerrar a comanda.</p>
       </div>
       <div class="pay-options">
-        <div class="pay-option"><strong>Pix</strong><span>QR do estabelecimento no balcao</span></div>
-        <div class="pay-option"><strong>Cartao</strong><span>Credito ou debito na maquininha</span></div>
-        <div class="pay-option"><strong>Dinheiro</strong><span>Troco no balcao</span></div>
+        <div class="pay-option"><strong>Pix</strong><span>QR do estabelecimento no balcão</span></div>
+        <div class="pay-option"><strong>Cartão</strong><span>Crédito ou débito na maquininha</span></div>
+        <div class="pay-option"><strong>Dinheiro</strong><span>Troco no balcão</span></div>
       </div>
-      <p class="modal-hint">Sobre a conta e cobrada a taxa de servico, ja mostrada no total da comanda.</p>
+      <p class="modal-hint">Sobre a conta é cobrada a taxa de serviço, já mostrada no total da comanda.</p>
       <button class="secondary wide" type="button" id="close-payment-info">Fechar</button>
     </div>
   </div>
@@ -88,12 +88,12 @@
       <img src="/images/baixok-logo-v2.png" alt="Baixo K">
       <div>
         <strong>Baixo K</strong>
-        <span>Pizza, burgues, massas e drinks</span>
+        <span>Pizza, burguers, massas e drinks</span>
       </div>
     </div>
     <div class="top-actions">
       <button class="secondary" type="button" id="open-history">Meus pedidos</button>
-      <a class="secondary" href="https://www.instagram.com/baixok_/" target="_blank" rel="noopener">◎ Instagram</a>
+      <a class="secondary" href="https://www.instagram.com/baixok_/" target="_blank" rel="noopener">Instagram</a>
     </div>
   </header>
 
@@ -102,9 +102,9 @@
       <img class="hero-mark" src="/images/baixok-logo-v2.png" alt="">
       <span class="eyebrow live-badge">Aberto para pedidos</span>
       <h1>Baixo K</h1>
-      <p>Pizza, burgues, massas e drinks.</p>
+      <p>Pizza, burguers, massas e drinks.</p>
       <div class="hero-actions">
-        <a class="primary" href="#menu-shell">Ver cardapio</a>
+        <a class="primary" href="#menu-shell">Ver cardápio</a>
         <a class="secondary dark-button" href="https://www.instagram.com/baixok_/" target="_blank" rel="noopener">@baixok_</a>
       </div>
     </div>
@@ -116,7 +116,7 @@
 
   <main class="shop-layout">
     <section class="mobile-order-strip" aria-label="Resumo rapido">
-      <div><strong>Retirada</strong><span>Nome no telao</span></div>
+      <div><strong>Retirada</strong><span>Nome no telão</span></div>
       <div><strong>Entrega</strong><span>Pedido pelo WhatsApp</span></div>
     </section>
 
@@ -125,17 +125,17 @@
     <section class="experience-strip" aria-label="Como funciona">
       <div><strong>1</strong><span>Monte seu pedido no celular</span></div>
       <div><strong>2</strong><span>Escolha retirada ou entrega</span></div>
-      <div><strong>3</strong><span>Acompanhe seu nome no telao</span></div>
+      <div><strong>3</strong><span>Acompanhe seu nome no telão</span></div>
     </section>
 
     <section class="menu-shell" id="menu-shell">
       <div class="section-head">
         <div>
-          <span class="eyebrow">Cardapio Baixo K</span>
+          <span class="eyebrow">Cardápio Baixo K</span>
           <h2>Escolha o que vai para a mesa</h2>
           <p>Produtos com estoque aparecem automaticamente. Finalize como retirada ou entrega.</p>
         </div>
-        <input id="search" type="search" placeholder="Buscar pizza, burguer, drink..." aria-label="Buscar no cardapio">
+        <input id="search" type="search" placeholder="Buscar pizza, burguer, drink..." aria-label="Buscar no cardápio">
       </div>
       <div class="filters" id="filters" role="group" aria-label="Filtrar por categoria"></div>
       <div class="menu-grid" id="menu"></div>
@@ -144,7 +144,7 @@
     <aside class="cart" id="cart" aria-label="Seu pedido">
       <div class="cart-head">
         <div>
-          <span class="eyebrow">Checkout rapido</span>
+          <span class="eyebrow">Checkout rápido</span>
           <h2>Seu pedido</h2>
         </div>
         <strong class="cart-count" id="cart-count">0</strong>
@@ -162,16 +162,16 @@
 
       <label>
         Cliente
-        <input id="customer-name" placeholder="Nome para chamar no telao" autocomplete="name">
+        <input id="customer-name" placeholder="Nome para chamar no telão" autocomplete="name">
       </label>
       <label>
         Telefone
         <input id="customer-phone" placeholder="WhatsApp ou telefone" autocomplete="tel" inputmode="tel">
       </label>
       <label id="place-label" class="hidden">
-        Endereco de entrega
+        Endereço de entrega
         <div class="geocoder" id="endereco-widget"></div>
-        <input id="customer-place" placeholder="Rua e numero" autocomplete="off">
+        <input id="customer-place" placeholder="Rua e número" autocomplete="off">
       </label>
       <div class="sugestoes" id="endereco-sugestoes"></div>
       <p class="entrega-aviso hidden" id="entrega-aviso" role="status"></p>
@@ -180,7 +180,7 @@
         <select id="payment-method">
           <option value="">Selecione</option>
           <option>Pix</option>
-          <option>Cartao</option>
+          <option>Cartão</option>
           <option>Dinheiro</option>
         </select>
       </label>
@@ -189,8 +189,8 @@
         <input id="change-for" placeholder="Ex: 100,00" inputmode="decimal">
       </label>
       <label>
-        Observacao
-        <textarea id="order-note" rows="3" placeholder="Sem cebola, ponto da carne, troco..."></textarea>
+        Observação
+        <textarea id="order-note" rows="3" placeholder="Sem cebola, ponto da carne, troca..."></textarea>
       </label>
 
       <div class="coupon-field" id="coupon-field">
@@ -238,7 +238,7 @@
     <div class="modal-card history-card">
       <div>
         <h2 id="history-title">Meus pedidos</h2>
-        <p>Digite o telefone usado no pedido para ver os ultimos registros.</p>
+        <p>Digite o telefone usado no pedido para ver os últimos registros.</p>
       </div>
       <div class="coupon-input-row">
         <input id="history-phone" placeholder="WhatsApp ou telefone" inputmode="tel" autocomplete="tel">

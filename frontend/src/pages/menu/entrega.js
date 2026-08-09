@@ -43,8 +43,8 @@ function mostrarAviso(mensagem, tom = "info") {
 
 function descreverCotacao(resultado) {
   if (!resultado?.configurado) return "";
-  if (!resultado.dentro) return `Esse endereco esta a ${resultado.km} km da loja, fora da area de entrega.`;
-  const minimo = resultado.minimo ? ` · pedido minimo ${reais(resultado.minimo)}` : "";
+  if (!resultado.dentro) return `Esse endereço está a ${resultado.km} km da loja, fora da área de entrega.`;
+  const minimo = resultado.minimo ? ` · pedido mínimo ${reais(resultado.minimo)}` : "";
   return `Entrega ${resultado.zona} · taxa ${reais(resultado.taxa)}${minimo}`;
 }
 
@@ -56,7 +56,7 @@ async function cotar(params, aoAtualizar) {
     aoAtualizar?.();
   } catch (erro) {
     cotacao = null;
-    mostrarAviso(erro.message || "Nao foi possivel calcular a taxa agora.", "erro");
+    mostrarAviso(erro.message || "Não foi possível calcular a taxa agora.", "erro");
     aoAtualizar?.();
   }
 }
