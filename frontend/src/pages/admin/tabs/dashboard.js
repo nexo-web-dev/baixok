@@ -79,15 +79,59 @@ function horaCurta(data) {
   }).format(new Date(data));
 }
 
+function trocoResumoDashboard(pedido) {
+  if (!String(pedido.payment || "").toLowerCase().includes("dinheiro")) return null;
+  const trocoPara = Number(pedido.trocoPara || 0);
+  if (!trocoPara) return "Pagamento em dinheiro. Conferir troco no balcao.";
+  const troco = Math.max(0, trocoPara - Number(pedido.total || 0));
+  return `Troco para ${reais(trocoPara)} | devolver ${reais(troco)}`;
+}
+
+function vendaTag(texto) {
+  return texto ? el("span.sale-tag", {}, texto) : null;
+}
+
+function fotoVenda(item) {
+  if (!item?.image) return el("div.sale-item-thumb.no-photo", {}, "Sem foto");
+  return el("img.sale-item-thumb", {
+    src: item.image,
+    alt: item.name || "Produto",
+    loading: "lazy",
+    decoding: "async",
+    onerror: evento => evento.target.replaceWith(el("div.sale-item-thumb.no-photo", {}, "Sem foto"))
+  });
+}
+
+function itemVenda(item) {
+  const total = Number(item.price || 0) * Number(item.qty || 0);
+  return el("div.sale-item", {},
+    fotoVenda(item),
+    el("div", {},
+      el("strong", {}, `${item.qty}x ${item.name}`),
+      el("span", {}, `${reais(item.price || 0)} cada`)
+    ),
+    el("strong", {}, reais(total))
+  );
+}
+
 function vendaLinha(pedido) {
   const cancelado = pedido.status === "cancelado";
+  const troco = trocoResumoDashboard(pedido);
   return el("article.sale-row", { dataset: { id: pedido.id } },
     el("div.sale-main", {},
-      el("strong", {}, pedido.customer || "Cliente sem nome"),
-      el("span", {}, `${horaCurta(pedido.createdAt)} | ${CANAIS_ROTULO[pedido.channel] || pedido.channel || "-"} | ${pedido.fulfillment || "-"}`),
+      el("div.sale-title", {},
+        el("strong", {}, pedido.customer || "Cliente sem nome"),
+        el("span", {}, horaCurta(pedido.createdAt))
+      ),
+      el("div.sale-tags", {},
+        vendaTag(CANAIS_ROTULO[pedido.channel] || pedido.channel || "-"),
+        vendaTag(MODALIDADES_ROTULO[pedido.fulfillment] || pedido.fulfillment || "-"),
+        vendaTag(pedido.payment || "Pagamento nao informado")
+      ),
       pedido.fulfillment === "entrega" && pedido.motoboy ? el("span", {}, `Motoboy: ${pedido.motoboy}`) : null,
       cancelado && pedido.cancelReason ? el("span.danger-text", {}, `Motivo: ${pedido.cancelReason}`) : null,
-      el("em", {}, pedido.items.map(item => `${item.qty}x ${item.name}`).join(" | ") || "Sem itens")
+      troco ? el("span.money-text", {}, `Troco: ${troco}`) : null,
+      el("div.sale-items", {}, pedido.items.length ? pedido.items.map(itemVenda) : el("em", {}, "Sem itens"))
     ),
     el("div.sale-side", {},
       el("strong", {}, reais(pedido.total || 0)),

@@ -164,6 +164,29 @@ function trocoResumo(pedido) {
   return `Troco para ${reais(trocoPara)} | devolver ${reais(troco)}`;
 }
 
+function fotoItem(item) {
+  if (!item?.image) return el("div.motoboy-item-thumb.no-photo", {}, "Sem foto");
+  return el("img.motoboy-item-thumb", {
+    src: item.image,
+    alt: item.name || "Produto",
+    loading: "lazy",
+    decoding: "async",
+    onerror: evento => evento.target.replaceWith(el("div.motoboy-item-thumb.no-photo", {}, "Sem foto"))
+  });
+}
+
+function linhaItemPedido(item) {
+  const total = Number(item.price || 0) * Number(item.qty || 0);
+  return el("div.motoboy-item-row", {},
+    fotoItem(item),
+    el("div", {},
+      el("strong", {}, `${item.qty}x ${item.name}`),
+      el("span", {}, `${reais(item.price || 0)} cada`)
+    ),
+    el("strong", {}, reais(total))
+  );
+}
+
 function cartaoLocalizacaoAoVivo(localizacao) {
   const nomeEntrega = localizacao.nome || "";
   const login = localizacao.usuario || "-";
@@ -326,7 +349,11 @@ function cardEntrega(pedido) {
       el("p", {}, el("span", {}, "Telefone"), el("strong", {}, pedido.phone || "-")),
       el("p", {}, el("span", {}, "Endereço"), el("strong", {}, pedido.place || "-"))
     ),
-    el("p.motoboy-items", {}, pedido.items.map(item => `${item.qty}x ${item.name}`).join(" | ") || "Sem itens"),
+    el("div.motoboy-items-grid", {},
+      pedido.items.length
+        ? pedido.items.map(linhaItemPedido)
+        : el("p.faint", {}, "Sem itens neste pedido.")
+    ),
     pedido.note ? el("p.order-note", {}, el("strong", {}, "Obs: "), pedido.note) : null,
     troco ? el("p.order-note.money", {}, el("strong", {}, "Troco: "), troco) : null,
     localizacao ? el("p.order-note.route", {},

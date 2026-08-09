@@ -31,6 +31,8 @@ import { desenharPlano, ligarPlano } from "./tabs/plano.js";
 import { desenharCaixaStatus, desenharFechamentos, ligarFechamentos } from "./tabs/fechamentos.js";
 
 let abaAtual = null;
+let monitorPedidosPronto = false;
+let idsPedidosConhecidos = new Set();
 
 /* Qual funcao redesenha cada aba, e o que ela precisa recarregar. */
 const DESENHO = {
@@ -65,7 +67,7 @@ const AFETADAS = {
 };
 
 const DEPENDENCIAS_ABA = {
-  pedidos: [],
+  pedidos: ["pedidos", "caixa"],
   motoboy: [],
   mesas: ["mesas", "produtos"],
   produtos: ["produtos", "promocoes"],
@@ -79,7 +81,29 @@ const DEPENDENCIAS_ABA = {
 };
 
 function areasIniciais(usuario) {
-  return podeVer("pedidos", usuario) ? ["pedidos"] : [];
+  return podeVer("pedidos", usuario) ? ["pedidos", "caixa"] : [];
+}
+
+function armarMonitorPedidos() {
+  idsPedidosConhecidos = new Set(estado.pedidos.map(pedido => pedido.id));
+  monitorPedidosPronto = true;
+}
+
+function avisarPedidosNovos() {
+  if (!monitorPedidosPronto) {
+    armarMonitorPedidos();
+    return;
+  }
+
+  const novos = estado.pedidos.filter(pedido =>
+    pedido.status === "novo" && !idsPedidosConhecidos.has(pedido.id)
+  );
+  idsPedidosConhecidos = new Set(estado.pedidos.map(pedido => pedido.id));
+
+  if (!novos.length) return;
+  toast(novos.length === 1
+    ? `Novo pedido ${String(novos[0].id).slice(-3).toUpperCase()} recebido.`
+    : `${novos.length} novos pedidos recebidos.`);
 }
 
 // ------------------------------------------------------------------- sessao ---
@@ -199,6 +223,7 @@ async function iniciar() {
   ligarShell();
 
   await abrirAba(abaInicial(sessao.usuario));
+  armarMonitorPedidos();
 
   carregar(...areasIniciais(sessao.usuario)).then(async () => {
     desenharMetricas();
@@ -220,6 +245,7 @@ async function iniciar() {
         retomada: ["pedidos", "mesas", "caixa"]
       }[assunto];
       await carregar(...(areas || []));
+      if (assunto === "pedidos") avisarPedidosNovos();
       if (assunto === "entrega") recarregarRascunhoEntrega();
       desenharMetricas();
       if (assunto === "caixa") await desenharCaixaStatus();
