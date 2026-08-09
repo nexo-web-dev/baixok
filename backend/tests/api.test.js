@@ -248,6 +248,26 @@ test("painel nao responde sem sessao", async () => {
   }
 });
 
+test("localizacao do motoboy separa aparelhos do mesmo login", async () => {
+  for (const [deviceId, deviceName, lat] of [
+    ["celular-1", "Celular da rota", -22.897],
+    ["celular-2", "Segundo aparelho", -22.898]
+  ]) {
+    const envio = await chamar("/api/painel/motoboys/localizacao", {
+      metodo: "POST",
+      sessao: sessaoEntregador,
+      corpo: { lat, lng: -43.187, accuracy: 8, deviceId, deviceName }
+    });
+    assert.equal(envio.status, 200);
+  }
+
+  const { status, corpo } = await chamar("/api/painel/motoboys/localizacoes", { sessao: sessaoAdmin });
+  assert.equal(status, 200);
+  const ids = corpo.localizacoes.map(item => item.deviceId);
+  assert.ok(ids.includes("celular-1"));
+  assert.ok(ids.includes("celular-2"));
+});
+
 test("cozinha nao cancela pedido nem mexe em preco", async () => {
   const cancelar = await chamar("/api/painel/pedidos/qualquer/cancelar", {
     metodo: "POST", corpo: { motivo: "teste" }, sessao: sessaoCozinha
