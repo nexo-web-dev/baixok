@@ -65,7 +65,7 @@ const AFETADAS = {
 };
 
 const DEPENDENCIAS_ABA = {
-  pedidos: ["pedidos", "produtos"],
+  pedidos: ["pedidos", "caixa"],
   motoboy: [],
   mesas: ["mesas", "produtos"],
   produtos: ["produtos", "promocoes"],
@@ -79,12 +79,7 @@ const DEPENDENCIAS_ABA = {
 };
 
 function areasIniciais(usuario) {
-  const areas = new Set(["pedidos"]);
-  if (podeVer("pedidos", usuario) || podeVer("produtos", usuario) || podeVer("estoque", usuario) || podeVer("mesas", usuario)) {
-    areas.add("produtos");
-  }
-  if (podeVer("estoque", usuario)) areas.add("insumos");
-  return [...areas];
+  return podeVer("pedidos", usuario) ? ["pedidos"] : [];
 }
 
 // ------------------------------------------------------------------- sessao ---

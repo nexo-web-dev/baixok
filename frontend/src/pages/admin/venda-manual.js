@@ -238,6 +238,9 @@ export async function abrirVendaManual(mesa = null, callback = null) {
     toastFalha(new Error("Abra o caixa antes de registrar vendas."), "Caixa");
     return;
   }
+  if (!estado.produtos.length) {
+    try { await carregar("produtos"); } catch { /* o formulario abre e mostra erro se continuar vazio */ }
+  }
 
   rascunho.itens = [];
   rascunho.mesa = mesa;

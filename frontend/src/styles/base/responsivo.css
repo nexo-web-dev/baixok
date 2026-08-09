@@ -31,6 +31,9 @@
     overflow: visible;
     padding: 14px max(18px, env(safe-area-inset-right, 0px)) 46px max(18px, env(safe-area-inset-left, 0px));
   }
+  body[data-page="menu"].cart-has-items .shop-layout {
+    padding-bottom: calc(124px + env(safe-area-inset-bottom, 0px));
+  }
   body[data-page="menu"] .mobile-order-strip, body[data-page="menu"] .experience-strip { display: none; }
   body[data-page="menu"] .signature-strip {
     display: flex;
@@ -72,7 +75,7 @@
     max-width: 100%;
     gap: 12px;
     margin: 0 0 14px;
-    padding: 0 4px;
+    padding: 0;
     border: 0;
     overflow: visible;
     background: transparent;
@@ -81,9 +84,10 @@
   body[data-page="menu"] .menu-shell .section-head h2 {
     width: 100%;
     max-width: 100%;
-    padding-left: 12px;
-    font-size: clamp(1.5rem, 7vw, 2rem);
-    line-height: 1.18;
+    margin: 0;
+    padding-left: 0;
+    font-size: clamp(1.36rem, 6.3vw, 1.82rem);
+    line-height: 1.2;
     overflow: visible;
     overflow-wrap: anywhere;
     text-wrap: balance;
@@ -198,8 +202,8 @@
     margin-bottom: 12px;
   }
   body[data-page="menu"][data-mode="mesa"] .menu-shell .section-head h2 {
-    padding-left: 12px;
-    font-size: clamp(1.34rem, 6vw, 1.72rem);
+    padding-left: 0;
+    font-size: clamp(1.28rem, 5.8vw, 1.62rem);
     line-height: 1.22;
   }
   body[data-page="admin"] {

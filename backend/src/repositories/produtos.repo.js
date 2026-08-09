@@ -24,6 +24,23 @@ function imagemParaApi(valor) {
   return imagem.length <= LIMITE_IMAGEM_API ? imagem : "";
 }
 
+let suporteDestaque = null;
+
+async function temDestaqueOrdem() {
+  if (suporteDestaque !== null) return suporteDestaque;
+  const linha = await um(`
+    SELECT EXISTS (
+      SELECT 1
+        FROM information_schema.columns
+       WHERE table_schema = current_schema()
+         AND table_name = 'produtos'
+         AND column_name = 'destaque_ordem'
+    ) AS existe
+  `);
+  suporteDestaque = Boolean(linha?.existe);
+  return suporteDestaque;
+}
+
 const paraApi = linha => linha && ({
   id: linha.id,
   name: linha.nome,
@@ -43,8 +60,9 @@ const paraApi = linha => linha && ({
 
 export const produtosRepo = {
   async listar() {
+    const destaque = await temDestaqueOrdem();
     return (await todos(`
-      SELECT id, nome, categoria, preco, estoque, estoque_min, ordem, destaque_ordem,
+      SELECT id, nome, categoria, preco, estoque, estoque_min, ordem, ${destaque ? "destaque_ordem" : "0 AS destaque_ordem"},
              ativo,
              CASE
                WHEN imagem LIKE 'data:image/%' AND length(imagem) > ${LIMITE_IMAGEM_API} THEN ''
@@ -59,13 +77,14 @@ export const produtosRepo = {
   /* Cardapio publico: so o que esta a venda, e sem estoque_min nem custo —
    * quantas unidades restam e informacao de operacao, nao de vitrine. */
   async listarPublico() {
+    const destaque = await temDestaqueOrdem();
     const linhas = await todos(`
       SELECT id, nome, categoria, preco,
              CASE
                WHEN imagem LIKE 'data:image/%' AND length(imagem) > ${LIMITE_IMAGEM_API} THEN ''
                ELSE imagem
              END AS imagem,
-             selo, descricao, estoque, ordem, destaque_ordem
+             selo, descricao, estoque, ordem, ${destaque ? "destaque_ordem" : "0 AS destaque_ordem"}
         FROM produtos
        WHERE ativo = 1
        ORDER BY ordem ASC, categoria, nome
@@ -91,6 +110,18 @@ export const produtosRepo = {
 
   async criar(produto) {
     const ordem = produto.order || (await um("SELECT COALESCE(MAX(ordem), 0) + 1 AS proxima FROM produtos"))?.proxima || 1;
+    const destaque = await temDestaqueOrdem();
+    if (!destaque) {
+      return paraApi(await um(`
+        INSERT INTO produtos (id, nome, categoria, preco, estoque, estoque_min, ordem, ativo, imagem, selo, descricao)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        RETURNING *
+      `, [
+        produto.id, produto.name, produto.category, produto.price,
+        produto.stock, produto.minStock, ordem, paraBanco(produto.active),
+        produto.image, produto.badge, produto.description
+      ]));
+    }
     return paraApi(await um(`
       INSERT INTO produtos (id, nome, categoria, preco, estoque, estoque_min, ordem, destaque_ordem, ativo, imagem, selo, descricao)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -103,6 +134,20 @@ export const produtosRepo = {
   },
 
   async atualizar(id, produto) {
+    const destaque = await temDestaqueOrdem();
+    if (!destaque) {
+      return paraApi(await um(`
+        UPDATE produtos
+           SET nome = ?, categoria = ?, preco = ?, estoque = ?, estoque_min = ?, ordem = ?,
+               ativo = ?, imagem = ?, selo = ?, descricao = ?, atualizado_em = now()
+         WHERE id = ?
+        RETURNING *
+      `, [
+        produto.name, produto.category, produto.price, produto.stock, produto.minStock,
+        produto.order || 9999,
+        paraBanco(produto.active), produto.image, produto.badge, produto.description, id
+      ]));
+    }
     return paraApi(await um(`
       UPDATE produtos
          SET nome = ?, categoria = ?, preco = ?, estoque = ?, estoque_min = ?, ordem = ?, destaque_ordem = ?,
@@ -117,6 +162,7 @@ export const produtosRepo = {
   },
 
   async definirDestaque(id, ordem) {
+    if (!(await temDestaqueOrdem())) return this.buscar(id);
     const destaque = Math.max(0, Math.min(3, Number(ordem || 0)));
     if (destaque > 0) {
       await alteradas("UPDATE produtos SET destaque_ordem = 0, atualizado_em = now() WHERE destaque_ordem = ? AND id <> ?", [destaque, id]);

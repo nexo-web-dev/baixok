@@ -25,7 +25,7 @@ import { mesaDaUrl, sessaoMesa, iniciarModoMesa, mostrarVista, atualizarMesa } f
 const estado = {
   produtos: [],
   produtosPorId: new Map(),
-  loja: {},
+  loja: { caixaAberto: false },
   categoria: "todos",
   busca: "",
   modalidade: "retirada"
@@ -322,6 +322,9 @@ async function buscarHistorico() {
       ? pedidos.map(pedidoHistorico)
       : el("p.faint", {}, "Nenhum pedido encontrado para este telefone."));
   } catch (erro) {
+    estado.produtos = [];
+    estado.produtosPorId = new Map();
+    estado.loja = { ...estado.loja, caixaAberto: false };
     toastFalha(erro, "Histórico");
     render(alvo);
   }
