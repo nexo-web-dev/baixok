@@ -19,7 +19,7 @@ import { ABAS, abaInicial, podeVer } from "./abas.js";
 import { ligarVendaManual } from "./venda-manual.js";
 
 import { desenharPedidos, ligarPedidos } from "./tabs/pedidos.js";
-import { desenharMotoboy, ligarMotoboy, iniciarRastreamentoMotoboy } from "./tabs/motoboy.js";
+import { desenharMotoboy, ligarMotoboy, iniciarRastreamentoMotoboy, garantirNomeMotoboy } from "./tabs/motoboy.js";
 import { desenharMesas, ligarMesas } from "./tabs/mesas.js";
 import { desenharProdutos, ligarProdutos } from "./tabs/produtos.js";
 import { desenharPromocoes, desenharCupons, ligarPromocoes } from "./tabs/promocoes.js";
@@ -223,6 +223,7 @@ async function iniciar() {
   estado.usuario = sessao.usuario;
   $("#usuario-nome").textContent = sessao.usuario.nome;
   $("#usuario-papel").textContent = { admin: "Administrador", caixa: "Caixa", cozinha: "Cozinha", entregador: "Entregador" }[sessao.usuario.papel];
+  garantirNomeMotoboy();
   iniciarRastreamentoMotoboy();
 
   montarMenu(sessao.usuario);

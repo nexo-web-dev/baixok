@@ -53,6 +53,24 @@ export function registrarMotoboyLocal(nome) {
   );
 }
 
+/* O login de entrega e compartilhado entre entregadores (mesmo usuario e
+ * senha para todo mundo). Sem isto, o mapa so sabe quem e quem depois que a
+ * pessoa digita o nome numa entrega qualquer — ate la, aparece so o login
+ * generico. Perguntando na entrada, a localizacao ja chega identificada desde
+ * o primeiro sinal de GPS. So pergunta quando este aparelho ainda nao tem
+ * nome salvo; depois disso, trocar e opçao manual (botão "Trocar meu nome"). */
+export function garantirNomeMotoboy() {
+  if (!podeEnviarLocalizacao() || nomeMotoboyLocal()) return;
+  const nome = (prompt("Seu nome (aparece para a loja identificar suas entregas):", "") || "").trim();
+  if (nome) registrarMotoboyLocal(nome);
+}
+
+function trocarNomeMotoboy() {
+  const nome = (prompt("Seu nome (aparece para a loja identificar suas entregas):", nomeMotoboyLocal()) || "").trim();
+  if (nome) registrarMotoboyLocal(nome);
+  desenharLocalizacoes();
+}
+
 function deviceId() {
   try {
     const chave = "baixok.motoboy.deviceId";
@@ -246,13 +264,16 @@ function desenharLocalizacoes() {
   if (!alvo) return;
 
   if (podeEnviarLocalizacao()) {
+    const nome = nomeMotoboyLocal();
     render(alvo,
       el("article.location-card", { class: "self" },
         el("div", {},
           el("span", {}, "Localização do entregador"),
           el("strong#motoboy-location-status", {}, watchId == null ? "Aguardando permissão do navegador" : "Localização ativa"),
+          el("small", {}, nome ? `Suas entregas aparecem como: ${nome}` : "Nome ainda nao informado neste aparelho."),
           el("small", {}, "A posição só é enviada enquanto esta página estiver aberta.")
-        )
+        ),
+        el("button.secondary.small", { type: "button", dataset: { acao: "trocar-nome-motoboy" } }, nome ? "Trocar meu nome" : "Informar meu nome")
       )
     );
     return;
@@ -489,6 +510,8 @@ export function ligarMotoboy() {
 
   iniciarRastreamentoMotoboy();
   iniciarAtualizacaoLocalizacoesPainel();
+
+  delegar($("#motoboy-location-panel"), "click", "[data-acao='trocar-nome-motoboy']", trocarNomeMotoboy);
 
   delegar(alvo, "click", "[data-acao='salvar-motoboy']", (_e, botao) => salvarMotoboy(botao.closest(".motoboy-card")));
   delegar(alvo, "click", "[data-acao='entregue']", (_e, botao) => marcarEntregue(botao.closest(".motoboy-card")));

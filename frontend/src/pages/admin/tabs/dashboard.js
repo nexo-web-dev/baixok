@@ -178,7 +178,8 @@ export async function desenharDashboard() {
 
   const {
     resumo, porHora, porDia = [], porCanal, porPagamento, porModalidade = [],
-    porMotoboy = [], maisVendidos, menosVendidos = [], estoqueBaixo, periodo, vendas = [], cancelados = []
+    porMotoboy = [], maisVendidos, menosVendidos = [], estoqueBaixo, periodo, vendas = [], cancelados = [],
+    taxaServico = { total: 0, contasFechadas: 0, contasSemCobranca: 0 }
   } = ultimoRelatorio;
   const pagamentoTop = primeiro(porPagamento);
   const plataformaTop = primeiro(porCanal);
@@ -195,6 +196,11 @@ export async function desenharDashboard() {
     metrica("Entrega x loja", `${modalidades.entrega} / ${modalidades.loja}`, "entrega / loja"),
     metrica("Plataforma líder", plataformaTop ? CANAIS_ROTULO[plataformaTop.rotulo] || plataformaTop.rotulo : "Sem dados", plataformaTop ? reais(plataformaTop.faturamento) : null),
     metrica("Motoboy líder", motoboyTop ? motoboyTop.rotulo : "Sem entrega", motoboyTop ? `${motoboyTop.pedidos} entregas` : null),
+    metrica("Taxa do garçom", reais(taxaServico.total),
+      taxaServico.contasSemCobranca
+        ? `${taxaServico.contasSemCobranca} conta(s) fechada(s) sem cobrar`
+        : `${taxaServico.contasFechadas} conta(s) de mesa fechada(s)`,
+      taxaServico.contasSemCobranca ? "alert-copper" : ""),
     metrica("Cancelados", String(resumo.cancelados || 0), (resumo.valorCancelado || 0) ? `valor ${reais(resumo.valorCancelado)}` : "nenhum no período",
       (resumo.cancelados || 0) ? "alert-danger" : ""),
     metrica("Descontos", reais(resumo.descontos), resumo.taxasEntrega ? `taxas entrega ${reais(resumo.taxasEntrega)}` : null),
