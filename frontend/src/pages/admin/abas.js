@@ -9,14 +9,14 @@ const PAPEL_PADRAO_VER = Object.freeze({
   admin: ["pedidos", "motoboy", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "fechamentos", "plano", "usuarios"],
   caixa: ["pedidos", "motoboy", "mesas", "estoque", "dashboard", "fechamentos"],
   cozinha: ["pedidos"],
-  entregador: ["pedidos"]
+  entregador: ["pedidos", "motoboy"]
 });
 
 const PAPEL_PADRAO_EDITAR = Object.freeze({
   admin: ["pedidos", "motoboy", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "fechamentos", "plano", "usuarios"],
   caixa: ["pedidos", "motoboy", "mesas", "estoque", "dashboard", "fechamentos"],
   cozinha: [],
-  entregador: ["pedidos"]
+  entregador: ["pedidos", "motoboy"]
 });
 
 export const ABAS = Object.freeze({
@@ -32,7 +32,7 @@ export const ABAS = Object.freeze({
     subtitulo: "Entregas prontas e entregues, com responsavel pela rota.",
     icone: "MB",
     rotulo: "Motoboy",
-    papeis: ["admin", "caixa"]
+    papeis: ["admin", "caixa", "entregador"]
   },
   mesas: {
     titulo: "Mesas do salao",
@@ -105,10 +105,13 @@ export const abasDoPapel = papel =>
 function listaPermitida(usuario, tipo) {
   const chave = tipo === "editar" ? "abasEditar" : "abasVer";
   const lista = usuario?.[chave];
-  if (Array.isArray(lista) && lista.length) return lista;
-  return tipo === "editar"
+  const padrao = tipo === "editar"
     ? PAPEL_PADRAO_EDITAR[usuario?.papel] || []
     : PAPEL_PADRAO_VER[usuario?.papel] || [];
+  if (usuario?.papel === "admin") return Object.keys(ABAS);
+  if (!Array.isArray(lista) || !lista.length) return padrao;
+  if (["caixa", "entregador"].includes(usuario?.papel)) return [...new Set([...lista, ...padrao])];
+  return lista;
 }
 
 export function abaInicial(usuario) {

@@ -70,7 +70,7 @@ export const relatoriosService = {
       pedidosRepo.agruparPor("modalidade", filtro),
       pedidosRepo.maisVendidos({ ...filtro, limite: 10 }),
       pedidosRepo.menosVendidos({ ...filtro, limite: 10 }),
-      pedidosRepo.listar({ ...filtro, limite: 200 }),
+      pedidosRepo.listar({ ...filtro, status: "entregue", limite: 200 }),
       pedidosRepo.listar({ ...filtro, status: "cancelado", limite: 100 })
     ]);
 
@@ -104,7 +104,7 @@ export const relatoriosService = {
    * a casa usa a planilha para conferencia operacional e repasse de motoboy. */
   async exportacao({ periodo, desde, ate, canal }) {
     const intervalo = resolverPeriodo({ periodo, desde, ate });
-    const pedidos = await pedidosRepo.listar({ desde: intervalo.desde, ate: intervalo.ate, limite: 1000 });
+    const pedidos = await pedidosRepo.listar({ desde: intervalo.desde, ate: intervalo.ate, status: "entregue", limite: 1000 });
 
     return {
       periodo: intervalo,

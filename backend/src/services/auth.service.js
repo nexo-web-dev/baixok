@@ -16,17 +16,17 @@ import { logger } from "../lib/logger.js";
 import { supabaseAuth } from "./supabase-auth.js";
 
 const ABAS_POR_PADRAO = {
-  [PAPEIS.ADMIN]: ["pedidos", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "plano", "usuarios"],
-  [PAPEIS.CAIXA]: ["pedidos", "mesas", "estoque"],
+  [PAPEIS.ADMIN]: ["pedidos", "motoboy", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "fechamentos", "plano", "usuarios"],
+  [PAPEIS.CAIXA]: ["pedidos", "motoboy", "mesas", "estoque", "dashboard", "fechamentos"],
   [PAPEIS.COZINHA]: ["pedidos"],
-  [PAPEIS.ENTREGADOR]: ["pedidos"]
+  [PAPEIS.ENTREGADOR]: ["pedidos", "motoboy"]
 };
 
 const EDITAVEIS_POR_PADRAO = {
-  [PAPEIS.ADMIN]: ["pedidos", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "plano", "usuarios"],
-  [PAPEIS.CAIXA]: ["pedidos", "mesas", "estoque"],
+  [PAPEIS.ADMIN]: ["pedidos", "motoboy", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "fechamentos", "plano", "usuarios"],
+  [PAPEIS.CAIXA]: ["pedidos", "motoboy", "mesas", "estoque"],
   [PAPEIS.COZINHA]: [],
-  [PAPEIS.ENTREGADOR]: ["pedidos"]
+  [PAPEIS.ENTREGADOR]: ["pedidos", "motoboy"]
 };
 
 function normalizarEmail(email) {
@@ -49,13 +49,25 @@ const paraLista = valor => {
   return [];
 };
 
+function abasDoUsuario(papel, valor, modo = "ver") {
+  const salvas = paraLista(valor);
+  const padrao = modo === "editar"
+    ? EDITAVEIS_POR_PADRAO[papel] || []
+    : ABAS_POR_PADRAO[papel] || [];
+
+  if (papel === PAPEIS.ADMIN) return padrao;
+  if (!salvas.length) return padrao;
+  if ([PAPEIS.CAIXA, PAPEIS.ENTREGADOR].includes(papel)) return [...new Set([...salvas, ...padrao])];
+  return salvas;
+}
+
 const paraUsuarioPublico = linha => ({
   id: linha.id,
   usuario: linha.usuario,
   nome: linha.nome,
   papel: linha.papel,
-  abasVer: paraLista(linha.abas_ver),
-  abasEditar: paraLista(linha.abas_editar)
+  abasVer: abasDoUsuario(linha.papel, linha.abas_ver, "ver"),
+  abasEditar: abasDoUsuario(linha.papel, linha.abas_editar, "editar")
 });
 
 function nomePadraoPorEmail(email) {
@@ -248,8 +260,8 @@ export const authService = {
         usuario: sessao.usuario,
         nome: sessao.nome,
         papel: sessao.papel,
-        abasVer: paraLista(sessao.abas_ver),
-        abasEditar: paraLista(sessao.abas_editar)
+        abasVer: abasDoUsuario(sessao.papel, sessao.abas_ver, "ver"),
+        abasEditar: abasDoUsuario(sessao.papel, sessao.abas_editar, "editar")
       },
       csrfHash: sessao.csrf_hash,
       expiraEm: sessao.expira_em

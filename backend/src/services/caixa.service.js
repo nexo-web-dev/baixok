@@ -86,72 +86,248 @@ const dataHora = valor => new Intl.DateTimeFormat("pt-BR", {
 }).format(new Date(valor));
 
 function linhasTabela(linhas) {
-  if (!linhas?.length) return "<tr><td colspan=\"3\">Sem movimento.</td></tr>";
+  if (!linhas?.length) return "<tr><td colspan=\"3\" class=\"empty-row\">Sem movimento neste caixa.</td></tr>";
   return linhas.map(linha => `
     <tr>
       <td>${escapar(linha.rotulo)}</td>
-      <td>${Number(linha.pedidos || 0)}</td>
-      <td>${moeda(linha.faturamento)}</td>
+      <td class="num">${Number(linha.pedidos || 0)}</td>
+      <td class="num money">${moeda(linha.faturamento)}</td>
     </tr>
   `).join("");
 }
 
 function htmlRelatorio(caixa) {
+  const periodo = `${dataHora(caixa.abertoEm)} ate ${dataHora(caixa.fechadoEm)}`;
+
   return `<!doctype html>
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
   <title>Fechamento de caixa - Baixo K</title>
   <style>
-    @page { size: A4; margin: 16mm; }
+    @page { size: A4; margin: 12mm; }
     * { box-sizing: border-box; }
-    body { margin: 0; color: #16120f; font-family: Arial, sans-serif; }
-    header { border-bottom: 3px solid #16120f; padding-bottom: 12px; margin-bottom: 18px; }
-    h1 { margin: 0; font-size: 26px; letter-spacing: .02em; }
-    h2 { margin: 22px 0 8px; font-size: 15px; text-transform: uppercase; }
-    p { margin: 4px 0; }
-    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 16px 0; }
-    .metric { border: 1px solid #222; padding: 10px; min-height: 72px; }
-    .metric span { display: block; font-size: 11px; text-transform: uppercase; color: #555; }
-    .metric strong { display: block; margin-top: 7px; font-size: 20px; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-    th, td { border: 1px solid #222; padding: 8px; text-align: left; font-size: 12px; }
-    th { background: #eee; text-transform: uppercase; font-size: 11px; }
-    footer { margin-top: 24px; padding-top: 10px; border-top: 1px solid #888; color: #555; font-size: 11px; text-align: center; }
-    @media print { button { display: none; } }
+    :root {
+      --bg: #f4eee5;
+      --paper: #fffaf3;
+      --ink: #1b1510;
+      --muted: #6b5d50;
+      --line: #e5d5c3;
+      --copper: #c97443;
+      --gold: #e0a66d;
+      --green: #66784e;
+      --danger: #b75f54;
+      --dark: #17120e;
+    }
+    body {
+      margin: 0;
+      padding: 22px;
+      color: var(--ink);
+      background: var(--bg);
+      font-family: Arial, Helvetica, sans-serif;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .sheet {
+      max-width: 1120px;
+      margin: 0 auto;
+      overflow: hidden;
+      border-radius: 24px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      box-shadow: 0 22px 70px rgba(55,35,21,.16);
+    }
+    .print-btn {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 10;
+      min-height: 42px;
+      padding: 0 18px;
+      border: 0;
+      border-radius: 999px;
+      color: #1b120c;
+      background: linear-gradient(135deg, #f2c17d, #c97443);
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 12px 30px rgba(201,116,67,.25);
+    }
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 22px;
+      padding: 26px 30px;
+      color: #fff6e8;
+      background:
+        radial-gradient(circle at 85% 0%, rgba(224,166,109,.26), transparent 28%),
+        linear-gradient(135deg, #120e0b, #2c1d14);
+    }
+    .brand { display: flex; gap: 16px; align-items: center; }
+    .brand img {
+      width: 74px;
+      height: 74px;
+      object-fit: cover;
+      border-radius: 18px;
+      border: 1px solid rgba(224,166,109,.45);
+      background: #100d0a;
+    }
+    h1 { margin: 0; font-size: 29px; line-height: 1.05; }
+    .subtitle { margin: 6px 0 0; color: #d8c7b7; font-size: 13px; }
+    .tag {
+      align-self: start;
+      min-width: 170px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.14);
+      text-align: right;
+    }
+    .tag span { display: block; color: #d8c7b7; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .tag strong { display: block; margin-top: 3px; color: var(--gold); font-size: 15px; }
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      padding: 16px 30px;
+      background: #211811;
+      color: #f7eadb;
+      border-top: 1px solid rgba(255,255,255,.08);
+    }
+    .meta div { display: grid; gap: 4px; min-width: 0; }
+    .meta span, .metric span, .section-title span { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+    .meta strong { color: #fffaf3; font-size: 12px; overflow-wrap: anywhere; }
+    main { padding: 24px 30px 28px; }
+    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 22px; }
+    .metric {
+      min-height: 96px;
+      padding: 15px 16px;
+      border-radius: 18px;
+      background: #fff6eb;
+      border: 1px solid var(--line);
+    }
+    .metric strong { display: block; margin-top: 9px; font-size: 24px; line-height: 1.05; }
+    .metric.money strong { color: var(--copper); }
+    .metric.green strong { color: var(--green); }
+    .metric.danger strong { color: var(--danger); }
+    .tables { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+    .table-card {
+      overflow: hidden;
+      border-radius: 18px;
+      background: #fffdf8;
+      border: 1px solid var(--line);
+    }
+    .table-card.full { grid-column: 1 / -1; }
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      background: #2a1c13;
+      color: #fff4e5;
+    }
+    .section-title h2 { margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: .04em; }
+    .section-title span { color: var(--gold); }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 11px 14px; text-align: left; border-bottom: 1px solid #efe2d3; font-size: 12px; }
+    th { color: var(--muted); background: #fff6eb; font-size: 10px; text-transform: uppercase; letter-spacing: .07em; }
+    tbody tr:nth-child(even) td { background: #fff8ef; }
+    tbody tr:last-child td { border-bottom: 0; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .money { font-weight: 800; color: var(--copper); }
+    .empty-row { color: var(--muted); text-align: center; padding: 18px; }
+    .obs {
+      margin-top: 16px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: #fff6eb;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 30px 20px;
+      color: #7b6b5c;
+      border-top: 1px solid var(--line);
+      font-size: 11px;
+    }
+    footer a { color: var(--copper); font-weight: 800; text-decoration: none; }
+    @media print {
+      body { padding: 0; background: #fff; }
+      .sheet { max-width: none; border: 0; border-radius: 0; box-shadow: none; }
+      .print-btn { display: none; }
+      header { padding: 20px 22px; }
+      main { padding: 18px 22px; }
+      footer { padding: 12px 22px; }
+      .metric { break-inside: avoid; }
+      .table-card { break-inside: avoid; }
+    }
   </style>
 </head>
 <body>
-  <button onclick="window.print()">Imprimir ou salvar PDF</button>
-  <header>
-    <h1>Baixo K - Fechamento de caixa</h1>
-    <p><strong>Caixa:</strong> ${escapar(caixa.id)}</p>
-    <p><strong>Aberto:</strong> ${dataHora(caixa.abertoEm)} por ${escapar(caixa.abertoPorNome || "-")}</p>
-    <p><strong>Fechado:</strong> ${dataHora(caixa.fechadoEm)} por ${escapar(caixa.fechadoPorNome || "-")}</p>
-  </header>
+  <button class="print-btn" onclick="window.print()">Imprimir ou salvar PDF</button>
+  <div class="sheet">
+    <header>
+      <div class="brand">
+        <img src="/images/baixok-logo-v2.png" alt="Baixo K">
+        <div>
+          <h1>Fechamento de caixa</h1>
+          <p class="subtitle">Baixo K | Relatorio gerencial do movimento</p>
+        </div>
+      </div>
+      <div class="tag">
+        <span>Total faturado</span>
+        <strong>${moeda(caixa.faturamento)}</strong>
+      </div>
+    </header>
 
-  <section class="grid">
-    <div class="metric"><span>Pedidos</span><strong>${caixa.pedidos}</strong></div>
-    <div class="metric"><span>Faturamento</span><strong>${moeda(caixa.faturamento)}</strong></div>
-    <div class="metric"><span>Ticket medio</span><strong>${moeda(caixa.ticketMedio)}</strong></div>
-    <div class="metric"><span>Cancelados</span><strong>${caixa.cancelados}</strong></div>
-    <div class="metric"><span>Entrega</span><strong>${caixa.entregas}</strong></div>
-    <div class="metric"><span>Retirada</span><strong>${caixa.retiradas}</strong></div>
-    <div class="metric"><span>Mesa</span><strong>${caixa.mesas}</strong></div>
-    <div class="metric"><span>Taxas entrega</span><strong>${moeda(caixa.taxasEntrega)}</strong></div>
-  </section>
+    <section class="meta">
+      <div><span>Caixa</span><strong>${escapar(caixa.id)}</strong></div>
+      <div><span>Periodo</span><strong>${periodo}</strong></div>
+      <div><span>Responsavel</span><strong>${escapar(caixa.fechadoPorNome || caixa.abertoPorNome || "-")}</strong></div>
+    </section>
 
-  <h2>Formas de pagamento</h2>
-  <table><thead><tr><th>Forma</th><th>Pedidos</th><th>Total</th></tr></thead><tbody>${linhasTabela(caixa.pagamentos)}</tbody></table>
+    <main>
+      <section class="grid">
+        <div class="metric green"><span>Pedidos entregues</span><strong>${caixa.pedidos}</strong></div>
+        <div class="metric money"><span>Faturamento</span><strong>${moeda(caixa.faturamento)}</strong></div>
+        <div class="metric money"><span>Ticket medio</span><strong>${moeda(caixa.ticketMedio)}</strong></div>
+        <div class="metric danger"><span>Cancelados</span><strong>${caixa.cancelados}</strong></div>
+        <div class="metric"><span>Entregas</span><strong>${caixa.entregas}</strong></div>
+        <div class="metric"><span>Retiradas</span><strong>${caixa.retiradas}</strong></div>
+        <div class="metric"><span>Mesas</span><strong>${caixa.mesas}</strong></div>
+        <div class="metric money"><span>Taxas de entrega</span><strong>${moeda(caixa.taxasEntrega)}</strong></div>
+      </section>
 
-  <h2>Canais de venda</h2>
-  <table><thead><tr><th>Canal</th><th>Pedidos</th><th>Total</th></tr></thead><tbody>${linhasTabela(caixa.canais)}</tbody></table>
+      <section class="tables">
+        <div class="table-card">
+          <div class="section-title"><h2>Formas de pagamento</h2><span>${caixa.pedidos} pedidos</span></div>
+          <table><thead><tr><th>Forma</th><th class="num">Pedidos</th><th class="num">Total</th></tr></thead><tbody>${linhasTabela(caixa.pagamentos)}</tbody></table>
+        </div>
 
-  <h2>Modalidades</h2>
-  <table><thead><tr><th>Tipo</th><th>Pedidos</th><th>Total</th></tr></thead><tbody>${linhasTabela(caixa.modalidades)}</tbody></table>
+        <div class="table-card">
+          <div class="section-title"><h2>Canais de venda</h2><span>${moeda(caixa.faturamento)}</span></div>
+          <table><thead><tr><th>Canal</th><th class="num">Pedidos</th><th class="num">Total</th></tr></thead><tbody>${linhasTabela(caixa.canais)}</tbody></table>
+        </div>
 
-  ${caixa.observacao ? `<h2>Observacao</h2><p>${escapar(caixa.observacao)}</p>` : ""}
-  <footer>Desenvolvido pela Nexo Developer</footer>
+        <div class="table-card full">
+          <div class="section-title"><h2>Retirada, entrega e mesa</h2><span>operacao</span></div>
+          <table><thead><tr><th>Tipo</th><th class="num">Pedidos</th><th class="num">Total</th></tr></thead><tbody>${linhasTabela(caixa.modalidades)}</tbody></table>
+        </div>
+      </section>
+
+      ${caixa.observacao ? `<section class="obs"><strong>Observacao do fechamento:</strong> ${escapar(caixa.observacao)}</section>` : ""}
+    </main>
+
+    <footer>
+      <span>Aberto por ${escapar(caixa.abertoPorNome || "-")} | Fechado por ${escapar(caixa.fechadoPorNome || "-")}</span>
+      <span>Desenvolvido pela <a href="https://portfolio-nexo.netlify.app/">Nexo Developer</a></span>
+    </footer>
+  </div>
 </body>
 </html>`;
 }

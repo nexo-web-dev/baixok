@@ -3,6 +3,7 @@
 /* â€” sistema interno: shell + sidebar â€” */
 .side-nav {
   position: sticky; top: 0; z-index: 20; display: flex; flex-direction: column; gap: 12px;
+  min-height: 0;
   padding: 14px clamp(14px, 4vw, 32px); background: rgba(22,18,16,.94); backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--line-soft);
 }
@@ -519,11 +520,25 @@ button[disabled] { opacity: .55; cursor: progress; }
   body[data-page="admin"] { display: flex; align-items: flex-start; }
   .side-nav {
     flex: none; width: 224px; height: 100vh; padding: 22px 16px 18px; gap: 0;
+    overflow: hidden;
     background: var(--sidebar); backdrop-filter: none;
     border-right: 1px solid var(--line-soft); border-bottom: 0;
   }
-  .nav-list { display: grid; gap: 5px; margin-top: 26px; overflow: visible; }
-  .nav-foot { display: grid; gap: 8px; margin-top: auto; }
+  .nav-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: grid;
+    align-content: start;
+    gap: 5px;
+    margin-top: 26px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px;
+    padding-bottom: 10px;
+  }
+  .nav-list::-webkit-scrollbar { width: 6px; }
+  .nav-list::-webkit-scrollbar-thumb { background: rgba(217,154,104,.25); border: 0; }
+  .nav-foot { flex: none; display: grid; gap: 8px; margin-top: 12px; }
   .admin-app { padding: 26px 32px 40px; }
 }
 

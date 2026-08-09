@@ -248,7 +248,10 @@ export const pedidosRepo = {
    *
    * Os `::int` nos COUNT e SUM de inteiro nao sao decoracao: no Postgres eles
    * devolvem BIGINT, que chegaria como numero grande e, em SUM de quantidade,
-   * como valor que o front trata como texto na hora de somar. */
+   * como valor que o front trata como texto na hora de somar.
+   *
+   * So pedido entregue entra no caixa: novo/preparo/pronto ainda podem mudar,
+   * entao nao podem inflar dashboard, fechamento ou exportacao. */
   async resumoPeriodo({ desde, ate, canal = null }) {
     return await um(`
       SELECT COUNT(*)::int AS pedidos,
@@ -258,7 +261,7 @@ export const pedidosRepo = {
              COALESCE(SUM(taxa_entrega), 0) AS taxas_entrega
         FROM pedidos
        WHERE criado_em >= ?::timestamptz AND criado_em <= ?::timestamptz
-         AND status <> 'cancelado'
+         AND status = 'entregue'
          AND (?::text IS NULL OR canal = ?::text)
     `, [desde, ate, canal, canal]);
   },
@@ -271,7 +274,7 @@ export const pedidosRepo = {
              COUNT(*)::int AS pedidos,
              COALESCE(SUM(total), 0) AS faturamento
         FROM pedidos
-       WHERE criado_em >= ?::timestamptz AND criado_em <= ?::timestamptz AND status <> 'cancelado'
+       WHERE criado_em >= ?::timestamptz AND criado_em <= ?::timestamptz AND status = 'entregue'
          AND (?::text IS NULL OR canal = ?::text)
        GROUP BY hora ORDER BY hora
     `, [desde, ate, canal, canal]);
@@ -284,7 +287,7 @@ export const pedidosRepo = {
              COUNT(*)::int AS pedidos,
              COALESCE(SUM(total), 0) AS faturamento
         FROM pedidos
-       WHERE criado_em >= ?::timestamptz AND criado_em <= ?::timestamptz AND status <> 'cancelado'
+       WHERE criado_em >= ?::timestamptz AND criado_em <= ?::timestamptz AND status = 'entregue'
          AND (?::text IS NULL OR canal = ?::text)
        GROUP BY rotulo
        ORDER BY data_ordem
@@ -302,7 +305,7 @@ export const pedidosRepo = {
     return await todos(`
       SELECT ${campo} AS rotulo, COUNT(*)::int AS pedidos, COALESCE(SUM(total), 0) AS faturamento
         FROM pedidos
-       WHERE criado_em >= ?::timestamptz AND criado_em <= ?::timestamptz AND status <> 'cancelado'
+       WHERE criado_em >= ?::timestamptz AND criado_em <= ?::timestamptz AND status = 'entregue'
          AND (?::text IS NULL OR canal = ?::text)
        GROUP BY ${campo} ORDER BY faturamento DESC
     `, [desde, ate, canal, canal]);
@@ -315,7 +318,7 @@ export const pedidosRepo = {
              SUM(i.quantidade * i.preco_unit) AS faturamento
         FROM pedido_itens i
         JOIN pedidos p ON p.id = i.pedido_id
-       WHERE p.criado_em >= ?::timestamptz AND p.criado_em <= ?::timestamptz AND p.status <> 'cancelado'
+       WHERE p.criado_em >= ?::timestamptz AND p.criado_em <= ?::timestamptz AND p.status = 'entregue'
          AND (?::text IS NULL OR p.canal = ?::text)
        GROUP BY i.nome
        ORDER BY quantidade DESC
@@ -330,7 +333,7 @@ export const pedidosRepo = {
              SUM(i.quantidade * i.preco_unit) AS faturamento
         FROM pedido_itens i
         JOIN pedidos p ON p.id = i.pedido_id
-       WHERE p.criado_em >= ?::timestamptz AND p.criado_em <= ?::timestamptz AND p.status <> 'cancelado'
+       WHERE p.criado_em >= ?::timestamptz AND p.criado_em <= ?::timestamptz AND p.status = 'entregue'
          AND (?::text IS NULL OR p.canal = ?::text)
        GROUP BY i.nome
        ORDER BY quantidade ASC, faturamento ASC, rotulo ASC

@@ -11,23 +11,29 @@ const ABAS_PADRAO_VER = Object.freeze({
   admin: ["pedidos", "motoboy", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "fechamentos", "plano", "usuarios"],
   caixa: ["pedidos", "motoboy", "mesas", "estoque", "dashboard", "fechamentos"],
   cozinha: ["pedidos"],
-  entregador: ["pedidos"]
+  entregador: ["pedidos", "motoboy"]
 });
 
 const ABAS_PADRAO_EDITAR = Object.freeze({
   admin: ["pedidos", "motoboy", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "fechamentos", "plano", "usuarios"],
   caixa: ["pedidos", "motoboy", "mesas", "estoque"],
   cozinha: [],
-  entregador: ["pedidos"]
+  entregador: ["pedidos", "motoboy"]
 });
 
 function listaAbas(usuario, modo = "ver") {
   const chave = modo === "editar" ? "abasEditar" : "abasVer";
   const abas = usuario?.[chave];
-  if (Array.isArray(abas) && abas.length) return abas;
-  return modo === "editar"
+  const padrao = modo === "editar"
     ? ABAS_PADRAO_EDITAR[usuario?.papel] || []
     : ABAS_PADRAO_VER[usuario?.papel] || [];
+  if (usuario?.papel === "admin") return padrao;
+  if (!Array.isArray(abas) || !abas.length) return padrao;
+
+  /* Usuarios antigos ficam com a lista salva no banco. Caixa/entregador precisam
+   * receber abas operacionais novas sem recriar conta ou mexer no Supabase. */
+  if (["caixa", "entregador"].includes(usuario?.papel)) return [...new Set([...abas, ...padrao])];
+  return abas;
 }
 
 /* Popula req.sessao quando ha cookie valido, e segue adiante de qualquer jeito.
