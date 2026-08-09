@@ -6,7 +6,7 @@
  * todo cliente passava a carregar isso. */
 import { el, render, $, delegar } from "../../../utils/dom.js";
 import { reais, paraNumero } from "../../../utils/formato.js";
-import { CATEGORIAS_ROTULO } from "../../../utils/categorias.js";
+import { rotuloCategoria } from "../../../utils/categorias.js";
 import { apiProdutos } from "../../../services/api.js";
 import { estado, carregar, promocaoDoProduto } from "../store.js";
 import { toast, toastFalha } from "../../../components/toast.js";
@@ -22,7 +22,16 @@ const LADO_MAXIMO = 900;
 const QUALIDADE = 0.82;
 let filtroCategoria = "todos";
 
-const categoriasFiltro = () => ({ todos: "Todos", ...CATEGORIAS_ROTULO });
+function categoriasDosProdutos() {
+  const mapa = new Map();
+  for (const produto of estado.produtos || []) {
+    const categoria = String(produto.category || "").trim();
+    if (categoria && !mapa.has(categoria)) mapa.set(categoria, rotuloCategoria(categoria));
+  }
+  return mapa;
+}
+
+const categoriasFiltro = () => new Map([["todos", "Todos"], ...categoriasDosProdutos()]);
 const normalizarImagem = valor => String(valor || "").trim().replace(/^\/images\//, "images/");
 
 /* Redimensiona e recomprime no proprio navegador antes de enviar. */
@@ -80,7 +89,7 @@ function cardProduto(produto) {
       ),
       el("p", {}, produto.description || "Sem descricao cadastrada."),
       el("div.admin-product-meta", {},
-        el("span", {}, CATEGORIAS_ROTULO[produto.category] || produto.category),
+        el("span", {}, rotuloCategoria(produto.category)),
         el("span.price", {},
           promocao ? el("s", {}, reais(produto.price)) : null,
           promocao ? " " : null,
@@ -104,7 +113,7 @@ function desenharFiltrosProdutos() {
   const alvo = $("#product-category-filters");
   if (!alvo) return;
 
-  render(alvo, ...Object.entries(categoriasFiltro()).map(([categoria, rotulo]) =>
+  render(alvo, ...Array.from(categoriasFiltro()).map(([categoria, rotulo]) =>
     el("button.filter", {
       type: "button",
       class: filtroCategoria === categoria ? "active" : "",
@@ -119,15 +128,19 @@ function produtosFiltrados() {
 }
 
 function produtosAgrupados(produtos) {
-  return Object.keys(CATEGORIAS_ROTULO)
-    .map(categoria => [categoria, produtos.filter(produto => produto.category === categoria)])
-    .filter(([, itens]) => itens.length);
+  const grupos = new Map();
+  for (const produto of produtos) {
+    const categoria = String(produto.category || "Sem categoria").trim();
+    if (!grupos.has(categoria)) grupos.set(categoria, []);
+    grupos.get(categoria).push(produto);
+  }
+  return Array.from(grupos);
 }
 
 function grupoCategoria(categoria, produtos) {
   return el("section.product-category-group", {},
     el("header", {},
-      el("h3", {}, CATEGORIAS_ROTULO[categoria] || categoria),
+      el("h3", {}, rotuloCategoria(categoria)),
       el("span", {}, `${produtos.length} ${produtos.length === 1 ? "item" : "itens"}`)
     ),
     el("div.product-category-list", {}, ...produtos.map(cardProduto))
@@ -138,6 +151,9 @@ export function desenharProdutos() {
   const alvo = $("#product-admin-list");
   if (!alvo) return;
 
+  if (filtroCategoria !== "todos" && !estado.produtos.some(produto => produto.category === filtroCategoria)) {
+    filtroCategoria = "todos";
+  }
   desenharFiltrosProdutos();
   const produtos = produtosFiltrados();
 
@@ -154,6 +170,13 @@ export function desenharProdutos() {
       })
     ));
   }
+
+  const categorias = $("#product-category-options");
+  if (categorias) {
+    render(categorias, ...Array.from(categoriasDosProdutos()).map(([categoria, rotulo]) =>
+      el("option", { value: categoria }, rotulo)
+    ));
+  }
 }
 
 function limparFormulario() {
@@ -163,7 +186,7 @@ function limparFormulario() {
   $("#product-price").value = "";
   $("#product-stock").value = "";
   $("#product-order").value = "";
-  $("#product-category").value = "pizzas";
+  $("#product-category").value = "";
   $("#product-image").value = "";
   $("#product-active").checked = true;
   $("#product-form-title").textContent = "Novo produto";
@@ -197,7 +220,7 @@ async function salvar(evento) {
   const corpo = {
     name: $("#product-name").value.trim(),
     description: $("#product-description").value.trim(),
-    category: $("#product-category").value,
+    category: $("#product-category").value.trim(),
     price: paraNumero($("#product-price").value),
     stock: Math.max(0, Math.floor(paraNumero($("#product-stock").value))),
     minStock: estado.produtos.find(item => item.id === id)?.minStock ?? 4,

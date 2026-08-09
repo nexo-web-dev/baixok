@@ -13,6 +13,12 @@ export const CATEGORIAS_ROTULO = Object.freeze({
   porcoes: "Porcoes"
 });
 
+export function rotuloCategoria(categoria) {
+  const valor = String(categoria || "").trim();
+  if (!valor) return "Sem categoria";
+  return CATEGORIAS_ROTULO[valor] || valor;
+}
+
 export const CANAIS_ROTULO = Object.freeze({
   cardapio: "Cardapio",
   loja: "Loja",

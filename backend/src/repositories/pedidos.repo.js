@@ -24,6 +24,7 @@ const paraApi = (linha, itens = []) => linha && ({
   phone: linha.telefone,
   place: linha.local,
   note: linha.observacao,
+  cancelReason: linha.motivo_cancelamento || "",
   payment: linha.pagamento,
   trocoPara: linha.troco_para,
   tableNumber: linha.mesa_n,
@@ -156,14 +157,14 @@ export const pedidosRepo = {
   async inserir(pedido) {
     await alteradas(`
       INSERT INTO pedidos (
-        id, criado_em, status, canal, modalidade, cliente, telefone, local, observacao,
+        id, criado_em, status, canal, modalidade, cliente, telefone, local, observacao, motivo_cancelamento,
         pagamento, troco_para, mesa_n, subtotal, desconto, cupom_code, taxa_entrega, entrega_km,
         entrega_faixa, total, motoboy, impresso, estoque_baixado, criado_por
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       pedido.id, pedido.createdAt, pedido.status, pedido.channel, pedido.fulfillment,
-      pedido.customer, pedido.phone, pedido.place, pedido.note, pedido.payment, pedido.trocoPara ?? null,
-      pedido.tableNumber ?? null, pedido.subtotal, pedido.discount, pedido.coupon,
+      pedido.customer, pedido.phone, pedido.place, pedido.note, pedido.cancelReason || "",
+      pedido.payment, pedido.trocoPara ?? null, pedido.tableNumber ?? null, pedido.subtotal, pedido.discount, pedido.coupon,
       pedido.deliveryFee, pedido.deliveryKm ?? null, pedido.deliveryZone ?? null,
       pedido.total, pedido.motoboy || "", paraBanco(pedido.printed), paraBanco(pedido.stockDeducted),
       pedido.createdBy ?? null
@@ -188,6 +189,25 @@ export const pedidosRepo = {
   async atualizarStatus(id, status) {
     await alteradas("UPDATE pedidos SET status = ?, atualizado_em = now() WHERE id = ?", [status, id]);
     return this.buscar(id);
+  },
+
+  async cancelar(id, motivo) {
+    await alteradas(
+      "UPDATE pedidos SET status = 'cancelado', motivo_cancelamento = ?, atualizado_em = now() WHERE id = ?",
+      [motivo, id]
+    );
+    return this.buscar(id);
+  },
+
+  async resumoCancelados({ desde, ate, canal = null }) {
+    return await um(`
+      SELECT COUNT(*)::int AS pedidos,
+             COALESCE(SUM(total), 0) AS valor
+        FROM pedidos
+       WHERE criado_em >= ?::timestamptz AND criado_em <= ?::timestamptz
+         AND status = 'cancelado'
+         AND (?::text IS NULL OR canal = ?::text)
+    `, [desde, ate, canal, canal]);
   },
 
   async definirMotoboy(id, motoboy) {

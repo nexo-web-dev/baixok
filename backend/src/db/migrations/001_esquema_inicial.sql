@@ -52,7 +52,7 @@ CREATE INDEX idx_auditoria_entidade ON auditoria(entidade, entidade_id);
 CREATE TABLE produtos (
   id            TEXT    PRIMARY KEY,
   nome          TEXT    NOT NULL,
-  categoria     TEXT    NOT NULL CHECK (categoria IN ('pizzas', 'burgues', 'massas', 'drinks', 'porcoes')),
+  categoria     TEXT    NOT NULL,
   preco         REAL    NOT NULL CHECK (preco >= 0),
   estoque       INTEGER NOT NULL DEFAULT 0 CHECK (estoque >= 0),
   estoque_min   INTEGER NOT NULL DEFAULT 4 CHECK (estoque_min >= 0),
@@ -121,6 +121,7 @@ CREATE TABLE pedidos (
   telefone       TEXT    NOT NULL DEFAULT '',
   local          TEXT    NOT NULL DEFAULT '',
   observacao     TEXT    NOT NULL DEFAULT '',
+  motivo_cancelamento TEXT NOT NULL DEFAULT '',
   pagamento      TEXT    NOT NULL DEFAULT '',
   mesa_n         INTEGER REFERENCES mesas(n) ON DELETE SET NULL,
   subtotal       REAL    NOT NULL DEFAULT 0,

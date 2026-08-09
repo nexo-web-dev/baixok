@@ -1,0 +1,2 @@
+-- Referencia SQLite: a pasta raiz de migrations nao e mais executada.
+-- Em Postgres, a coluna e criada por migrations/postgres/009_motivo_cancelamento.sql.

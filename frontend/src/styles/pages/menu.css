@@ -21,7 +21,9 @@
   position: relative; z-index: 1; align-self: end; justify-self: end; display: grid; gap: 4px;
   width: max-content; max-width: 100%; padding: 14px 16px; border-radius: var(--radius-sm);
   background: rgba(20,16,13,.7); border: 1px solid rgba(217,154,104,.28); box-shadow: var(--shadow-md); backdrop-filter: blur(10px);
+  text-decoration: none; transition: transform .16s ease, border-color .16s ease, background .16s ease;
 }
+.venue-card:hover { transform: translateY(-2px); border-color: rgba(217,154,104,.5); background: rgba(34,26,20,.82); }
 .venue-card span { color: var(--muted); font-size: .86rem; font-weight: 700; }
 .venue-card strong { color: var(--gold); font-size: 1rem; line-height: 1.3; }
 

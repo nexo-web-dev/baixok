@@ -197,9 +197,13 @@ async function iniciar() {
   await carregar(...areasIniciais(sessao.usuario));
   desenharMetricas();
 
-  /* Aba da URL, se o papel permitir; senao a inicial daquele papel. */
+  /* Admin sempre volta para Produtos ao entrar. Para os outros papeis, a URL
+   * ainda ajuda tablets de operacao a recarregar na aba em uso. */
   const daUrl = location.hash.slice(1);
-  await abrirAba(podeVer(daUrl, sessao.usuario) ? daUrl : abaInicial(sessao.usuario));
+  const chaveInicial = sessao.usuario.papel === "admin"
+    ? abaInicial(sessao.usuario)
+    : podeVer(daUrl, sessao.usuario) ? daUrl : abaInicial(sessao.usuario);
+  await abrirAba(chaveInicial);
 
   conectarEventos({
     canal: "operacao",

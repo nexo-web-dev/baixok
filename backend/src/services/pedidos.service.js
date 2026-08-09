@@ -286,7 +286,7 @@ export const pedidosService = {
         }
         await pedidosRepo.marcarEstoqueDevolvido(id);
       }
-      return pedidosRepo.atualizarStatus(id, "cancelado");
+      return pedidosRepo.cancelar(id, textoMotivo);
     });
 
     await auditoriaRepo.registrar({

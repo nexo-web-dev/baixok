@@ -85,19 +85,33 @@ function vendaLinha(pedido) {
       el("strong", {}, pedido.customer || "Cliente sem nome"),
       el("span", {}, `${horaCurta(pedido.createdAt)} | ${CANAIS_ROTULO[pedido.channel] || pedido.channel || "-"} | ${pedido.fulfillment || "-"}`),
       pedido.fulfillment === "entrega" && pedido.motoboy ? el("span", {}, `Motoboy: ${pedido.motoboy}`) : null,
+      cancelado && pedido.cancelReason ? el("span.danger-text", {}, `Motivo: ${pedido.cancelReason}`) : null,
       el("em", {}, pedido.items.map(item => `${item.qty}x ${item.name}`).join(" | ") || "Sem itens")
     ),
     el("div.sale-side", {},
       el("strong", {}, reais(pedido.total || 0)),
       el("span", { class: cancelado ? "danger-text" : "" }, cancelado ? "Cancelado" : pedido.payment || "Pagamento nao informado"),
+      el("button.secondary.small", { type: "button", dataset: { action: "details-sale" } }, "Detalhes"),
       !cancelado
         ? el("button.secondary.small", { type: "button", dataset: { action: "reprint-sale" } }, "Reimprimir")
         : null,
       cancelado
         ? null
         : el("button.secondary.small", { type: "button", dataset: { action: "cancel-sale" } }, "Cancelar")
+    ),
+    el("div.sale-detail.hidden", {},
+      el("strong", {}, "Detalhes do pedido"),
+      el("span", {}, `Telefone: ${pedido.phone || "-"}`),
+      el("span", {}, `Endereco/local: ${pedido.place || "-"}`),
+      pedido.note ? el("span", {}, `Obs.: ${pedido.note}`) : null,
+      pedido.cancelReason ? el("span.danger-text", {}, `Motivo do cancelamento: ${pedido.cancelReason}`) : null,
+      pedido.motoboy ? el("span", {}, `Motoboy: ${pedido.motoboy}`) : null
     )
   );
+}
+
+function canceladoLinha(pedido) {
+  return vendaLinha(pedido);
 }
 
 export async function desenharDashboard() {
@@ -110,7 +124,7 @@ export async function desenharDashboard() {
 
   const {
     resumo, porHora, porDia = [], porCanal, porPagamento, porModalidade = [],
-    maisVendidos, menosVendidos = [], estoqueBaixo, periodo, vendas = []
+    maisVendidos, menosVendidos = [], estoqueBaixo, periodo, vendas = [], cancelados = []
   } = ultimoRelatorio;
   const pagamentoTop = primeiro(porPagamento);
   const plataformaTop = primeiro(porCanal);
@@ -125,6 +139,8 @@ export async function desenharDashboard() {
     metrica("Pagamento lider", pagamentoTop ? pagamentoTop.rotulo || "nao informado" : "Sem dados", pagamentoTop ? reais(pagamentoTop.faturamento) : null),
     metrica("Entrega x loja", `${modalidades.entrega} / ${modalidades.loja}`, "entrega / loja"),
     metrica("Plataforma lider", plataformaTop ? CANAIS_ROTULO[plataformaTop.rotulo] || plataformaTop.rotulo : "Sem dados", plataformaTop ? reais(plataformaTop.faturamento) : null),
+    metrica("Cancelados", String(resumo.cancelados || 0), (resumo.valorCancelado || 0) ? `valor ${reais(resumo.valorCancelado)}` : "nenhum no periodo",
+      (resumo.cancelados || 0) ? "alert-danger" : ""),
     metrica("Descontos", reais(resumo.descontos), resumo.taxasEntrega ? `taxas entrega ${reais(resumo.taxasEntrega)}` : null),
     metrica("Estoque critico", String(estoqueBaixo.length), estoqueBaixo.length ? "itens no minimo" : "tudo certo",
       estoqueBaixo.length ? "alert-copper" : "")
@@ -192,6 +208,10 @@ export async function desenharDashboard() {
   render($("#dashboard-sales"), vendas.length
     ? vendas.map(vendaLinha)
     : el("p.faint.pad", {}, "Nenhuma venda neste periodo."));
+
+  render($("#dashboard-canceled"), cancelados.length
+    ? cancelados.map(canceladoLinha)
+    : el("p.faint.pad", {}, "Nenhum pedido cancelado neste periodo."));
 }
 
 /* Exportacao em CSV com separador ponto-e-virgula e BOM: e o que o Excel em
@@ -201,7 +221,7 @@ function exportarPlanilha() {
 
   apiRelatorios.exportar(parametrosDashboard())
     .then(({ linhas, periodo }) => {
-      const colunas = ["id", "data", "status", "canal", "modalidade", "cliente", "telefone", "endereco", "motoboy", "pagamento", "itens", "subtotal", "desconto", "taxaEntrega", "total"];
+      const colunas = ["id", "data", "status", "canal", "modalidade", "cliente", "telefone", "endereco", "motivoCancelamento", "motoboy", "pagamento", "itens", "subtotal", "desconto", "taxaEntrega", "total"];
       const escapar = valor => `"${String(valor ?? "").replace(/"/g, '""')}"`;
 
       const csv = [
@@ -292,4 +312,11 @@ export function ligarDashboard() {
       botao.disabled = false;
     }
   });
+
+  const alternarDetalhes = (_evento, botao) => {
+    const detalhe = botao.closest(".sale-row")?.querySelector(".sale-detail");
+    detalhe?.classList.toggle("hidden");
+  };
+  delegar($("#dashboard-sales"), "click", "[data-action='details-sale']", alternarDetalhes);
+  delegar($("#dashboard-canceled"), "click", "[data-action='details-sale']", alternarDetalhes);
 }

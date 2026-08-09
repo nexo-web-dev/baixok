@@ -43,8 +43,11 @@ async function carregarCardapio() {
 }
 
 function redesenhar() {
+  if (estado.categoria !== "todos" && !estado.produtos.some(produto => produto.category === estado.categoria)) {
+    estado.categoria = "todos";
+  }
   desenharDestaques(estado.produtos);
-  desenharFiltros(estado.categoria);
+  desenharFiltros(estado.produtos, estado.categoria);
   desenharGrade(estado.produtos, { categoria: estado.categoria, busca: estado.busca });
   return desenharCarrinho({
     produtosPorId: estado.produtosPorId,
@@ -57,7 +60,7 @@ function redesenhar() {
 // ------------------------------------------------------------ interacoes ---
 function definirCategoria(categoria) {
   estado.categoria = categoria;
-  desenharFiltros(categoria);
+  desenharFiltros(estado.produtos, categoria);
   desenharGrade(estado.produtos, { categoria, busca: estado.busca });
 }
 

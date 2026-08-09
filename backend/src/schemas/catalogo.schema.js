@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CATEGORIAS, TIPOS_CUPOM } from "../config/constants.js";
+import { TIPOS_CUPOM } from "../config/constants.js";
 import { texto, dinheiro, idTexto } from "./comum.schema.js";
 
 /* Imagem: caminho relativo do proprio site ou data URL de imagem.
@@ -21,7 +21,7 @@ const imagemSchema = z
 
 export const produtoSchema = z.object({
   name: texto(80, { obrigatorio: true }),
-  category: z.enum(CATEGORIAS, { message: "Categoria invalida." }),
+  category: texto(60, { obrigatorio: true }),
   price: dinheiro,
   stock: z.coerce.number().int().min(0).max(99999).default(0),
   minStock: z.coerce.number().int().min(0).max(9999).default(4),

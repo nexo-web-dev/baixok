@@ -1,9 +1,16 @@
 /* Vitrine do cardapio: destaques, filtros e grade de produtos. */
 import { el, render, $ } from "../../utils/dom.js";
 import { reais } from "../../utils/formato.js";
-import { CATEGORIAS_ROTULO } from "../../utils/categorias.js";
+import { rotuloCategoria } from "../../utils/categorias.js";
 
-const CATEGORIAS_FILTRO = { todos: "Todos", ...CATEGORIAS_ROTULO };
+function categoriasFiltro(produtos) {
+  const categorias = new Map([["todos", "Todos"]]);
+  for (const produto of produtos || []) {
+    const categoria = String(produto.category || "").trim();
+    if (categoria && !categorias.has(categoria)) categorias.set(categoria, rotuloCategoria(categoria));
+  }
+  return categorias;
+}
 
 /* Sem foto cadastrada mostramos um espaco marcado, nao uma imagem quebrada. */
 function foto(produto, alt = "") {
@@ -25,7 +32,7 @@ function cartaoProduto(produto) {
   const promocional = produto.emPromocao && produto.precoOriginal > produto.price;
 
   return el("article.product", { class: promocional ? "on-sale" : "", dataset: { id: produto.id } },
-    el("span.badge", {}, promocional ? "Promocao" : (produto.badge || CATEGORIAS_ROTULO[produto.category] || "Item")),
+    el("span.badge", {}, promocional ? "Promocao" : (produto.badge || rotuloCategoria(produto.category) || "Item")),
     foto(produto),
     el("div.product-body", {},
       el("strong", {}, produto.name),
@@ -53,9 +60,7 @@ function destaques(produtos) {
   };
 
   juntar(produtos.find(produto => /baixo k|mais pedida|especial/i.test(`${produto.name} ${produto.badge || ""}`)));
-  for (const categoria of ["burgues", "drinks", "pizzas", "massas"]) {
-    juntar(produtos.find(produto => produto.category === categoria));
-  }
+  for (const categoria of ["burgues", "drinks", "pizzas", "massas"]) juntar(produtos.find(produto => produto.category === categoria));
   produtos.forEach(juntar);
   return escolhidos.slice(0, 3);
 }
@@ -68,7 +73,7 @@ export function desenharDestaques(produtos) {
     el("article", { dataset: { acao: "categoria", categoria: produto.category }, role: "button", tabIndex: 0 },
       foto(produto),
       el("div", {},
-        el("span", {}, produto.badge || CATEGORIAS_ROTULO[produto.category] || "Destaque"),
+        el("span", {}, produto.badge || rotuloCategoria(produto.category) || "Destaque"),
         el("strong", {}, produto.name),
         el("em", {}, reais(produto.price))
       )
@@ -76,11 +81,11 @@ export function desenharDestaques(produtos) {
   ));
 }
 
-export function desenharFiltros(categoriaAtual) {
+export function desenharFiltros(produtos, categoriaAtual) {
   const alvo = $("#filters");
   if (!alvo) return;
 
-  render(alvo, ...Object.entries(CATEGORIAS_FILTRO).map(([chave, rotulo]) =>
+  render(alvo, ...Array.from(categoriasFiltro(produtos)).map(([chave, rotulo]) =>
     el("button.filter", {
       type: "button",
       class: categoriaAtual === chave ? "active" : "",

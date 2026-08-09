@@ -1,0 +1,3 @@
+-- Referencia SQLite: a pasta raiz de migrations nao e mais executada.
+-- Em bancos SQLite antigos, a constraint original nao e alteravel sem recriar
+-- a tabela; o ambiente de producao atual usa Postgres.

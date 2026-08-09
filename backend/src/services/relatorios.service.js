@@ -57,10 +57,11 @@ export const relatoriosService = {
      * esperando a outra — o dashboard e a tela mais lenta do painel e nao ha
      * ordem entre elas. */
     const [
-      resumo, emFalta, porHora, porDia, porCanal, porPagamento, porModalidade,
-      maisVendidos, menosVendidos, vendas
+      resumo, canceladosResumo, emFalta, porHora, porDia, porCanal, porPagamento, porModalidade,
+      maisVendidos, menosVendidos, vendas, cancelados
     ] = await Promise.all([
       pedidosRepo.resumoPeriodo(filtro),
+      pedidosRepo.resumoCancelados(filtro),
       produtosRepo.emFalta(),
       pedidosRepo.porHora(filtro),
       pedidosRepo.porDia(filtro),
@@ -69,7 +70,8 @@ export const relatoriosService = {
       pedidosRepo.agruparPor("modalidade", filtro),
       pedidosRepo.maisVendidos({ ...filtro, limite: 10 }),
       pedidosRepo.menosVendidos({ ...filtro, limite: 10 }),
-      pedidosRepo.listar({ ...filtro, limite: 200 })
+      pedidosRepo.listar({ ...filtro, limite: 200 }),
+      pedidosRepo.listar({ ...filtro, status: "cancelado", limite: 100 })
     ]);
 
     return {
@@ -79,7 +81,9 @@ export const relatoriosService = {
         faturamento: Math.round(resumo.faturamento * 100) / 100,
         ticketMedio: Math.round(resumo.ticket_medio * 100) / 100,
         descontos: Math.round(resumo.descontos * 100) / 100,
-        taxasEntrega: Math.round(resumo.taxas_entrega * 100) / 100
+        taxasEntrega: Math.round(resumo.taxas_entrega * 100) / 100,
+        cancelados: canceladosResumo.pedidos,
+        valorCancelado: Math.round(canceladosResumo.valor * 100) / 100
       },
       porHora,
       porDia,
@@ -89,6 +93,7 @@ export const relatoriosService = {
       maisVendidos,
       menosVendidos,
       vendas: vendas.filter(pedido => !canal || pedido.channel === canal),
+      cancelados: cancelados.filter(pedido => !canal || pedido.channel === canal),
       estoqueBaixo: emFalta.map(produto => ({
         id: produto.id, nome: produto.name, estoque: produto.stock, minimo: produto.minStock
       }))
@@ -114,6 +119,7 @@ export const relatoriosService = {
           cliente: pedido.customer,
           telefone: pedido.phone,
           endereco: pedido.place,
+          motivoCancelamento: pedido.cancelReason,
           motoboy: pedido.motoboy,
           pagamento: pedido.payment,
           itens: pedido.items.map(item => `${item.qty}x ${item.name}`).join("; "),

@@ -53,7 +53,11 @@
 
 .panel { padding: 20px 22px; border-radius: var(--radius-md); background: var(--sidebar); border: 1px solid var(--line-soft); }
 .panel h2 { font-size: 1.05rem; }
-.tab-guide { display: grid; gap: 4px; margin-bottom: 14px; padding: 13px 16px; border-radius: var(--radius-sm); border-left: 4px solid var(--copper); background: var(--soft); }
+.tab-guide {
+  display: grid; gap: 4px; max-width: 1180px; margin-bottom: 14px; padding: 14px 18px;
+  border-radius: 18px; border: 1px solid rgba(217,154,104,.18); border-left: 4px solid var(--copper);
+  background: linear-gradient(90deg, rgba(201,116,67,.12), rgba(255,255,255,.02));
+}
 .tab-guide strong { color: var(--gold); font-size: .82rem; text-transform: uppercase; letter-spacing: .03em; }
 .tab-guide p { max-width: 980px; margin: 0; line-height: 1.45; color: var(--muted-2); font-size: .85rem; }
 .tab-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -258,7 +262,7 @@
 .photo-presets img { width: 56px; height: 56px; border-radius: var(--radius-sm); object-fit: cover; cursor: pointer; border: 2.5px solid var(--line); transition: border-color .16s ease; }
 .photo-presets img:hover { border-color: rgba(217,154,104,.6); }
 .photo-upload { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.photo-upload img { width: 40px; height: 40px; border-radius: var(--radius-xs); object-fit: cover; border: 2px solid var(--green); }
+.photo-upload img { width: 40px; height: 40px; border-radius: var(--radius-xs); object-fit: contain; background: var(--soft); border: 2px solid var(--green); }
 .photo-upload .photo-empty { color: var(--faint); font-size: .72rem; }
 .check-field { display: inline-flex; align-items: center; gap: 8px; min-height: 38px; color: var(--muted-2); font-size: .82rem; }
 .check-field input { width: 18px; min-height: 18px; accent-color: var(--copper); }
@@ -349,6 +353,7 @@
 }
 .metric-card strong { color: var(--gold-light); font-family: var(--font-head); font-size: clamp(1.05rem, 1.4vw, 1.35rem); line-height: 1.12; overflow-wrap: anywhere; }
 .metric-card span { color: var(--muted); font-size: .76rem; }
+.metric-card.alert-danger { border-color: rgba(212,127,110,.45); background: linear-gradient(180deg, rgba(212,127,110,.08), rgba(255,255,255,0)), var(--panel); }
 .dashboard-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 14px; align-items: start; }
 .chart-card {
   display: grid; align-content: start; gap: 12px; min-height: 245px; padding: 18px 22px; border-radius: var(--radius-md);
@@ -397,6 +402,12 @@
 .sale-main em { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sale-side { display: grid; justify-items: end; gap: 6px; }
 .sale-side strong { color: var(--gold-light); font-family: var(--font-head); font-size: .95rem; }
+.sale-detail {
+  grid-column: 1 / -1; display: grid; gap: 4px; padding: 10px 12px;
+  border-radius: var(--radius-sm); background: rgba(255,255,255,.03); border: 1px dashed var(--line);
+}
+.sale-detail strong { color: var(--gold); font-size: .78rem; }
+.sale-detail span { color: var(--muted-2); font-size: .76rem; line-height: 1.35; overflow-wrap: anywhere; }
 
 @media (max-width: 1280px) {
   .products-layout { grid-template-columns: 1fr; }

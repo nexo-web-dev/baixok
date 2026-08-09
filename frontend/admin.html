@@ -108,7 +108,7 @@
     <section class="admin-tab hidden" id="tab-produtos">
       <div class="tab-guide">
         <strong>Como usar esta aba</strong>
-        <p>Cadastre e edite o cardapio que o cliente ve. Pausar ou zerar o estoque tira o item do ar na hora, sem apagar o cadastro. Fotos enviadas sao reduzidas automaticamente antes de subir.</p>
+        <p>Cadastre produtos, fotos, categoria e ordem do cardapio. Pausar ou zerar estoque tira o item do ar sem apagar o cadastro.</p>
       </div>
       <div class="products-layout">
         <div class="data-table" id="product-table">
@@ -129,13 +129,8 @@
             <input id="product-stock" type="number" step="1" min="0" required placeholder="Estoque">
           </div>
           <input id="product-order" type="number" step="1" min="1" placeholder="Ordem no cardapio (ex: 1)">
-          <select id="product-category" aria-label="Categoria">
-            <option value="pizzas">Pizzas</option>
-            <option value="burgues">Burgues</option>
-            <option value="massas">Massas</option>
-            <option value="drinks">Drinks</option>
-            <option value="porcoes">Porcoes</option>
-          </select>
+          <input id="product-category" required maxlength="60" list="product-category-options" placeholder="Categoria (ex: Pizzas, Burgues, Combos)">
+          <datalist id="product-category-options"></datalist>
           <div class="photo-block">
             <span class="field-label">Foto do produto</span>
             <div class="photo-presets" id="photo-presets"></div>
@@ -215,7 +210,7 @@
     <section class="admin-tab hidden" id="tab-estoque">
       <div class="tab-guide">
         <strong>Como usar esta aba</strong>
-        <p>Contador por produto para a entrada de mercadoria. Quando um item zera, ele sai do cardapio automaticamente. Cada ajuste fica registrado com quem fez.</p>
+        <p>Controle produtos do cardapio e insumos internos. Produto zerado sai do cardapio automaticamente; cada ajuste fica registrado com quem fez.</p>
       </div>
       <div class="stock-grid" id="stock-grid"></div>
     </section>
@@ -281,6 +276,16 @@
           </div>
         </div>
         <div class="sales-list" id="dashboard-sales"></div>
+      </div>
+
+      <div class="panel all-sales-card">
+        <div class="sales-head">
+          <div>
+            <h2>Pedidos cancelados</h2>
+            <p class="small faint">Cancelamentos ficam fora do faturamento. Aqui aparece quem cancelou, o motivo e os itens para conferencia.</p>
+          </div>
+        </div>
+        <div class="sales-list" id="dashboard-canceled"></div>
       </div>
     </section>
 

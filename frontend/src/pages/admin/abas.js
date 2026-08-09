@@ -105,7 +105,9 @@ function listaPermitida(usuario, tipo) {
 }
 
 export function abaInicial(usuario) {
-  return listaPermitida(usuario, "ver")[0] || "pedidos";
+  const permitidas = listaPermitida(usuario, "ver");
+  if (usuario?.papel === "admin" && permitidas.includes("produtos")) return "produtos";
+  return permitidas[0] || "pedidos";
 }
 
 export function podeVer(aba, usuario) {
