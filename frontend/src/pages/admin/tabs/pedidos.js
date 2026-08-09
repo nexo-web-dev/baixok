@@ -45,6 +45,39 @@ function dadosParaStatus(pedido, status) {
 
 /* A cozinha ve a fila e avanca o preparo, mas nao recusa nem reimprime nota do
  * balcao. A rota tambem barra — isto aqui e para nao oferecer o botao. */
+function trocoResumo(pedido) {
+  if (!String(pedido.payment || "").toLowerCase().includes("dinheiro")) return null;
+  const trocoPara = Number(pedido.trocoPara || 0);
+  if (!trocoPara) return "Pagamento em dinheiro. Conferir troco no balcão.";
+  const troco = Math.max(0, trocoPara - Number(pedido.total || 0));
+  return `Troco para ${reais(trocoPara)} | devolver ${reais(troco)}`;
+}
+
+function rotuloAtalhoStatus(pedido, status) {
+  if (status === "preparo") return pedido.status === "novo" ? "Aprovar" : "Preparo";
+  if (status === "pronto") return pedido.fulfillment === "entrega" ? "A caminho" : "Pronto";
+  if (status === "entregue") return "Entregue";
+  return "Novo";
+}
+
+function atalhosStatus(pedido, papel) {
+  if (papel === "cozinha" || papel === "entregador") return null;
+  const permitidos = colunasDoPapel(papel)
+    .map(([status]) => status)
+    .filter(status => status !== pedido.status);
+  if (!permitidos.length) return null;
+
+  return el("div.status-shortcuts", {},
+    el("span", {}, "Mover no celular"),
+    ...permitidos.map(status =>
+      el("button.ghost.small", {
+        type: "button",
+        dataset: { acao: "status", id: pedido.id, status }
+      }, rotuloAtalhoStatus(pedido, status))
+    )
+  );
+}
+
 function acoes(pedido, papel) {
   const podeOperar = papel === "admin" || papel === "caixa";
 
@@ -76,6 +109,7 @@ function acoes(pedido, papel) {
 
 function cartao(pedido, papel) {
   const espera = minutosDesde(pedido.createdAt);
+  const troco = trocoResumo(pedido);
   const prioridade = pedido.status === "entregue"
     ? "normal"
     : espera >= MINUTOS_ATRASO * 2 ? "urgent" : espera >= MINUTOS_ATRASO ? "attention" : "normal";
@@ -98,6 +132,8 @@ function cartao(pedido, papel) {
     ),
     el("p.order-items-line", {}, pedido.items.map(item => `${item.qty}x ${item.name}`).join("  ·  ")),
     pedido.note ? el("p.order-note", {}, el("strong", {}, "Obs: "), pedido.note) : null,
+    troco ? el("p.order-note.money", {}, el("strong", {}, "Troco: "), troco) : null,
+    pedido.motoboy ? el("p.order-note", {}, el("strong", {}, "Motoboy: "), pedido.motoboy) : null,
     /* Telefone e endereco so para quem opera o balcao. O tablet da cozinha
      * costuma ficar num lugar de passagem. */
     papel === "cozinha"
@@ -106,7 +142,8 @@ function cartao(pedido, papel) {
     pedido.printed
       ? el("div.order-flags", {}, el("span.flag.done", {}, "🖨 Cozinha ✓"), el("span.flag.done", {}, "🖨 Balcão ✓"))
       : null,
-    el("div.order-actions", {}, ...acoes(pedido, papel))
+    el("div.order-actions", {}, ...acoes(pedido, papel)),
+    atalhosStatus(pedido, papel)
   );
 }
 
@@ -153,6 +190,13 @@ async function mudarStatus(id, status) {
     }
     await carregar("pedidos", "produtos");
     desenharPedidos();
+    if (status === "entregue") {
+      toast(`Pedido ${senha(pedido)} entregue${pedido.motoboy ? ` por ${pedido.motoboy}` : ""}.`);
+    } else if (status === "preparo") {
+      toast(`Pedido ${senha(pedido)} aprovado e impresso.`);
+    } else if (status === "pronto") {
+      toast(`Pedido ${senha(pedido)} pronto.`);
+    }
   } catch (erro) {
     toastFalha(erro);
   }

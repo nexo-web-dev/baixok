@@ -1,0 +1,2 @@
+-- Referencia SQLite: a pasta raiz de migrations nao e mais executada.
+-- Em Postgres, multiplos dispositivos de motoboy sao tratados por migrations/postgres/014_motoboy_dispositivos.sql.

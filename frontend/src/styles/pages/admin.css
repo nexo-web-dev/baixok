@@ -168,9 +168,11 @@
 .order-items-line { color: var(--muted-2); font-size: .76rem; line-height: 1.5; }
 .order-note { color: var(--gold); font-size: .73rem; }
 .order-note strong { color: var(--gold); }
+.order-note.money { color: var(--gold-light); }
 .order-place { color: var(--muted); font-size: .7rem; }
 .order-actions { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 3px; }
 .order-flags { display: flex; gap: 5px; flex-wrap: wrap; }
+.status-shortcuts { display: none; }
 .flag { padding: 3px 9px; border-radius: var(--radius-pill); color: var(--muted-2); background: var(--chip); font-size: .66rem; font-weight: 600; }
 .flag.paid { color: var(--green); }
 .flag.done { color: var(--green); background: var(--green-bg); }
@@ -358,6 +360,7 @@
   padding: 14px 16px; border-radius: var(--radius-md); background: var(--panel);
   border: 1.5px solid rgba(143,174,109,.28);
 }
+.location-card.live { border-color: rgba(143,174,109,.58); box-shadow: 0 0 0 1px rgba(143,174,109,.08), 0 14px 34px rgba(143,174,109,.08); }
 .location-card div { display: grid; gap: 3px; min-width: 0; }
 .location-card span { color: var(--green); font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
 .location-card strong { color: var(--ink); overflow-wrap: anywhere; }
@@ -504,6 +507,26 @@
   .admin-product-title strong { font-size: .92rem; line-height: 1.2; }
   .admin-product-main p { font-size: .8rem; }
   .cash-status { width: 100%; margin-right: 0; justify-content: center; }
+  .status-shortcuts {
+    display: flex;
+    gap: 7px;
+    flex-wrap: wrap;
+    align-items: center;
+    padding-top: 8px;
+    border-top: 1px solid var(--line-soft);
+  }
+  .status-shortcuts span {
+    flex: 1 0 100%;
+    color: var(--muted);
+    font-size: .68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  .status-shortcuts button {
+    flex: 1 1 auto;
+    min-height: 36px;
+  }
   .user-row, .permission-row, .audit-row, .sale-row, .closing-row { grid-template-columns: 1fr; }
   .permission-group, .sale-side, .closing-side { justify-content: flex-start; justify-items: start; }
   .sale-main em { white-space: normal; }

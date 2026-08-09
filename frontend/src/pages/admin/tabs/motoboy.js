@@ -23,10 +23,12 @@ const ehAdmin = () => estado.usuario?.papel === "admin";
 function deviceId() {
   try {
     const chave = "baixok.motoboy.deviceId";
-    const salvo = sessionStorage.getItem(chave);
+    const salvo = localStorage.getItem(chave);
     if (salvo) return salvo;
-    const novo = crypto.randomUUID ? crypto.randomUUID() : `motoboy-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    sessionStorage.setItem(chave, novo);
+    const novo = globalThis.crypto?.randomUUID
+      ? globalThis.crypto.randomUUID()
+      : `motoboy-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    localStorage.setItem(chave, novo);
     return novo;
   } catch {
     return "principal";
@@ -51,6 +53,14 @@ function minutosDesde(data) {
 
 function mapaUrl(localizacao) {
   return `https://www.google.com/maps?q=${encodeURIComponent(`${localizacao.lat},${localizacao.lng}`)}`;
+}
+
+function trocoResumo(pedido) {
+  if (!String(pedido.payment || "").toLowerCase().includes("dinheiro")) return null;
+  const trocoPara = Number(pedido.trocoPara || 0);
+  if (!trocoPara) return "Pagamento em dinheiro. Conferir troco.";
+  const troco = Math.max(0, trocoPara - Number(pedido.total || 0));
+  return `Troco para ${reais(trocoPara)} | devolver ${reais(troco)}`;
 }
 
 function cartaoLocalizacaoAoVivo(localizacao) {
@@ -175,6 +185,7 @@ function iniciarAtualizacaoLocalizacoesPainel() {
 function cardEntrega(pedido) {
   const entregue = pedido.status === "entregue";
   const podeEditarMotoboy = !pedido.motoboy || ehAdmin();
+  const troco = trocoResumo(pedido);
 
   return el("article.motoboy-card", { class: entregue ? "done" : "", dataset: { id: pedido.id, motoboySalvo: pedido.motoboy || "" } },
     el("div.motoboy-card-head", {},
@@ -192,6 +203,7 @@ function cardEntrega(pedido) {
     ),
     el("p.motoboy-items", {}, pedido.items.map(item => `${item.qty}x ${item.name}`).join(" | ") || "Sem itens"),
     pedido.note ? el("p.order-note", {}, el("strong", {}, "Obs: "), pedido.note) : null,
+    troco ? el("p.order-note.money", {}, el("strong", {}, "Troco: "), troco) : null,
     el("div.motoboy-actions", {},
       el("label", {},
         el("span", {}, "Motoboy"),
