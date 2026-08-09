@@ -39,12 +39,13 @@ function barras(linhas, formatar, vazioMensagem = "Sem dados no periodo.", vazio
     el("div.chart-row", {},
       el("span.chart-label", {}, linha.rotulo),
       el("span.chart-bar", {}, el("i", { style: { width: `${Math.max(3, (linha.valor / maior) * 100)}%` } })),
-      el("span.chart-value", {}, formatar(linha.valor))
+      el("span.chart-value", {}, formatar(linha.valor, linha))
     )
   ));
 }
 
 const primeiro = lista => lista?.[0] || null;
+const dinheiroEPedidos = (valor, linha) => `${reais(valor)} · ${Number(linha.pedidos || 0)} ped.`;
 
 function produtoResumo(produto) {
   return produto ? `${produto.rotulo} (${produto.quantidade}x)` : "Sem venda";
@@ -156,29 +157,45 @@ export async function desenharDashboard() {
   ));
 
   render($("#channel-chart"), barras(
-    porCanal.map(linha => ({ rotulo: CANAIS_ROTULO[linha.rotulo] || linha.rotulo || "-", valor: linha.pedidos })),
-    valor => `${valor} ped.`,
+    porCanal.map(linha => ({
+      rotulo: CANAIS_ROTULO[linha.rotulo] || linha.rotulo || "-",
+      valor: Number(linha.faturamento || 0),
+      pedidos: linha.pedidos
+    })),
+    dinheiroEPedidos,
     "Nenhum canal movimentou neste período.",
     "iFood, 99Food, WhatsApp, loja e cardápio aparecem aqui."
   ));
 
   render($("#payment-chart"), barras(
-    porPagamento.map(linha => ({ rotulo: linha.rotulo || "não informado", valor: linha.pedidos })),
-    valor => `${valor} ped.`,
+    porPagamento.map(linha => ({
+      rotulo: linha.rotulo || "não informado",
+      valor: Number(linha.faturamento || 0),
+      pedidos: linha.pedidos
+    })),
+    dinheiroEPedidos,
     "Sem pagamentos registrados.",
     "A divisão por forma de pagamento vai aparecer neste bloco."
   ));
 
   render($("#fulfillment-chart"), barras(
-    porModalidade.map(linha => ({ rotulo: MODALIDADES_ROTULO[linha.rotulo] || linha.rotulo || "-", valor: linha.pedidos })),
-    valor => `${valor} ped.`,
+    porModalidade.map(linha => ({
+      rotulo: MODALIDADES_ROTULO[linha.rotulo] || linha.rotulo || "-",
+      valor: Number(linha.faturamento || 0),
+      pedidos: linha.pedidos
+    })),
+    dinheiroEPedidos,
     "Sem modalidades registradas.",
     "Mostra quantas entregas, retiradas e mesas saíram."
   ));
 
   render($("#hour-chart"), barras(
-    porHora.map(linha => ({ rotulo: `${linha.hora}h`, valor: linha.pedidos })),
-    valor => `${valor} ped.`,
+    porHora.map(linha => ({
+      rotulo: `${linha.hora}h`,
+      valor: Number(linha.faturamento || 0),
+      pedidos: linha.pedidos
+    })),
+    dinheiroEPedidos,
     "Sem movimento por hora.",
     "Quando o caixa rodar, este gráfico mostra os picos do dia."
   ));

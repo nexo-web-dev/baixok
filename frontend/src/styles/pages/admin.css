@@ -411,6 +411,7 @@
   border: 1.5px solid rgba(143,174,109,.28);
 }
 .location-card.live { border-color: rgba(143,174,109,.58); box-shadow: 0 0 0 1px rgba(143,174,109,.08), 0 14px 34px rgba(143,174,109,.08); }
+.location-card.explain { grid-column: 1 / -1; border-color: rgba(213,151,89,.34); background: rgba(35,25,17,.82); }
 .location-card div { display: grid; gap: 3px; min-width: 0; }
 .location-card span { color: var(--green); font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
 .location-card strong { color: var(--ink); overflow-wrap: anywhere; }
@@ -471,6 +472,7 @@
 .chart-row span { color: var(--muted-2); }
 .chart-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .chart-bar { height: 10px; border-radius: var(--radius-pill); background: rgba(255,255,255,.03); overflow: hidden; box-shadow: inset 0 0 0 1px rgba(255,255,255,.03); }
+.chart-value { color: var(--gold-light) !important; font-weight: 800; text-align: right; white-space: nowrap; }
 .chart-row i { display: block; height: 100%; border-radius: var(--radius-pill); background: linear-gradient(90deg, var(--copper), #f0b47e); }
 .chart-row.sage i { background: #7a8a5e; }
 .chart-row strong { text-align: right; color: var(--gold-light); font-family: var(--font-body); font-weight: 700; }

@@ -131,7 +131,7 @@ function atualizarStatusLoja() {
   mostrar($("#closed-banner"), !aberta);
 
   const badge = document.querySelector(".live-badge");
-  if (badge) badge.textContent = aberta ? "Aberto para pedidos" : "Fechado para pedidos";
+  if (badge) badge.textContent = aberta ? "Aberto para pedidos" : "Estabelecimento fechado";
 
   const botao = $("#send-order");
   if (botao) {
@@ -139,7 +139,7 @@ function atualizarStatusLoja() {
     botao.setAttribute("aria-disabled", String(!aberta));
     botao.textContent = aberta
       ? (sessaoMesa.n ? "Enviar para a cozinha" : "Enviar pedido")
-      : "Loja fechada";
+      : "Estabelecimento fechado";
   }
 
   const quantidade = Number($("#cart-count")?.textContent || 0);
@@ -148,7 +148,7 @@ function atualizarStatusLoja() {
 }
 
 function adicionarAoCarrinho(id) {
-  if (!lojaAberta()) return toast("Loja fechada no momento. O cardápio está disponível só para consulta.");
+  if (!lojaAberta()) return toast("Estabelecimento fechado no momento. O cardápio está disponível só para consulta.");
   const produto = estado.produtosPorId.get(id);
   if (!produto) return toast("Item indisponível.");
   carrinho.adicionar(id);
@@ -182,7 +182,7 @@ function abrirDetalhesProduto(id) {
           type: "button",
           disabled: !lojaAberta(),
           dataset: lojaAberta() ? { acao: "adicionar", id: produto.id } : {}
-        }, lojaAberta() ? "Adicionar ao pedido" : "Loja fechada")
+        }, lojaAberta() ? "Adicionar ao pedido" : "Estabelecimento fechado")
       )
     )
   );
@@ -224,7 +224,7 @@ function montarWhatsapp(pedido) {
 
 async function enviarPedido() {
   const botao = $("#send-order");
-  if (!lojaAberta()) return toast("Loja fechada no momento. Tente novamente quando o caixa abrir.");
+  if (!lojaAberta()) return toast("Estabelecimento fechado no momento. Tente novamente quando o caixa abrir.");
   const linhas = carrinho.linhas();
   if (!linhas.length) return toast("Adicione pelo menos um item.");
 

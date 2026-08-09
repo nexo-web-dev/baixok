@@ -60,7 +60,7 @@ function cartaoProduto(produto, { lojaAberta = true } = {}) {
           type: "button",
           disabled: !lojaAberta,
           dataset: lojaAberta ? { acao: "adicionar", id: produto.id } : {}
-        }, lojaAberta ? "Adicionar" : "Fechado")
+        }, lojaAberta ? "Adicionar" : "Loja fechada")
       )
     )
   );

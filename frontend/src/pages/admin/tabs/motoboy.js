@@ -165,20 +165,34 @@ function trocoResumo(pedido) {
 }
 
 function cartaoLocalizacaoAoVivo(localizacao) {
-  const aparelho = detalheAparelho(localizacao);
+  const nomeEntrega = localizacao.nome || "";
+  const login = localizacao.usuario || "-";
+  const aparelho = localizacao.deviceName || "nao informado pelo navegador";
   const entrega = ultimaEntregaDaLocalizacao(localizacao);
   const precisao = localizacao.accuracy ? ` | precisão ${Math.round(localizacao.accuracy)}m` : "";
   return el("article.location-card", { class: localizacao.online ? "live" : "" },
     el("div", {},
       el("span", {}, localizacao.online ? "Ao vivo" : "Última posição"),
-      el("strong", {}, localizacao.nome || "Motoboy"),
-      aparelho ? el("small", {}, aparelho) : null,
+      el("strong", {}, nomeEntrega || login || "Motoboy"),
+      el("small", {}, `Nome salvo na entrega: ${nomeEntrega || "ainda nao informado"}`),
+      el("small", {}, `Login usado: ${login}`),
+      el("small", {}, `Aparelho detectado: ${aparelho}`),
       el("small", {}, `${minutosDesde(localizacao.updatedAt)}${precisao}`),
       entrega ? el("small.location-order", {},
         `Pedido ${senha(entrega)} entregue por ${entrega.motoboy || localizacao.nome} - ${entrega.customer || "Cliente"}`
       ) : null
     ),
     el("a.secondary.small", { href: mapaUrl(localizacao), target: "_blank", rel: "noopener" }, "Abrir no Google")
+  );
+}
+
+function cartaoExplicacaoLocalizacao() {
+  return el("article.location-card.explain", {},
+    el("div", {},
+      el("span", {}, "Como identificar"),
+      el("strong", {}, "Mesmo login, controle por nome salvo e aparelho"),
+      el("small", {}, "O navegador nao libera o nome real do telefone. O sistema mostra o login usado, o aparelho detectado e o nome digitado quando a entrega e salva.")
+    )
   );
 }
 
@@ -219,7 +233,7 @@ function desenharLocalizacoes() {
 
   render(alvo,
     localizacoes.length
-      ? localizacoes.map(cartaoLocalizacaoAoVivo)
+      ? [cartaoExplicacaoLocalizacao(), ...localizacoes.map(cartaoLocalizacaoAoVivo)]
       : el("article.location-card", { class: "empty" },
           el("div", {},
             el("span", {}, "Localização"),
