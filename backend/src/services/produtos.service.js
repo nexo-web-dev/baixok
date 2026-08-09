@@ -6,6 +6,7 @@ import { naoEncontrado, ErroApp } from "../lib/errors.js";
 import { publicar, CANAL } from "../lib/events.js";
 import { uid } from "../lib/ids.js";
 import { emTransacao } from "../db/postgres.js";
+import { controlaEstoqueCategoria } from "../lib/estoque.js";
 
 const SELO_POR_CATEGORIA = {
   pizzas: "Pizza", burgues: "Burguer", massas: "Massa", drinks: "Drink", porcoes: "Porcao"
@@ -13,7 +14,9 @@ const SELO_POR_CATEGORIA = {
 
 export const produtosService = {
   listar: () => produtosRepo.listar(),
-  emFalta: () => produtosRepo.emFalta(),
+  async emFalta() {
+    return (await produtosRepo.emFalta()).filter(produto => controlaEstoqueCategoria(produto.category));
+  },
 
   /* Cardapio publico: produtos a venda ja com o preco promocional aplicado.
    * O cliente nunca ve estoque_min nem a quantidade exata em estoque — sao
@@ -27,17 +30,20 @@ export const produtosService = {
     ]);
     const promocoes = new Map(promos.map(promo => [promo.productId, promo.price]));
 
-    return produtos.map(produto => ({
-      ...produto,
-      precoOriginal: promocoes.has(produto.id) ? produto.price : null,
-      price: promocoes.get(produto.id) ?? produto.price,
-      emPromocao: promocoes.has(produto.id)
-    }));
+    return produtos
+      .filter(produto => !controlaEstoqueCategoria(produto.category) || produto.stock > 0)
+      .map(({ stock: _stock, ...produto }) => ({
+        ...produto,
+        disponivel: true,
+        precoOriginal: promocoes.has(produto.id) ? produto.price : null,
+        price: promocoes.get(produto.id) ?? produto.price,
+        emPromocao: promocoes.has(produto.id)
+      }));
   },
 
   async buscar(id) {
     const produto = await produtosRepo.buscar(id);
-    if (!produto) throw naoEncontrado("Produto nao encontrado.");
+    if (!produto) throw naoEncontrado("Produto não encontrado.");
     return produto;
   },
 
@@ -80,7 +86,7 @@ export const produtosService = {
   async moverOrdem(id, direction, { usuario, ip }) {
     const produtos = await produtosRepo.listar();
     const indice = produtos.findIndex(produto => produto.id === id);
-    if (indice === -1) throw naoEncontrado("Produto nao encontrado.");
+    if (indice === -1) throw naoEncontrado("Produto não encontrado.");
 
     const destino = direction === "up" ? indice - 1 : indice + 1;
     if (destino < 0 || destino >= produtos.length) return produtos[indice];
@@ -103,7 +109,7 @@ export const produtosService = {
     const produto = await this.buscar(id);
     /* Nao apagamos produto que ja apareceu em pedido: a exclusao levaria junto o
      * historico de vendas. O caminho para tirar do cardapio e desativar. */
-    if (!(await produtosRepo.remover(id))) throw naoEncontrado("Produto nao encontrado.");
+    if (!(await produtosRepo.remover(id))) throw naoEncontrado("Produto não encontrado.");
     await auditoriaRepo.registrar({
       usuarioId: usuario.id, usuario: usuario.usuario, acao: "produto_removido",
       entidade: "produto", entidadeId: id, detalhes: { nome: produto.name }, ip
@@ -144,14 +150,14 @@ export const promocoesService = {
 
   async salvar(dados, { usuario, ip }) {
     const produto = await produtosRepo.buscar(dados.productId);
-    if (!produto) throw naoEncontrado("Produto nao encontrado.");
+    if (!produto) throw naoEncontrado("Produto não encontrado.");
 
     /* Regra que o schema nao consegue expressar: depende do preco cadastrado.
      * O painel antigo checava isso so na tela, entao uma chamada direta a API
      * criava "promocao" mais cara que o preco cheio. */
     if (dados.price >= produto.price) {
       throw new ErroApp(
-        `O preco promocional precisa ser menor que R$ ${produto.price.toFixed(2)}.`,
+        `O preço promocional precisa ser menor que R$ ${produto.price.toFixed(2)}.`,
         422,
         "promocao_invalida"
       );
@@ -168,7 +174,7 @@ export const promocoesService = {
   },
 
   async remover(id, { usuario, ip }) {
-    if (!(await promocoesRepo.remover(id))) throw naoEncontrado("Promocao nao encontrada.");
+    if (!(await promocoesRepo.remover(id))) throw naoEncontrado("Promoção não encontrada.");
     await auditoriaRepo.registrar({
       usuarioId: usuario.id, usuario: usuario.usuario, acao: "promocao_encerrada",
       entidade: "promocao", entidadeId: id, ip

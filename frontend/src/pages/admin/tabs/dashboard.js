@@ -90,7 +90,7 @@ function vendaLinha(pedido) {
     ),
     el("div.sale-side", {},
       el("strong", {}, reais(pedido.total || 0)),
-      el("span", { class: cancelado ? "danger-text" : "" }, cancelado ? "Cancelado" : pedido.payment || "Pagamento nao informado"),
+      el("span", { class: cancelado ? "danger-text" : "" }, cancelado ? "Cancelado" : pedido.payment || "Pagamento não informado"),
       el("button.secondary.small", { type: "button", dataset: { action: "details-sale" } }, "Detalhes"),
       !cancelado
         ? el("button.secondary.small", { type: "button", dataset: { action: "reprint-sale" } }, "Reimprimir")
@@ -102,7 +102,7 @@ function vendaLinha(pedido) {
     el("div.sale-detail.hidden", {},
       el("strong", {}, "Detalhes do pedido"),
       el("span", {}, `Telefone: ${pedido.phone || "-"}`),
-      el("span", {}, `Endereco/local: ${pedido.place || "-"}`),
+      el("span", {}, `Endereço/local: ${pedido.place || "-"}`),
       pedido.note ? el("span", {}, `Obs.: ${pedido.note}`) : null,
       pedido.cancelReason ? el("span.danger-text", {}, `Motivo do cancelamento: ${pedido.cancelReason}`) : null,
       pedido.motoboy ? el("span", {}, `Motoboy: ${pedido.motoboy}`) : null
@@ -134,60 +134,60 @@ export async function desenharDashboard() {
   render($("#dashboard-metrics"),
     metrica("Faturamento", reais(resumo.faturamento), periodo.rotulo),
     metrica("Pedidos", String(resumo.pedidos), "cancelados fora da conta"),
-    metrica("Ticket medio", reais(resumo.ticketMedio), null),
+    metrica("Ticket médio", reais(resumo.ticketMedio), null),
     metrica("Mais vendido", produtoResumo(primeiro(maisVendidos)), primeiro(maisVendidos) ? reais(primeiro(maisVendidos).faturamento) : null),
     metrica("Menos vendido", produtoResumo(primeiro(menosVendidos)), primeiro(menosVendidos) ? reais(primeiro(menosVendidos).faturamento) : null),
-    metrica("Pagamento lider", pagamentoTop ? pagamentoTop.rotulo || "nao informado" : "Sem dados", pagamentoTop ? reais(pagamentoTop.faturamento) : null),
+    metrica("Pagamento líder", pagamentoTop ? pagamentoTop.rotulo || "não informado" : "Sem dados", pagamentoTop ? reais(pagamentoTop.faturamento) : null),
     metrica("Entrega x loja", `${modalidades.entrega} / ${modalidades.loja}`, "entrega / loja"),
-    metrica("Plataforma lider", plataformaTop ? CANAIS_ROTULO[plataformaTop.rotulo] || plataformaTop.rotulo : "Sem dados", plataformaTop ? reais(plataformaTop.faturamento) : null),
-    metrica("Motoboy lider", motoboyTop ? motoboyTop.rotulo : "Sem entrega", motoboyTop ? `${motoboyTop.pedidos} entregas` : null),
-    metrica("Cancelados", String(resumo.cancelados || 0), (resumo.valorCancelado || 0) ? `valor ${reais(resumo.valorCancelado)}` : "nenhum no periodo",
+    metrica("Plataforma líder", plataformaTop ? CANAIS_ROTULO[plataformaTop.rotulo] || plataformaTop.rotulo : "Sem dados", plataformaTop ? reais(plataformaTop.faturamento) : null),
+    metrica("Motoboy líder", motoboyTop ? motoboyTop.rotulo : "Sem entrega", motoboyTop ? `${motoboyTop.pedidos} entregas` : null),
+    metrica("Cancelados", String(resumo.cancelados || 0), (resumo.valorCancelado || 0) ? `valor ${reais(resumo.valorCancelado)}` : "nenhum no período",
       (resumo.cancelados || 0) ? "alert-danger" : ""),
     metrica("Descontos", reais(resumo.descontos), resumo.taxasEntrega ? `taxas entrega ${reais(resumo.taxasEntrega)}` : null),
-    metrica("Estoque critico", String(estoqueBaixo.length), estoqueBaixo.length ? "itens no minimo" : "tudo certo",
+    metrica("Estoque crítico", String(estoqueBaixo.length), estoqueBaixo.length ? "itens no mínimo" : "tudo certo",
       estoqueBaixo.length ? "alert-copper" : "")
   );
 
   render($("#day-chart"), barras(
     porDia.map(linha => ({ rotulo: linha.rotulo, valor: linha.faturamento })),
     reais,
-    "Sem vendas por dia neste periodo.",
-    "Troque para 7 dias ou 30 dias para enxergar a evolucao."
+    "Sem vendas por dia neste período.",
+    "Troque para 7 dias ou 30 dias para enxergar a evolução."
   ));
 
   render($("#channel-chart"), barras(
     porCanal.map(linha => ({ rotulo: CANAIS_ROTULO[linha.rotulo] || linha.rotulo || "-", valor: linha.pedidos })),
     valor => `${valor} ped.`,
-    "Nenhum canal movimentou neste periodo.",
-    "iFood, 99Food, WhatsApp, loja e cardapio aparecem aqui."
+    "Nenhum canal movimentou neste período.",
+    "iFood, 99Food, WhatsApp, loja e cardápio aparecem aqui."
   ));
 
   render($("#payment-chart"), barras(
-    porPagamento.map(linha => ({ rotulo: linha.rotulo || "nao informado", valor: linha.pedidos })),
+    porPagamento.map(linha => ({ rotulo: linha.rotulo || "não informado", valor: linha.pedidos })),
     valor => `${valor} ped.`,
     "Sem pagamentos registrados.",
-    "A divisao por forma de pagamento vai aparecer neste bloco."
+    "A divisão por forma de pagamento vai aparecer neste bloco."
   ));
 
   render($("#fulfillment-chart"), barras(
     porModalidade.map(linha => ({ rotulo: MODALIDADES_ROTULO[linha.rotulo] || linha.rotulo || "-", valor: linha.pedidos })),
     valor => `${valor} ped.`,
     "Sem modalidades registradas.",
-    "Mostra quantas entregas, retiradas e mesas sairam."
+    "Mostra quantas entregas, retiradas e mesas saíram."
   ));
 
   render($("#hour-chart"), barras(
     porHora.map(linha => ({ rotulo: `${linha.hora}h`, valor: linha.pedidos })),
     valor => `${valor} ped.`,
     "Sem movimento por hora.",
-    "Quando o caixa rodar, este grafico mostra os picos do dia."
+    "Quando o caixa rodar, este gráfico mostra os picos do dia."
   ));
 
   render($("#best-items"), barras(
     maisVendidos.map(linha => ({ rotulo: linha.rotulo, valor: linha.quantidade })),
     valor => `${valor}x`,
     "Sem itens vendidos ainda.",
-    "Os produtos mais fortes do periodo entram aqui automaticamente."
+    "Os produtos mais fortes do período entram aqui automaticamente."
   ));
 
   render($("#worst-items"), barras(
@@ -200,7 +200,7 @@ export async function desenharDashboard() {
   render($("#motoboy-chart"), barras(
     porMotoboy.map(linha => ({ rotulo: linha.rotulo, valor: linha.pedidos })),
     valor => `${valor} entregas`,
-    "Nenhuma entrega com motoboy no periodo.",
+    "Nenhuma entrega com motoboy no período.",
     "Quando salvar o nome do motoboy na aba Motoboy, o resumo aparece aqui."
   ));
 
@@ -210,17 +210,17 @@ export async function desenharDashboard() {
         valor => `${valor} un.`
       )
     : estadoVazioGrafico(
-        "Nenhum item no minimo.",
+        "Nenhum item no mínimo.",
         "Quando algo baixar, este bloco vira alerta visual."
       ));
 
   render($("#dashboard-sales"), vendas.length
     ? vendas.map(vendaLinha)
-    : el("p.faint.pad", {}, "Nenhuma venda neste periodo."));
+    : el("p.faint.pad", {}, "Nenhuma venda neste período."));
 
   render($("#dashboard-canceled"), cancelados.length
     ? cancelados.map(canceladoLinha)
-    : el("p.faint.pad", {}, "Nenhum pedido cancelado neste periodo."));
+    : el("p.faint.pad", {}, "Nenhum pedido cancelado neste período."));
 }
 
 /* Exportacao em CSV com separador ponto-e-virgula e BOM: e o que o Excel em
@@ -249,7 +249,7 @@ function exportarPlanilha() {
       link.click();
       URL.revokeObjectURL(url);
     })
-    .catch(erro => toastFalha(erro, "Exportacao"));
+    .catch(erro => toastFalha(erro, "Exportação"));
 }
 
 export function ligarDashboard() {
@@ -283,7 +283,7 @@ export function ligarDashboard() {
   $("#apply-period")?.addEventListener("click", () => {
     const desde = $("#filter-from")?.value || "";
     const ate = $("#filter-to")?.value || "";
-    if (!desde || !ate) return toastFalha(new Error("Escolha data inicial e final."), "Periodo");
+    if (!desde || !ate) return toastFalha(new Error("Escolha data inicial e final."), "Período");
     filtros.periodo = "personalizado";
     filtros.desde = desde;
     filtros.ate = ate;
@@ -294,7 +294,7 @@ export function ligarDashboard() {
   delegar($("#dashboard-sales"), "click", "[data-action='cancel-sale']", async (_evento, botao) => {
     const linha = botao.closest(".sale-row");
     if (!linha) return;
-    const motivo = (prompt("Motivo do cancelamento da venda (obrigatorio):", "") ?? "").trim();
+    const motivo = (prompt("Motivo do cancelamento da venda (obrigatório):", "") ?? "").trim();
     if (!motivo) return toastFalha(new Error("Informe o motivo para cancelar."), "Venda");
     botao.disabled = true;
     try {
@@ -314,9 +314,9 @@ export function ligarDashboard() {
     try {
       const { pedido } = await apiPedidos.buscar(linha.dataset.id);
       imprimirAmbas(pedido);
-      toastOk("Nota enviada para reimpressao.");
+      toastOk("Nota enviada para reimpressão.");
     } catch (erro) {
-      toastFalha(erro, "Reimpressao");
+      toastFalha(erro, "Reimpressão");
     } finally {
       botao.disabled = false;
     }

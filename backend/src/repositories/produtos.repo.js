@@ -43,7 +43,7 @@ export const produtosRepo = {
     const linhas = await todos(`
       SELECT id, nome, categoria, preco, imagem, selo, descricao, estoque, ordem
         FROM produtos
-       WHERE ativo = 1 AND estoque > 0
+       WHERE ativo = 1
        ORDER BY ordem ASC, categoria, nome
     `);
     return linhas.map(linha => ({
@@ -55,6 +55,7 @@ export const produtosRepo = {
       badge: linha.selo,
       description: linha.descricao,
       order: linha.ordem ?? 9999,
+      stock: linha.estoque,
       disponivel: linha.estoque > 0
     }));
   },

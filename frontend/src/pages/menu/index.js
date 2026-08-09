@@ -11,7 +11,9 @@ import { apiPublica } from "../../services/api.js";
 import { conectarEventos } from "../../services/realtime.js";
 import { registrarPwa } from "../../services/pwa.js";
 import { reais, dataHora } from "../../utils/formato.js";
-import { desenharDestaques, desenharFiltros, desenharGrade } from "./catalogo.js";
+import { rotuloCategoria } from "../../utils/categorias.js";
+import { controlaEstoqueCategoria } from "../../utils/estoque.js";
+import { desenharDestaques, desenharFiltros, desenharGrade, foto } from "./catalogo.js";
 import { carrinho, aoMudarCarrinho } from "./carrinho-store.js";
 import {
   desenharCarrinho, aplicarCupom, removerCupom, revalidarCupom,
@@ -49,20 +51,22 @@ function redesenhar() {
   }
   desenharDestaques(estado.produtos);
   desenharFiltros(estado.produtos, estado.categoria);
-  desenharGrade(estado.produtos, { categoria: estado.categoria, busca: estado.busca });
-  return desenharCarrinho({
+  desenharGrade(estado.produtos, { categoria: estado.categoria, busca: estado.busca, lojaAberta: lojaAberta() });
+  const resumo = desenharCarrinho({
     produtosPorId: estado.produtosPorId,
     modalidade: estado.modalidade,
     cotacao: entrega.cotacao,
     modoMesa: Boolean(sessaoMesa.n)
   });
+  atualizarStatusLoja();
+  return resumo;
 }
 
 // ------------------------------------------------------------ interacoes ---
 function definirCategoria(categoria) {
   estado.categoria = categoria;
   desenharFiltros(estado.produtos, categoria);
-  desenharGrade(estado.produtos, { categoria, busca: estado.busca });
+  desenharGrade(estado.produtos, { categoria, busca: estado.busca, lojaAberta: lojaAberta() });
 }
 
 function definirModalidade(modo) {
@@ -92,12 +96,71 @@ function atualizarCampoTroco() {
   if (!mostrarCampo && $("#change-for")) $("#change-for").value = "";
 }
 
+function lojaAberta() {
+  return estado.loja.caixaAberto !== false;
+}
+
+function atualizarStatusLoja() {
+  const aberta = lojaAberta();
+  document.body.classList.toggle("store-closed", !aberta);
+  mostrar($("#closed-banner"), !aberta);
+
+  const badge = document.querySelector(".live-badge");
+  if (badge) badge.textContent = aberta ? "Aberto para pedidos" : "Loja fechada";
+
+  const botao = $("#send-order");
+  if (botao) {
+    botao.disabled = !aberta;
+    botao.textContent = aberta
+      ? (sessaoMesa.n ? "Enviar para a cozinha" : "Enviar pedido")
+      : "Loja fechada";
+  }
+
+  const quantidade = Number($("#cart-count")?.textContent || 0);
+  document.body.classList.toggle("cart-has-items", quantidade > 0);
+  mostrar($("#open-cart"), aberta && quantidade > 0);
+}
+
 function adicionarAoCarrinho(id) {
+  if (!lojaAberta()) return toast("Loja fechada no momento. O cardápio está disponível só para consulta.");
   const produto = estado.produtosPorId.get(id);
   if (!produto) return toast("Item indisponível.");
   carrinho.adicionar(id);
   document.body.classList.add("cart-open");
+  mostrar($("#product-modal"), false);
   toast("Item adicionado ao pedido.");
+}
+
+function abrirDetalhesProduto(id) {
+  const produto = estado.produtosPorId.get(id);
+  const modal = $("#product-modal");
+  const alvo = $("#product-detail");
+  if (!produto || !modal || !alvo) return;
+
+  const promocional = produto.emPromocao && produto.precoOriginal > produto.price;
+  render(alvo,
+    el("div.product-detail", {},
+      el("div.product-detail-media", {}, foto(produto, produto.name)),
+      el("div.product-detail-info", {},
+        el("span.eyebrow", {}, produto.badge || rotuloCategoria(produto.category) || "Item"),
+        el("h2#product-detail-title", {}, produto.name),
+        el("p", {}, produto.description || "Produto do cardápio Baixo K."),
+        el("div.product-detail-price", {},
+          promocional ? el("s", {}, reais(produto.precoOriginal)) : null,
+          el("strong", {}, reais(produto.price))
+        ),
+        controlaEstoqueCategoria(produto.category) && produto.stock != null
+          ? el("span.stock-chip", {}, `${produto.stock} disponíveis`)
+          : null,
+        el("button.primary.wide", {
+          type: "button",
+          disabled: !lojaAberta(),
+          dataset: lojaAberta() ? { acao: "adicionar", id: produto.id } : {}
+        }, lojaAberta() ? "Adicionar ao pedido" : "Loja fechada")
+      )
+    )
+  );
+  mostrar(modal, true);
 }
 
 function ligarRolagemDoCarrinho() {
@@ -135,6 +198,7 @@ function montarWhatsapp(pedido) {
 
 async function enviarPedido() {
   const botao = $("#send-order");
+  if (!lojaAberta()) return toast("Loja fechada no momento. Tente novamente quando o caixa abrir.");
   const linhas = carrinho.linhas();
   if (!linhas.length) return toast("Adicione pelo menos um item.");
 
@@ -148,7 +212,7 @@ async function enviarPedido() {
 
   if (!modoMesa) {
     if (!cliente || !pagamento) return toast("Preencha nome e forma de pagamento.");
-    if (estado.modalidade === "entrega" && !endereco) return toast("Informe o endereco de entrega.");
+    if (estado.modalidade === "entrega" && !endereco) return toast("Informe o endereço de entrega.");
     if (pagamento === "Dinheiro" && !trocoPara) return toast("Informe troco para quanto.");
   }
 
@@ -203,8 +267,7 @@ async function enviarPedido() {
     redesenhar();
   } finally {
     clearTimeout(tempo);
-    botao.disabled = false;
-    botao.textContent = modoMesa ? "Enviar para a cozinha" : "Enviar pedido";
+    atualizarStatusLoja();
   }
 }
 
@@ -245,7 +308,20 @@ async function buscarHistorico() {
 function ligarEventos() {
   /* Um ouvinte por container, com delegacao. Substitui os onclick= que estavam
    * no HTML e permite a CSP sem 'unsafe-inline'. */
-  delegar(document.body, "click", "[data-acao='adicionar']", (_evento, alvo) => adicionarAoCarrinho(alvo.dataset.id));
+  delegar(document.body, "click", "[data-acao='adicionar']", (evento, alvo) => {
+    evento.preventDefault();
+    evento.stopPropagation();
+    adicionarAoCarrinho(alvo.dataset.id);
+  });
+  delegar(document.body, "click", "[data-acao='detalhes-produto']", (evento, alvo) => {
+    if (evento.target.closest("button,a,input,select,textarea")) return;
+    abrirDetalhesProduto(alvo.dataset.id);
+  });
+  delegar(document.body, "keydown", "[data-acao='detalhes-produto']", (evento, alvo) => {
+    if (!["Enter", " "].includes(evento.key)) return;
+    evento.preventDefault();
+    abrirDetalhesProduto(alvo.dataset.id);
+  });
   delegar(document.body, "click", "[data-acao='categoria']", (_evento, alvo) => {
     definirCategoria(alvo.dataset.categoria);
     $("#menu-shell")?.scrollIntoView({ behavior: "smooth" });
@@ -262,7 +338,7 @@ function ligarEventos() {
 
   $("#search")?.addEventListener("input", evento => {
     estado.busca = evento.target.value;
-    desenharGrade(estado.produtos, { categoria: estado.categoria, busca: estado.busca });
+    desenharGrade(estado.produtos, { categoria: estado.categoria, busca: estado.busca, lojaAberta: lojaAberta() });
   });
 
   $("#mode-retirada")?.addEventListener("click", () => definirModalidade("retirada"));
@@ -311,6 +387,10 @@ function ligarEventos() {
   });
   ligarModal(modalHistorico, () => mostrar(modalHistorico, false));
 
+  const modalProduto = $("#product-modal");
+  $("#product-close")?.addEventListener("click", () => mostrar(modalProduto, false));
+  ligarModal(modalProduto, () => mostrar(modalProduto, false));
+
   /* Revalida o cupom quando o carrinho muda: um cupom com pedido minimo deixa
    * de valer se o cliente tirar itens, e o total tem que refletir na hora. */
   let timerCupom = null;
@@ -342,7 +422,7 @@ async function iniciar() {
   conectarEventos({
     canal: "publico",
     aoMudar: async assunto => {
-      if (["produtos", "promocoes", "entrega", "retomada", "desconhecido"].includes(assunto)) {
+      if (["produtos", "promocoes", "entrega", "caixa", "retomada", "desconhecido"].includes(assunto)) {
         await carregarCardapio();
         redesenhar();
       }

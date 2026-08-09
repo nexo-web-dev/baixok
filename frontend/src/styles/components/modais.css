@@ -78,15 +78,27 @@ img.manual-thumb { background: var(--soft); }
 .support-card strong { color: var(--gold); font-size: 1.05rem; }
 
 @media (max-width: 640px) {
-  .modal { place-items: start center; padding-block: max(10px, env(safe-area-inset-top, 0px)) max(10px, env(safe-area-inset-bottom, 0px)); }
+  .modal {
+    place-items: start center;
+    padding-block: max(10px, env(safe-area-inset-top, 0px)) max(10px, env(safe-area-inset-bottom, 0px));
+  }
   .modal-card {
     width: min(100%, calc(100vw - 20px));
     max-height: calc(100dvh - 20px);
     padding: 18px;
     border-radius: 22px;
   }
-  .pay-options { gap: 10px; }
-  .pay-option { padding: 14px; }
+  #payment-modal .modal-card {
+    gap: 9px;
+    padding: 14px;
+  }
+  #payment-modal .modal-card h2 { font-size: 1.05rem; }
+  #payment-modal .modal-card > div > p,
+  #payment-modal .modal-hint { font-size: .72rem; line-height: 1.35; }
+  #payment-modal .pay-options { gap: 7px; }
+  #payment-modal .pay-option { padding: 10px 12px; }
+  #payment-modal .pay-option strong { font-size: .84rem; }
+  #payment-modal .pay-option span { font-size: .72rem; }
   .coupon-input-row { flex-wrap: wrap; }
   .coupon-input-row input { min-width: 0; flex: 1 1 180px; }
 }

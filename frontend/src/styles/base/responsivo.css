@@ -7,6 +7,13 @@
   body[data-page="menu"] .brand strong { font-size: 1rem; }
   body[data-page="menu"] .brand span { font-size: .76rem; }
   body[data-page="menu"] .top-actions .secondary { display: none; }
+  body[data-page="menu"] .closed-banner {
+    display: grid;
+    margin: 8px 20px 0;
+    padding: 12px 14px;
+  }
+  body[data-page="menu"] .closed-banner strong { font-size: .92rem; }
+  body[data-page="menu"] .closed-banner span { font-size: .78rem; }
   body[data-page="menu"] .hero {
     grid-template-columns: 1fr; min-height: 190px; margin: 10px 20px 10px; padding: 18px; border-radius: var(--radius-lg);
     background: linear-gradient(180deg, rgba(16,14,12,0) 20%, rgba(16,14,12,.94) 100%), url("/images/loja-baixo-k-hero.png") center/cover;
@@ -65,7 +72,7 @@
     max-width: 100%;
     gap: 12px;
     margin: 0 0 14px;
-    padding: 0;
+    padding: 0 4px;
     border: 0;
     overflow: visible;
     background: transparent;
@@ -74,11 +81,12 @@
   body[data-page="menu"] .menu-shell .section-head h2 {
     width: 100%;
     max-width: 100%;
-    padding-left: 2px;
+    padding-left: 12px;
     font-size: clamp(1.5rem, 7vw, 2rem);
-    line-height: 1.08;
+    line-height: 1.18;
     overflow: visible;
-    overflow-wrap: normal;
+    overflow-wrap: anywhere;
+    text-wrap: balance;
   }
   body[data-page="menu"] .menu-shell .section-head input { max-width: none; width: 100%; min-width: 0; }
   body[data-page="menu"] .filters {
@@ -135,6 +143,7 @@
     font-size: 0;
   }
   body[data-page="menu"] .product .primary::before { content: "+"; font-size: 1.25rem; font-weight: 800; }
+  body[data-page="menu"] .product .primary:disabled::before { content: "×"; }
   body[data-page="menu"] .cart {
     top: 76px; left: 0; right: 0; bottom: 0; width: auto; height: auto; max-height: calc(100dvh - 76px);
     padding: 14px 14px calc(20px + env(safe-area-inset-bottom, 0px));
@@ -155,14 +164,43 @@
   body[data-page="menu"] .mobile-cart { display: flex; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
   body[data-page="menu"] .nexo-footer {
     margin-top: 22px;
-    padding: 26px 22px calc(118px + env(safe-area-inset-bottom, 0px));
+    padding: 22px 22px calc(40px + env(safe-area-inset-bottom, 0px));
     line-height: 1.45;
   }
+  body[data-page="menu"].cart-has-items .nexo-footer {
+    padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+  }
+  body[data-page="menu"] .product-detail-card {
+    width: min(100%, calc(100vw - 20px));
+    padding: 14px;
+  }
+  body[data-page="menu"] .product-detail {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  body[data-page="menu"] .product-detail-media,
+  body[data-page="menu"] .product-detail-media img,
+  body[data-page="menu"] .product-detail-media .no-photo {
+    min-height: 230px;
+    max-height: 44dvh;
+  }
+  body[data-page="menu"] .product-detail-info {
+    padding: 0;
+  }
+  body[data-page="menu"] .product-detail-info h2 {
+    max-width: calc(100% - 48px);
+    font-size: 1.35rem;
+  }
   body[data-page="menu"][data-mode="mesa"] .shop-layout {
-    padding: 18px max(18px, env(safe-area-inset-right, 0px)) calc(124px + env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px));
+    padding: 14px max(20px, env(safe-area-inset-right, 0px)) calc(76px + env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px));
   }
   body[data-page="menu"][data-mode="mesa"] .menu-shell .section-head {
     margin-bottom: 12px;
+  }
+  body[data-page="menu"][data-mode="mesa"] .menu-shell .section-head h2 {
+    padding-left: 12px;
+    font-size: clamp(1.34rem, 6vw, 1.72rem);
+    line-height: 1.22;
   }
   body[data-page="admin"] {
     width: 100%;
@@ -214,6 +252,9 @@
   }
   body[data-page="admin"] .admin-app {
     padding: 18px 16px calc(34px + env(safe-area-inset-bottom, 0px));
+  }
+  body[data-page="admin"] .tab-actions {
+    overflow-x: visible;
   }
   body[data-page="admin"] .tab-guide {
     margin-top: 0;

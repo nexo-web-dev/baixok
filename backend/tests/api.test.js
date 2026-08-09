@@ -53,6 +53,10 @@ await usuariosService.criar(
   { usuario: "cozinha1", nome: "Cozinha", senha: "senha-cozinha-1234", papel: "cozinha" },
   { usuario: admin, ip: "teste" }
 );
+await usuariosService.criar(
+  { usuario: "entrega1", nome: "Entregador", senha: "senha-entrega-1234", papel: "entregador" },
+  { usuario: admin, ip: "teste" }
+);
 
 const servidor = criarApp().listen(0);
 await new Promise(resolve => servidor.once("listening", resolve));
@@ -102,6 +106,7 @@ async function entrar(usuario, senha) {
 const sessaoAdmin = await entrar("admin", "senha-do-teste-1234");
 const sessaoCaixa = await entrar("caixa1", "senha-do-caixa-1234");
 const sessaoCozinha = await entrar("cozinha1", "senha-cozinha-1234");
+const sessaoEntregador = await entrar("entrega1", "senha-entrega-1234");
 await chamar("/api/painel/caixa/abrir", {
   metodo: "POST",
   sessao: sessaoAdmin,
@@ -165,7 +170,7 @@ test("preco enviado pelo cliente e ignorado", async () => {
 });
 
 test("pedido acima do estoque e recusado e nao deixa baixa pela metade", async () => {
-  const produto = (await produtosRepo.listar()).find(item => item.stock > 0);
+  const produto = (await produtosRepo.listar()).find(item => item.category === "drinks" && item.stock > 0);
   const estoqueAntes = (await produtosRepo.buscar(produto.id)).stock;
 
   const { status, corpo } = await chamar("/api/publico/pedidos", {
@@ -184,7 +189,7 @@ test("pedido acima do estoque e recusado e nao deixa baixa pela metade", async (
 
 test("pedidos simultaneos nao vendem alem do estoque", async () => {
   const produto = await produtosRepo.criar({
-    id: "teste-corrida", name: "Item Escasso", category: "porcoes", price: 10,
+    id: "teste-corrida", name: "Item Escasso", category: "drinks", price: 10,
     stock: 5, minStock: 0, active: true, image: "", badge: "Teste", description: ""
   });
 
@@ -199,6 +204,24 @@ test("pedidos simultaneos nao vendem alem do estoque", async () => {
 
   const aceitos = respostas.filter(resposta => resposta.status === 201).length;
   assert.equal(aceitos, 5, `deveriam passar exatamente 5 pedidos, passaram ${aceitos}`);
+  assert.equal((await produtosRepo.buscar(produto.id)).stock, 0);
+});
+
+test("comida ativa nao depende do estoque operacional", async () => {
+  const produto = await produtosRepo.criar({
+    id: "teste-pizza-sem-estoque", name: "Pizza Sem Estoque Operacional", category: "pizzas", price: 35,
+    stock: 0, minStock: 0, active: true, image: "", badge: "Pizza", description: ""
+  });
+
+  const cardapio = await chamar("/api/publico/cardapio");
+  assert.equal(cardapio.status, 200);
+  assert.ok(cardapio.corpo.produtos.some(item => item.id === produto.id), "comida ativa continua no cardapio");
+
+  const pedido = await chamar("/api/publico/pedidos", {
+    metodo: "POST",
+    corpo: { customer: "Cliente", items: [{ id: produto.id, qty: 2 }], fulfillment: "retirada" }
+  });
+  assert.equal(pedido.status, 201);
   assert.equal((await produtosRepo.buscar(produto.id)).stock, 0);
 });
 
@@ -397,7 +420,7 @@ test("cupom desconhecido nao derruba o pedido, so nao desconta", async () => {
 // =============================================================== auditoria ===
 test("cancelamento devolve estoque uma vez so e fica registrado", async () => {
   const produto = await produtosRepo.criar({
-    id: "teste-cancela", name: "Item Cancelavel", category: "porcoes", price: 20,
+    id: "teste-cancela", name: "Item Cancelavel", category: "drinks", price: 20,
     stock: 10, minStock: 0, active: true, image: "", badge: "Teste", description: ""
   });
 

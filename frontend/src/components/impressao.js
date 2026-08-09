@@ -62,7 +62,7 @@ function corpoDoRecibo(pedido, cozinha) {
   const meta = el("div.meta", {},
     el("p", {}, el("span", {}, "Canal"), el("strong", {}, CANAIS_ROTULO[pedido.channel] || pedido.channel || "")),
     el("p", {}, el("span", {}, "Tipo"), el("strong", {}, MODALIDADES_ROTULO[pedido.fulfillment] || pedido.fulfillment || "")),
-    el("p", {}, el("span", {}, "Horario"), el("strong", {}, horaCurta(pedido.createdAt))),
+    el("p", {}, el("span", {}, "Horário"), el("strong", {}, horaCurta(pedido.createdAt))),
     el("p", {}, el("span", {}, "Local"), el("strong", {}, pedido.place || ""))
   );
   /* Telefone so na via do balcao. A via da cozinha fica pendurada no passe e
@@ -96,7 +96,11 @@ function corpoDoRecibo(pedido, cozinha) {
       totais.append(el("div.line", {}, el("span", {}, "Taxa de entrega"), el("strong", {}, `R$ ${dinheiro(pedido.deliveryFee)}`)));
     }
     if (String(pedido.payment || "").toLowerCase().includes("dinheiro") && Number(pedido.trocoPara || 0) > 0) {
-      totais.append(el("div.line", {}, el("span", {}, "Troco para"), el("strong", {}, `R$ ${dinheiro(pedido.trocoPara)}`)));
+      const troco = Math.max(0, Number(pedido.trocoPara) - Number(pedido.total || 0));
+      totais.append(
+        el("div.line", {}, el("span", {}, "Troco para"), el("strong", {}, `R$ ${dinheiro(pedido.trocoPara)}`)),
+        el("div.line", {}, el("span", {}, "Troco"), el("strong", {}, `R$ ${dinheiro(troco)}`))
+      );
     }
     totais.append(
       el("div.line", {}, el("span", {}, "Total"), el("strong", {}, `R$ ${dinheiro(pedido.total)}`)),
@@ -148,7 +152,7 @@ export function imprimirTeste(tipo) {
     channel: "loja",
     fulfillment: "retirada",
     customer: "Cliente teste",
-    place: "Balcao",
+    place: "Balcão",
     payment: "Pix",
     note: "Teste Elgin i8",
     total: 39.8,

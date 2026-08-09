@@ -6,13 +6,13 @@ import { LIMITES } from "../config/constants.js";
  * O `.slice()` repetido campo a campo no server.js antigo virou isto. */
 export const texto = (max, { obrigatorio = false } = {}) => {
   const base = z.string().trim().max(max, `Use no maximo ${max} caracteres.`);
-  return obrigatorio ? base.min(1, "Campo obrigatorio.") : base.default("");
+  return obrigatorio ? base.min(1, "Campo obrigatório.") : base.default("");
 };
 
 export const dinheiro = z
   .coerce.number({ message: "Informe um valor numerico." })
   .finite("Valor invalido.")
-  .min(0, "O valor nao pode ser negativo.")
+  .min(0, "O valor não pode ser negativo.")
   .max(99999, "Valor acima do permitido.")
   /* Duas casas: sem isto, 19.999999 entra no banco e o total fecha com centavo
    * de diferenca em relacao ao que o cliente viu. */

@@ -94,7 +94,7 @@ export const ABAS = Object.freeze({
     titulo: "Usuários e auditoria",
     subtitulo: "Quem tem acesso, o que pode ver/editar, e o registro do que foi feito.",
     icone: "◍",
-    rotulo: "Usuarios",
+    rotulo: "Usuários",
     papeis: ["admin"]
   }
 });
@@ -116,7 +116,7 @@ function listaPermitida(usuario, tipo) {
 
 export function abaInicial(usuario) {
   const permitidas = listaPermitida(usuario, "ver");
-  if (usuario?.papel === "admin" && permitidas.includes("produtos")) return "produtos";
+  if (permitidas.includes("pedidos")) return "pedidos";
   return permitidas[0] || "pedidos";
 }
 

@@ -34,6 +34,7 @@ import { ErroApp, naoEncontrado, conflito } from "../lib/errors.js";
 import { publicar, CANAL } from "../lib/events.js";
 import { idPedido } from "../lib/ids.js";
 import { STATUS_ABERTOS } from "../config/constants.js";
+import { controlaEstoqueCategoria } from "../lib/estoque.js";
 
 /* Precifica os itens pelo cadastro, ignorando qualquer preco que tenha vindo do
  * cliente. Roda dentro da transacao. */
@@ -43,15 +44,16 @@ async function precificar(itens) {
   const precificados = [];
   for (const item of itens) {
     const produto = await produtosRepo.buscar(item.id);
-    if (!produto) throw new ErroApp(`Produto fora do cardapio.`, 400, "produto_invalido");
-    if (!produto.active) throw new ErroApp(`${produto.name} esta pausado no momento.`, 409, "produto_pausado");
+    if (!produto) throw new ErroApp(`Produto fora do cardápio.`, 400, "produto_invalido");
+    if (!produto.active) throw new ErroApp(`${produto.name} está pausado no momento.`, 409, "produto_pausado");
 
     const promocional = promocoes.get(produto.id);
     precificados.push({
       id: produto.id,
       name: produto.name,
       qty: item.qty,
-      price: promocional != null ? Number(promocional) : Number(produto.price)
+      price: promocional != null ? Number(promocional) : Number(produto.price),
+      stockControl: controlaEstoqueCategoria(produto.category)
     });
   }
   return precificados;
@@ -63,14 +65,14 @@ async function precificar(itens) {
 async function cotarEntregaSeNecessario(dados) {
   if (dados.fulfillment !== "entrega") return { taxa: 0, km: null, zona: null, minimo: 0 };
   if (!dados.phone) throw new ErroApp("Informe o telefone do cliente para entrega.", 400, "telefone_ausente");
-  if (!dados.place) throw new ErroApp("Informe o endereco de entrega.", 400, "endereco_ausente");
+  if (!dados.place) throw new ErroApp("Informe o endereço de entrega.", 400, "endereco_ausente");
 
   const config = await entregaService.config();
   if (!config.zones.length) return { taxa: 0, km: null, zona: null, minimo: 0 };
 
   const cotacao = await entregaService.cotarPorEndereco(dados.place);
   if (!cotacao.dentro) {
-    throw new ErroApp(`Endereco fora da area de entrega (${cotacao.km} km da loja).`, 400, "fora_da_area");
+    throw new ErroApp(`Endereço fora da área de entrega (${cotacao.km} km da loja).`, 400, "fora_da_area");
   }
   return { taxa: cotacao.taxa, km: cotacao.km, zona: cotacao.zona, minimo: cotacao.minimo };
 }
@@ -80,6 +82,7 @@ async function cotarEntregaSeNecessario(dados) {
  * lancamos, e a transacao inteira e desfeita — inclusive as baixas anteriores. */
 async function baixarEstoque(itens) {
   for (const item of itens) {
+    if (!item.stockControl) continue;
     if (!(await produtosRepo.baixarEstoque(item.id, item.qty))) {
       const atual = await produtosRepo.buscar(item.id);
       throw new ErroApp(
@@ -122,7 +125,7 @@ export const pedidosService = {
 
   async buscar(id) {
     const pedido = await pedidosRepo.buscar(id);
-    if (!pedido) throw naoEncontrado("Pedido nao encontrado.");
+    if (!pedido) throw naoEncontrado("Pedido não encontrado.");
     return pedido;
   },
 
@@ -140,7 +143,7 @@ export const pedidosService = {
       if (dados.tableNumber != null) {
         const mesa = await mesasRepo.buscar(dados.tableNumber);
         if (!mesa || mesa.status !== "aberta") {
-          throw new ErroApp("A comanda desta mesa nao esta aberta.", 409, "mesa_fechada");
+          throw new ErroApp("A comanda desta mesa não está aberta.", 409, "mesa_fechada");
         }
       }
 
@@ -158,13 +161,14 @@ export const pedidosService = {
 
       if (entrega.minimo && subtotal - desconto < entrega.minimo) {
         throw new ErroApp(
-          `Pedido minimo de R$ ${entrega.minimo.toFixed(2)} para entrega nessa faixa.`,
+          `Pedido mínimo de R$ ${entrega.minimo.toFixed(2)} para entrega nessa faixa.`,
           400,
           "abaixo_do_minimo"
         );
       }
 
       await baixarEstoque(itens);
+      const estoqueBaixado = itens.some(item => item.stockControl);
 
       const novo = await pedidosRepo.inserir({
         id: idPedido(),
@@ -188,7 +192,7 @@ export const pedidosService = {
         deliveryZone: entrega.zona,
         total: Math.round((subtotal - desconto + entrega.taxa) * 100) / 100,
         printed: false,
-        stockDeducted: true,
+        stockDeducted: estoqueBaixado,
         createdBy: null
       });
 
@@ -220,8 +224,8 @@ export const pedidosService = {
     const pedido = await emTransacao(async () => {
       if (dados.tableNumber != null) {
         const mesa = await mesasRepo.buscar(dados.tableNumber);
-        if (!mesa) throw naoEncontrado("Mesa nao encontrada.");
-        if (mesa.status !== "aberta") throw conflito("Abra a comanda da mesa antes de lancar o pedido.");
+        if (!mesa) throw naoEncontrado("Mesa não encontrada.");
+        if (mesa.status !== "aberta") throw conflito("Abra a comanda da mesa antes de lançar o pedido.");
       }
 
       const itens = await precificar(dados.items);
@@ -229,13 +233,14 @@ export const pedidosService = {
 
       if (entrega.minimo && subtotal < entrega.minimo) {
         throw new ErroApp(
-          `Pedido minimo de R$ ${entrega.minimo.toFixed(2)} para entrega nessa faixa.`,
+          `Pedido mínimo de R$ ${entrega.minimo.toFixed(2)} para entrega nessa faixa.`,
           400,
           "abaixo_do_minimo"
         );
       }
 
       await baixarEstoque(itens);
+      const estoqueBaixado = itens.some(item => item.stockControl);
 
       const novo = await pedidosRepo.inserir({
         id: idPedido(),
@@ -243,7 +248,7 @@ export const pedidosService = {
         status: "novo",
         channel: dados.channel,
         fulfillment: dados.fulfillment,
-        customer: dados.customer || (dados.tableNumber ? `Mesa ${dados.tableNumber}` : "Balcao"),
+        customer: dados.customer || (dados.tableNumber ? `Mesa ${dados.tableNumber}` : "Balcão"),
         phone: dados.phone,
         place: dados.place,
         note: dados.note,
@@ -259,7 +264,7 @@ export const pedidosService = {
         deliveryZone: entrega.zona,
         total: subtotal + entrega.taxa,
         printed: false,
-        stockDeducted: true,
+        stockDeducted: estoqueBaixado,
         createdBy: usuario.id
       });
 
@@ -276,19 +281,45 @@ export const pedidosService = {
     return pedido;
   },
 
-  async mudarStatus(id, status, { usuario, ip }) {
-    const atual = await this.buscar(id);
-    if (atual.status === status) return atual;
+  async mudarStatus(id, dados, { usuario, ip }) {
+    const status = typeof dados === "string" ? dados : dados.status;
+    let atual = await this.buscar(id);
 
     /* Cancelar tem regra propria (devolve estoque), entao nao entra por aqui. */
     if (status === "cancelado") {
       throw new ErroApp("Informe o motivo do cancelamento.", 400, "motivo_obrigatorio");
     }
 
+    if (status === "entregue" && atual.fulfillment === "entrega") {
+      const nomeMotoboy = String(
+        typeof dados === "string" ? atual.motoboy || "" : dados.motoboy || atual.motoboy || ""
+      ).trim();
+
+      if (!nomeMotoboy) {
+        throw new ErroApp("Informe o motoboy antes de marcar a entrega como entregue.", 400, "motoboy_obrigatorio");
+      }
+
+      if (atual.motoboy && nomeMotoboy !== atual.motoboy && usuario?.papel !== "admin") {
+        throw conflito("Motoboy ja foi salvo neste pedido. Apenas administrador pode alterar.");
+      }
+
+      if (nomeMotoboy !== atual.motoboy) {
+        atual = await pedidosRepo.definirMotoboy(id, nomeMotoboy);
+      }
+    }
+
+    if (atual.status === status) return atual;
+
     const pedido = await pedidosRepo.atualizarStatus(id, status);
     await auditoriaRepo.registrar({
       usuarioId: usuario.id, usuario: usuario.usuario, acao: "pedido_status",
-      entidade: "pedido", entidadeId: id, detalhes: { de: atual.status, para: status }, ip
+      entidade: "pedido", entidadeId: id,
+      detalhes: {
+        de: atual.status,
+        para: status,
+        motoboy: pedido.motoboy || atual.motoboy || ""
+      },
+      ip
     });
     publicar("pedidos", [CANAL.OPERACAO, CANAL.TELAO]);
     return pedido;
@@ -306,12 +337,14 @@ export const pedidosService = {
 
     const pedido = await emTransacao(async () => {
       const atual = await pedidosRepo.buscar(id);
-      if (!atual) throw naoEncontrado("Pedido nao encontrado.");
-      if (atual.status === "cancelado") throw conflito("Este pedido ja esta cancelado.");
+      if (!atual) throw naoEncontrado("Pedido não encontrado.");
+      if (atual.status === "cancelado") throw conflito("Este pedido já está cancelado.");
 
       if (atual.stockDeducted) {
         for (const item of atual.items) {
-          if (item.id) await produtosRepo.devolverEstoque(item.id, item.qty);
+          if (!item.id) continue;
+          const produto = await produtosRepo.buscar(item.id);
+          if (controlaEstoqueCategoria(produto?.category)) await produtosRepo.devolverEstoque(item.id, item.qty);
         }
         await pedidosRepo.marcarEstoqueDevolvido(id);
       }
@@ -341,6 +374,9 @@ export const pedidosService = {
     if (atual.fulfillment !== "entrega") throw conflito("Motoboy so pode ser informado em pedido de entrega.");
     if (!["pronto", "entregue"].includes(atual.status)) {
       throw conflito("Informe o motoboy quando a entrega estiver pronta ou entregue.");
+    }
+    if (atual.motoboy && atual.motoboy !== nome && usuario?.papel !== "admin") {
+      throw conflito("Motoboy ja foi salvo neste pedido. Apenas administrador pode alterar.");
     }
 
     const pedido = await pedidosRepo.definirMotoboy(id, nome);

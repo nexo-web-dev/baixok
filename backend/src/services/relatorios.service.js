@@ -9,6 +9,7 @@
 import { pedidosRepo } from "../repositories/pedidos.repo.js";
 import { produtosRepo } from "../repositories/produtos.repo.js";
 import { HORA_VIRADA } from "../config/constants.js";
+import { controlaEstoqueCategoria } from "../lib/estoque.js";
 
 /* O dia operacional vira as 5h: pedido feito 1h da manha pertence ao movimento
  * da noite anterior, nao ao dia seguinte. */
@@ -96,9 +97,11 @@ export const relatoriosService = {
       menosVendidos,
       vendas: vendas.filter(pedido => !canal || pedido.channel === canal),
       cancelados: cancelados.filter(pedido => !canal || pedido.channel === canal),
-      estoqueBaixo: emFalta.map(produto => ({
-        id: produto.id, nome: produto.name, estoque: produto.stock, minimo: produto.minStock
-      }))
+      estoqueBaixo: emFalta
+        .filter(produto => controlaEstoqueCategoria(produto.category))
+        .map(produto => ({
+          id: produto.id, nome: produto.name, estoque: produto.stock, minimo: produto.minStock
+        }))
     };
   },
 

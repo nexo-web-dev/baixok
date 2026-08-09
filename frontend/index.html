@@ -97,6 +97,11 @@
     </div>
   </header>
 
+  <div class="closed-banner hidden" id="closed-banner" role="status">
+    <strong>Loja fechada no momento</strong>
+    <span>O cardápio fica aberto para consulta. Os pedidos voltam quando o caixa abrir.</span>
+  </div>
+
   <section class="hero menu-hero">
     <div class="hero-copy">
       <img class="hero-mark" src="/images/baixok-logo-v2.png" alt="">
@@ -132,7 +137,7 @@
       <div class="section-head">
         <div>
           <span class="eyebrow">Cardápio Baixo K</span>
-          <h2>Escolha o que vai para a mesa</h2>
+          <h2 id="menu-title">Escolha seu pedido</h2>
           <p>Produtos com estoque aparecem automaticamente. Finalize como retirada ou entrega.</p>
         </div>
         <input id="search" type="search" placeholder="Buscar pizza, burguer, drink..." aria-label="Buscar no cardápio">
@@ -225,7 +230,7 @@
     </aside>
   </main>
 
-  <button class="mobile-cart" type="button" id="open-cart">
+  <button class="mobile-cart hidden" type="button" id="open-cart">
     Ver pedido <strong>R$ <span id="mobile-total">0,00</span></strong>
   </button>
 
@@ -246,6 +251,13 @@
       </div>
       <div class="history-list" id="history-results"></div>
       <button class="secondary wide" type="button" id="history-close">Fechar</button>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="product-modal" role="dialog" aria-modal="true" aria-labelledby="product-detail-title">
+    <div class="modal-card product-detail-card">
+      <button class="cart-close" type="button" id="product-close" aria-label="Fechar detalhes">×</button>
+      <div id="product-detail"></div>
     </div>
   </div>
 

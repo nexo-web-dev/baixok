@@ -40,7 +40,7 @@ export async function abrirQrMesa(numero, menuUrl) {
     $("#qr-print").download = `qr-mesa-${numero}.png`;
     mostrar(modal, true);
   } catch {
-    toastErro("Nao foi possivel gerar o QR code desta mesa.");
+    toastErro("Não foi possível gerar o QR code desta mesa.");
   }
 }
 

@@ -14,7 +14,7 @@ import { imprimirAmbas, imprimirTeste } from "../../../components/impressao.js";
 const MINUTOS_ATRASO = 15;
 
 const COLUNAS = [
-  ["novo", "Aguardando aprovacao"],
+  ["novo", "Aguardando aprovação"],
   ["preparo", "Em preparo"],
   ["pronto", "Pronto / A caminho"],
   ["entregue", "Entregue"]
@@ -30,6 +30,18 @@ const pedidosDoPapel = (pedidos, papel) => papel === "entregador"
 
 const senha = pedido => String(pedido.id).slice(-3).toUpperCase();
 const porChegada = lista => [...lista].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+function dadosParaStatus(pedido, status) {
+  if (status !== "entregue" || pedido?.fulfillment !== "entrega") return {};
+  if (pedido.motoboy) return { motoboy: pedido.motoboy };
+
+  const nome = (prompt("Nome do motoboy que fez a entrega (obrigatório):", "") || "").trim();
+  if (!nome) {
+    toastFalha(new Error("Informe o motoboy antes de marcar a entrega como entregue."), "Entrega");
+    return null;
+  }
+  return { motoboy: nome };
+}
 
 /* A cozinha ve a fila e avanca o preparo, mas nao recusa nem reimprime nota do
  * balcao. A rota tambem barra — isto aqui e para nao oferecer o botao. */
@@ -52,7 +64,7 @@ function acoes(pedido, papel) {
   if (pedido.status === "preparo") {
     return [
       el("button.primary.small", { type: "button", dataset: { acao: "status", id: pedido.id, status: "pronto" } },
-        pedido.fulfillment === "retirada" ? "Pronto - chamar no telao" : "Despachar entrega"),
+        pedido.fulfillment === "retirada" ? "Pronto - chamar no telão" : "Despachar entrega"),
       podeOperar ? el("button.secondary.small", { type: "button", dataset: { acao: "reimprimir", id: pedido.id } }, "Reimprimir") : null
     ];
   }
@@ -92,7 +104,7 @@ function cartao(pedido, papel) {
       ? null
       : el("p.order-place", {}, `${pedido.place || ""}${pedido.phone ? ` | ${pedido.phone}` : ""}`),
     pedido.printed
-      ? el("div.order-flags", {}, el("span.flag.done", {}, "🖨 Cozinha ✓"), el("span.flag.done", {}, "🖨 Balcao ✓"))
+      ? el("div.order-flags", {}, el("span.flag.done", {}, "🖨 Cozinha ✓"), el("span.flag.done", {}, "🖨 Balcão ✓"))
       : null,
     el("div.order-actions", {}, ...acoes(pedido, papel))
   );
@@ -128,8 +140,12 @@ async function mudarStatus(id, status) {
   if (estado.usuario?.papel === "entregador" && !["pronto", "entregue"].includes(status)) {
     return toast("Entregador move apenas pedidos em rota ou entregues.");
   }
+  const atual = estado.pedidos.find(pedido => pedido.id === id);
+  const extras = dadosParaStatus(atual, status);
+  if (extras === null) return;
+
   try {
-    const { pedido } = await apiPedidos.mudarStatus(id, status);
+    const { pedido } = await apiPedidos.mudarStatus(id, status, extras);
     /* Aprovar imprime as duas vias, como antes: cozinha monta, balcao entrega. */
     if (status === "preparo") {
       imprimirAmbas(pedido);
@@ -146,7 +162,7 @@ async function recusar(id) {
   const pedido = estado.pedidos.find(item => item.id === id);
   if (!confirm(`Recusar o pedido de ${pedido?.customer || "cliente"}? Os itens voltam para o estoque.`)) return;
 
-  const motivo = (prompt("Motivo da recusa (obrigatorio e fica registrado):", "") ?? "").trim();
+  const motivo = (prompt("Motivo da recusa (obrigatório e fica registrado):", "") ?? "").trim();
   if (!motivo) return toastFalha(new Error("Informe o motivo para recusar o pedido."), "Cancelamento");
   try {
     await apiPedidos.cancelar(id, motivo);

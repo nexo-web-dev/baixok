@@ -31,12 +31,12 @@ function cartaoDaLoja() {
   const marcada = rascunho.lng != null && rascunho.lat != null;
 
   return el("div.loja-atual", { class: marcada ? "marcada" : "" },
-    el("strong", {}, marcada ? "Loja marcada no mapa" : "Loja ainda nao marcada"),
-    marcada ? el("span", {}, rascunho.endereco || "sem endereco descrito") : null,
+    el("strong", {}, marcada ? "Loja marcada no mapa" : "Loja ainda não marcada"),
+    marcada ? el("span", {}, rascunho.endereco || "sem endereço descrito") : null,
     marcada ? el("code", {}, `${Number(rascunho.lat).toFixed(6)}, ${Number(rascunho.lng).toFixed(6)}`) : null,
     marcada
       ? el("button.ghost.small", { type: "button", dataset: { acao: "limpar-loja" } }, "Limpar ponto")
-      : el("span", {}, "Sem o ponto da loja, as faixas ficam guardadas mas nao entram na conta.")
+      : el("span", {}, "Sem o ponto da loja, as faixas ficam guardadas mas não entram na conta.")
   );
 }
 
@@ -44,7 +44,7 @@ function linhaFaixa(faixa, indice) {
   return el("div.faixa", { dataset: { indice: String(indice) } },
     el("input", { type: "number", step: "0.5", min: "0.5", value: String(faixa.km), dataset: { campo: "km", indice: String(indice) }, "aria-label": "Raio em km" }),
     el("input", { type: "number", step: "0.5", min: "0", value: String(faixa.fee), dataset: { campo: "fee", indice: String(indice) }, "aria-label": "Taxa em reais" }),
-    el("input", { type: "number", step: "1", min: "0", value: String(faixa.min), dataset: { campo: "min", indice: String(indice) }, "aria-label": "Pedido minimo" }),
+    el("input", { type: "number", step: "1", min: "0", value: String(faixa.min), dataset: { campo: "min", indice: String(indice) }, "aria-label": "Pedido mínimo" }),
     el("button.ghost.small", { type: "button", dataset: { acao: "remover-faixa", indice: String(indice) }, "aria-label": "Remover faixa" }, "×")
   );
 }
@@ -64,18 +64,18 @@ export function desenharEntrega() {
         el("div.modo-marcar", {},
           el("span.rotulo", {}, "Estou na loja agora"),
           el("p.small", {}, "Usa o GPS deste aparelho. Exige https ou localhost — na rede interna por http o navegador recusa."),
-          el("button.secondary.wide", { type: "button", dataset: { acao: "usar-gps" } }, "◉ Usar minha localizacao")
+          el("button.secondary.wide", { type: "button", dataset: { acao: "usar-gps" } }, "◉ Usar minha localização")
         ),
         el("div.modo-marcar", {},
           el("span.rotulo", {}, "Colar coordenada"),
-          el("p.small", {}, "No Google Maps, clique com o botao direito no ponto da loja e escolha a primeira opcao do menu."),
+          el("p.small", {}, "No Google Maps, clique com o botão direito no ponto da loja e escolha a primeira opção do menu."),
           el("div.coord-row", {},
             el("input", { id: "coord-colada", placeholder: "-22.8975, -43.1875", autocomplete: "off" }),
             el("button.secondary", { type: "button", dataset: { acao: "usar-coordenada" } }, "Usar")
           )
         ),
         el("div.modo-marcar", {},
-          el("span.rotulo", {}, "Buscar pelo endereco"),
+          el("span.rotulo", {}, "Buscar pelo endereço"),
           el("input", { id: "busca-loja", placeholder: "Rua, numero, bairro", autocomplete: "off" }),
           el("div.sugestoes", { id: "sugestoes-loja" })
         ),
@@ -87,9 +87,9 @@ export function desenharEntrega() {
 
       el("section.panel", {},
         el("h2", {}, "Faixas de raio"),
-        el("p.small", {}, "A distancia e medida em linha reta a partir da loja. O cliente paga a taxa da primeira faixa que alcanca; endereco alem da ultima e recusado."),
+        el("p.small", {}, "A distância é medida em linha reta a partir da loja. O cliente paga a taxa da primeira faixa que alcança; endereço além da última é recusado."),
         el("div.faixa-head", {},
-          el("span", {}, "Ate (km)"), el("span", {}, "Taxa (R$)"), el("span", {}, "Minimo (R$)"), el("span", {})
+          el("span", {}, "Até (km)"), el("span", {}, "Taxa (R$)"), el("span", {}, "Mínimo (R$)"), el("span", {})
         ),
         el("div.faixas", { id: "lista-faixas" },
           ...rascunho.zones.map(linhaFaixa),
@@ -98,7 +98,7 @@ export function desenharEntrega() {
         el("button.secondary.wide", { type: "button", dataset: { acao: "adicionar-faixa" } }, "+ Adicionar faixa"),
         el("div.panel-divider", {},
           el("button.primary.wide", { type: "button", dataset: { acao: "salvar-entrega" } }, "Salvar area de entrega"),
-          el("p.small.faint", {}, "As faixas sao ordenadas por distancia ao salvar.")
+          el("p.small.faint", {}, "As faixas são ordenadas por distância ao salvar.")
         )
       )
     )
@@ -125,7 +125,7 @@ async function buscarLoja(termo) {
         )
       ));
     } catch {
-      render(alvo, el("p.small.faint", {}, "Busca de endereco indisponivel. Use o GPS ou cole a coordenada."));
+      render(alvo, el("p.small.faint", {}, "Busca de endereço indisponível. Use o GPS ou cole a coordenada."));
     }
   }, 350);
 }
@@ -142,15 +142,15 @@ export function ligarEntrega() {
   if (!alvo) return;
 
   delegar(alvo, "click", "[data-acao='usar-gps']", (_e, botao) => {
-    if (!navigator.geolocation) return toast("Este aparelho nao tem GPS disponivel.");
+    if (!navigator.geolocation) return toast("Este aparelho não tem GPS disponível.");
     botao.disabled = true;
     botao.textContent = "Localizando...";
     navigator.geolocation.getCurrentPosition(
       posicao => definirLoja(posicao.coords.longitude, posicao.coords.latitude, rascunho.endereco || "Ponto marcado pelo GPS"),
       () => {
         botao.disabled = false;
-        botao.textContent = "◉ Usar minha localizacao";
-        toast("Nao foi possivel usar o GPS. Em http o navegador bloqueia — use https, localhost ou cole a coordenada.");
+        botao.textContent = "◉ Usar minha localização";
+        toast("Não foi possível usar o GPS. Em http o navegador bloqueia — use https, localhost ou cole a coordenada.");
       },
       { enableHighAccuracy: true, timeout: 12000 }
     );
@@ -165,7 +165,7 @@ export function ligarEntrega() {
     /* O Google Maps copia "lat, lng". Se vier trocado, corrigimos: nenhuma
      * latitude brasileira passa de -34, e nenhuma longitude fica acima de -34. */
     let [lat, lng] = dentroDoBrasil(primeiro, segundo) ? [primeiro, segundo] : [segundo, primeiro];
-    if (!dentroDoBrasil(lat, lng)) return toast("Essa coordenada nao parece estar no Brasil.");
+    if (!dentroDoBrasil(lat, lng)) return toast("Essa coordenada não parece estar no Brasil.");
 
     definirLoja(lng, lat, rascunho.endereco || "Coordenada colada");
   });

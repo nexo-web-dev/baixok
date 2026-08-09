@@ -11,7 +11,7 @@ const paraSql = data => data.toISOString().replace("T", " ").slice(0, 19);
 const arredondar = valor => Math.round(Number(valor || 0) * 100) / 100;
 
 const rotuloCanal = {
-  cardapio: "Cardapio",
+  cardapio: "Cardápio",
   loja: "Loja",
   ifood: "iFood",
   "99food": "99Food",
@@ -54,17 +54,17 @@ async function resumoFechamento(caixa, fechadoEm = new Date()) {
     retiradas: contagem.retiradas,
     mesas: contagem.mesas,
     pagamentos: pagamentos.map(linha => ({
-      rotulo: linha.rotulo || "Nao informado",
+      rotulo: linha.rotulo || "Não informado",
       pedidos: linha.pedidos,
       faturamento: arredondar(linha.faturamento)
     })),
     canais: canais.map(linha => ({
-      rotulo: rotuloCanal[linha.rotulo] || linha.rotulo || "Nao informado",
+      rotulo: rotuloCanal[linha.rotulo] || linha.rotulo || "Não informado",
       pedidos: linha.pedidos,
       faturamento: arredondar(linha.faturamento)
     })),
     modalidades: modalidades.map(linha => ({
-      rotulo: rotuloModalidade[linha.rotulo] || linha.rotulo || "Nao informado",
+      rotulo: rotuloModalidade[linha.rotulo] || linha.rotulo || "Não informado",
       pedidos: linha.pedidos,
       faturamento: arredondar(linha.faturamento)
     })),
@@ -118,7 +118,7 @@ function linhasMotoboy(linhas) {
 }
 
 function htmlRelatorio(caixa) {
-  const periodo = `${dataHora(caixa.abertoEm)} ate ${dataHora(caixa.fechadoEm)}`;
+  const periodo = `${dataHora(caixa.abertoEm)} até ${dataHora(caixa.fechadoEm)}`;
 
   return `<!doctype html>
 <html lang="pt-BR">
@@ -297,7 +297,7 @@ function htmlRelatorio(caixa) {
         <img src="/images/baixok-logo-v2.png" alt="Baixo K">
         <div>
           <h1>Fechamento de caixa</h1>
-          <p class="subtitle">Baixo K | Relatorio gerencial do movimento</p>
+          <p class="subtitle">Baixo K | Relatório gerencial do movimento</p>
         </div>
       </div>
       <div class="tag">
@@ -308,15 +308,15 @@ function htmlRelatorio(caixa) {
 
     <section class="meta">
       <div><span>Caixa</span><strong>${escapar(caixa.id)}</strong></div>
-      <div><span>Periodo</span><strong>${periodo}</strong></div>
-      <div><span>Responsavel</span><strong>${escapar(caixa.fechadoPorNome || caixa.abertoPorNome || "-")}</strong></div>
+      <div><span>Período</span><strong>${periodo}</strong></div>
+      <div><span>Responsável</span><strong>${escapar(caixa.fechadoPorNome || caixa.abertoPorNome || "-")}</strong></div>
     </section>
 
     <main>
       <section class="grid">
         <div class="metric green"><span>Pedidos entregues</span><strong>${caixa.pedidos}</strong></div>
         <div class="metric money"><span>Faturamento</span><strong>${moeda(caixa.faturamento)}</strong></div>
-        <div class="metric money"><span>Ticket medio</span><strong>${moeda(caixa.ticketMedio)}</strong></div>
+        <div class="metric money"><span>Ticket médio</span><strong>${moeda(caixa.ticketMedio)}</strong></div>
         <div class="metric danger"><span>Cancelados</span><strong>${caixa.cancelados}</strong></div>
         <div class="metric"><span>Entregas</span><strong>${caixa.entregas}</strong></div>
         <div class="metric"><span>Retiradas</span><strong>${caixa.retiradas}</strong></div>
@@ -336,7 +336,7 @@ function htmlRelatorio(caixa) {
         </div>
 
         <div class="table-card full">
-          <div class="section-title"><h2>Retirada, entrega e mesa</h2><span>operacao</span></div>
+          <div class="section-title"><h2>Retirada, entrega e mesa</h2><span>operação</span></div>
           <table><thead><tr><th>Tipo</th><th class="num">Pedidos</th><th class="num">Total</th></tr></thead><tbody>${linhasTabela(caixa.modalidades)}</tbody></table>
         </div>
 
@@ -346,7 +346,7 @@ function htmlRelatorio(caixa) {
         </div>
       </section>
 
-      ${caixa.observacao ? `<section class="obs"><strong>Observacao do fechamento:</strong> ${escapar(caixa.observacao)}</section>` : ""}
+      ${caixa.observacao ? `<section class="obs"><strong>Observação do fechamento:</strong> ${escapar(caixa.observacao)}</section>` : ""}
     </main>
 
     <footer>
@@ -364,13 +364,13 @@ export const caixaService = {
 
   async buscar(id) {
     const caixa = await caixaRepo.buscar(id);
-    if (!caixa) throw naoEncontrado("Fechamento de caixa nao encontrado.");
+    if (!caixa) throw naoEncontrado("Fechamento de caixa não encontrado.");
     return caixa;
   },
 
   async abrir({ usuario, ip }, { senha } = {}) {
     const aberto = await caixaRepo.atual();
-    if (aberto) throw conflito("Ja existe um caixa aberto.");
+    if (aberto) throw conflito("Já existe um caixa aberto.");
     await authService.confirmarSenha({ usuarioAtual: usuario, senha });
 
     const caixa = await caixaRepo.abrir({ id: uid("cx"), usuario });
@@ -383,13 +383,13 @@ export const caixaService = {
       detalhes: { abertoEm: caixa.abertoEm },
       ip
     });
-    publicar("caixa", [CANAL.OPERACAO]);
+    publicar("caixa", [CANAL.OPERACAO, CANAL.PUBLICO]);
     return caixa;
   },
 
   async fechar({ usuario, ip }, { observacao = "" } = {}) {
     const aberto = await caixaRepo.atual();
-    if (!aberto) throw naoEncontrado("Nao existe caixa aberto para fechar.");
+    if (!aberto) throw naoEncontrado("Não existe caixa aberto para fechar.");
 
     const [pedidosAbertos, mesas] = await Promise.all([
       pedidosRepo.listarAbertos(),
@@ -419,13 +419,13 @@ export const caixaService = {
       detalhes: { pedidos: caixa.pedidos, faturamento: caixa.faturamento, cancelados: caixa.cancelados },
       ip
     });
-    publicar("caixa", [CANAL.OPERACAO]);
+    publicar("caixa", [CANAL.OPERACAO, CANAL.PUBLICO]);
     return caixa;
   },
 
   async relatorioHtml(id) {
     const caixa = await this.buscar(id);
-    if (caixa.status !== "fechado") throw conflito("Feche o caixa antes de gerar o relatorio.");
+    if (caixa.status !== "fechado") throw conflito("Feche o caixa antes de gerar o relatório.");
     return htmlRelatorio(caixa);
   }
 };

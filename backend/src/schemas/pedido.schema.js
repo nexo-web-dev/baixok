@@ -42,7 +42,8 @@ export const criarPedidoManualSchema = z.object({
 }).strict();
 
 export const mudarStatusSchema = z.object({
-  status: z.enum(STATUS_PEDIDO, { message: "Status invalido." })
+  status: z.enum(STATUS_PEDIDO, { message: "Status invalido." }),
+  motoboy: texto(80).optional()
 });
 
 export const cancelarPedidoSchema = z.object({
@@ -56,7 +57,9 @@ export const motoboyPedidoSchema = z.object({
 export const localizacaoMotoboySchema = z.object({
   lat: latitude,
   lng: longitude,
-  accuracy: z.coerce.number().min(0).max(10000).nullable().optional()
+  accuracy: z.coerce.number().min(0).max(10000).nullable().optional(),
+  deviceId: idTexto.default("principal"),
+  deviceName: texto(80)
 }).strict();
 
 export const listarPedidosSchema = z.object({

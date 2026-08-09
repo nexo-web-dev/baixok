@@ -10,14 +10,27 @@
 
 const ESPERA_INICIAL_MS = 1000;
 const ESPERA_MAXIMA_MS = 30000;
+const ATRASO_OFFLINE_MS = 12000;
 
 export function conectarEventos({ canal, aoMudar, aoStatus }) {
   let fonte = null;
   let espera = ESPERA_INICIAL_MS;
   let timerReconexao = null;
+  let timerOffline = null;
   let encerrado = false;
 
   const avisarStatus = estado => aoStatus?.(estado);
+
+  function avisarConectado() {
+    clearTimeout(timerOffline);
+    timerOffline = null;
+    avisarStatus("conectado");
+  }
+
+  function avisarOfflineSePersistir() {
+    clearTimeout(timerOffline);
+    timerOffline = setTimeout(() => avisarStatus("desconectado"), ATRASO_OFFLINE_MS);
+  }
 
   function abrir() {
     if (encerrado) return;
@@ -25,7 +38,7 @@ export function conectarEventos({ canal, aoMudar, aoStatus }) {
 
     fonte.addEventListener("pronto", () => {
       espera = ESPERA_INICIAL_MS;      // reconectou: zera a espera
-      avisarStatus("conectado");
+      avisarConectado();
     });
 
     fonte.addEventListener("mudanca", evento => {
@@ -45,7 +58,7 @@ export function conectarEventos({ canal, aoMudar, aoStatus }) {
     });
 
     fonte.onerror = () => {
-      avisarStatus("desconectado");
+      avisarOfflineSePersistir();
       fonte.close();
       agendarReconexao();
     };
@@ -74,6 +87,7 @@ export function conectarEventos({ canal, aoMudar, aoStatus }) {
   return () => {
     encerrado = true;
     clearTimeout(timerReconexao);
+    clearTimeout(timerOffline);
     document.removeEventListener("visibilitychange", aoVoltar);
     fonte?.close();
   };

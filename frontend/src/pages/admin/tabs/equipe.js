@@ -14,8 +14,8 @@ let usuarioEmEdicao = null;
 const DESCRICAO_ACAO = {
   login: "entrou no sistema",
   logout: "saiu do sistema",
-  pedido_criado: "pedido pelo cardapio",
-  pedido_lancado: "lancou pedido manual",
+  pedido_criado: "pedido pelo cardápio",
+  pedido_lancado: "lançou pedido manual",
   pedido_status: "mudou status do pedido",
   pedido_cancelado: "cancelou pedido",
   pedido_motoboy: "informou motoboy",
@@ -24,14 +24,14 @@ const DESCRICAO_ACAO = {
   produto_removido: "excluiu produto",
   produto_pausado: "pausou produto",
   produto_ativado: "reativou produto",
-  produto_ordem: "alterou ordem do cardapio",
+  produto_ordem: "alterou ordem do cardápio",
   estoque_ajustado: "ajustou estoque",
   insumo_criado: "criou insumo",
   insumo_alterado: "alterou insumo",
   insumo_estoque: "ajustou insumo",
   insumo_removido: "removeu insumo",
-  promocao_salva: "criou promocao",
-  promocao_encerrada: "encerrou promocao",
+  promocao_salva: "criou promoção",
+  promocao_encerrada: "encerrou promoção",
   cupom_criado: "criou cupom",
   cupom_ativado: "ativou cupom",
   cupom_desativado: "desativou cupom",
@@ -39,12 +39,12 @@ const DESCRICAO_ACAO = {
   mesa_aberta: "abriu mesa",
   mesa_conta_fechada: "fechou conta da mesa",
   mesa_liberada: "liberou mesa",
-  entrega_configurada: "configurou area de entrega",
-  usuario_criado: "cadastrou usuario",
-  usuario_alterado: "alterou usuario",
-  usuario_removido: "removeu usuario",
-  senha_trocada: "trocou a propria senha",
-  senha_redefinida: "redefiniu senha de outro usuario"
+  entrega_configurada: "configurou área de entrega",
+  usuario_criado: "cadastrou usuário",
+  usuario_alterado: "alterou usuário",
+  usuario_removido: "removeu usuário",
+  senha_trocada: "trocou a própria senha",
+  senha_redefinida: "redefiniu senha de outro usuário"
 };
 
 const ROTULOS_ABAS = Object.fromEntries(
@@ -83,7 +83,7 @@ function aplicarPermissoesNaTela(permissoes) {
 
   render(alvo,
     el("div.permission-head", {},
-      el("strong", {}, "Permissoes por aba"),
+      el("strong", {}, "Permissões por aba"),
       el("span.small.faint", {}, "Marque o que a pessoa pode ver e o que pode editar")
     ),
     ...Object.entries(ABAS).map(([chave, aba]) =>
@@ -130,7 +130,7 @@ function prepararFormulario(usuario = null) {
 
   if (usuario) {
     if (titulo) titulo.textContent = `Editando ${usuario.nome}`;
-    if (botao) botao.textContent = "Salvar permissoes";
+    if (botao) botao.textContent = "Salvar permissões";
     if (nome) nome.value = usuario.nome || "";
     if (login) login.required = false;
     if (senha) senha.required = false;
@@ -145,8 +145,8 @@ function prepararFormulario(usuario = null) {
     return;
   }
 
-  if (titulo) titulo.textContent = "Novo usuario";
-  if (botao) botao.textContent = "Criar usuario";
+  if (titulo) titulo.textContent = "Novo usuário";
+  if (botao) botao.textContent = "Criar usuário";
   if (nome) nome.value = "";
   if (login) {
     login.value = "";
@@ -159,7 +159,7 @@ function prepararFormulario(usuario = null) {
   credenciais?.classList.remove("hidden");
   cancelar?.classList.add("hidden");
   if (papel) papel.value = "caixa";
-  if (hint) hint.textContent = "Use um e-mail valido e uma senha com pelo menos 10 caracteres.";
+  if (hint) hint.textContent = "Use um e-mail válido e uma senha com pelo menos 10 caracteres.";
   aplicarPermissoesNaTela(permissaoPadrao(papel?.value || "caixa"));
 }
 
@@ -183,7 +183,7 @@ function linhaUsuario(usuario) {
   return el("div.user-row", { class: usuario.ativo ? "" : "muted", dataset: { id: String(usuario.id) } },
     el("div", {},
       el("strong", {}, usuario.nome),
-      el("span", {}, `@${usuario.usuario}${euMesmo ? " (voce)" : ""}`),
+      el("span", {}, `@${usuario.usuario}${euMesmo ? " (você)" : ""}`),
       el("span.small.faint", {}, resumoPermissoes(usuario))
     ),
     el("select", { dataset: { acao: "papel", id: String(usuario.id) }, disabled: euMesmo },
@@ -207,13 +207,13 @@ function detalheAuditoria(registro) {
     const itens = Array.isArray(detalhes.itens) && detalhes.itens.length
       ? ` | ${detalhes.itens.join(", ")}`
       : "";
-    return `Motivo: ${detalhes.motivo || "nao informado"}${detalhes.cliente ? ` | Cliente ${detalhes.cliente}` : ""}${detalhes.total ? ` | Total ${reais(detalhes.total)}` : ""}${itens}`;
+    return `Motivo: ${detalhes.motivo || "não informado"}${detalhes.cliente ? ` | Cliente ${detalhes.cliente}` : ""}${detalhes.total ? ` | Total ${reais(detalhes.total)}` : ""}${itens}`;
   }
   if (registro.acao === "pedido_motoboy") {
     return `Motoboy: ${detalhes.motoboy || "-"}${detalhes.cliente ? ` | Cliente ${detalhes.cliente}` : ""}`;
   }
   if (registro.acao === "produto_ordem") {
-    return `${detalhes.nome || "Produto"} agora esta na ordem ${detalhes.ordem || "-"}`;
+    return `${detalhes.nome || "Produto"} agora está na ordem ${detalhes.ordem || "-"}`;
   }
   if (registro.acao?.startsWith("insumo_")) {
     if (detalhes.de !== undefined || detalhes.para !== undefined) {
@@ -228,7 +228,7 @@ export async function desenharEquipe() {
   try {
     usuarios = (await apiUsuarios.listar()).usuarios;
   } catch (erro) {
-    return toastFalha(erro, "Usuarios");
+    return toastFalha(erro, "Usuários");
   }
 
   render($("#user-list"), ...usuarios.map(linhaUsuario));
@@ -247,7 +247,7 @@ export async function desenharEquipe() {
       )
     ));
   } catch {
-    render($("#audit-list"), el("p.faint", {}, "Nao foi possivel carregar a auditoria."));
+    render($("#audit-list"), el("p.faint", {}, "Não foi possível carregar a auditoria."));
   }
 
   if (!usuarioEmEdicao) prepararFormulario(null);
@@ -274,7 +274,7 @@ export function ligarEquipe() {
           abasVer: normalizarLista(permissoes.abasVer),
           abasEditar: normalizarLista(permissoes.abasEditar)
         });
-        toast("Usuario criado.");
+        toast("Usuário criado.");
         evento.target.reset();
         erro?.classList.add("hidden");
         prepararFormulario(null);
@@ -301,7 +301,7 @@ export function ligarEquipe() {
         abasEditar
       });
 
-      toast("Permissoes atualizadas.");
+      toast("Permissões atualizadas.");
       evento.target.reset();
       erro.classList.add("hidden");
       prepararFormulario(null);
@@ -351,11 +351,11 @@ export function ligarEquipe() {
 
   delegar(lista, "click", "[data-acao='remover']", async (_e, botao) => {
     const usuario = usuarios.find(item => item.id === Number(botao.dataset.id));
-    if (!confirm(`Remover ${usuario?.nome}? O historico de auditoria e mantido.`)) return;
+    if (!confirm(`Remover ${usuario?.nome}? O histórico de auditoria é mantido.`)) return;
     try {
       await apiUsuarios.remover(Number(botao.dataset.id));
       await desenharEquipe();
-      toast("Usuario removido.");
+      toast("Usuário removido.");
     } catch (erro) {
       toastFalha(erro);
     }

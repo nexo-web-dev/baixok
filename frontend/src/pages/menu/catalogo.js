@@ -18,7 +18,7 @@ function categoriasFiltro(produtos) {
 }
 
 /* Sem foto cadastrada mostramos um espaco marcado, nao uma imagem quebrada. */
-function foto(produto, alt = "") {
+export function foto(produto, alt = "") {
   if (!produto?.image) {
     return el("div.no-photo", {}, "Sem foto", el("br"), el("small", {}, "Cadastre no painel"));
   }
@@ -33,10 +33,15 @@ function foto(produto, alt = "") {
   });
 }
 
-function cartaoProduto(produto) {
+function cartaoProduto(produto, { lojaAberta = true } = {}) {
   const promocional = produto.emPromocao && produto.precoOriginal > produto.price;
 
-  return el("article.product", { class: promocional ? "on-sale" : "", dataset: { id: produto.id } },
+  return el("article.product", {
+    class: promocional ? "on-sale" : "",
+    dataset: { id: produto.id, acao: "detalhes-produto" },
+    role: "button",
+    tabIndex: 0
+  },
     el("span.badge", {}, promocional ? "Promoção" : (produto.badge || rotuloCategoria(produto.category) || "Item")),
     foto(produto),
     el("div.product-body", {},
@@ -51,7 +56,11 @@ function cartaoProduto(produto) {
         /* data-acao em vez de onclick: e o que permite a CSP sem
          * 'unsafe-inline' e evita registrar um ouvinte por card a cada
          * redesenho da lista. */
-        el("button.primary", { type: "button", dataset: { acao: "adicionar", id: produto.id } }, "Adicionar")
+        el("button.primary", {
+          type: "button",
+          disabled: !lojaAberta,
+          dataset: lojaAberta ? { acao: "adicionar", id: produto.id } : {}
+        }, lojaAberta ? "Adicionar" : "Fechado")
       )
     )
   );
@@ -75,7 +84,7 @@ export function desenharDestaques(produtos) {
   if (!alvo) return;
 
   render(alvo, ...destaques(produtos).map(produto =>
-    el("article", { dataset: { acao: "categoria", categoria: produto.category }, role: "button", tabIndex: 0 },
+    el("article", { dataset: { acao: "detalhes-produto", id: produto.id }, role: "button", tabIndex: 0 },
       foto(produto),
       el("div", {},
         el("span", {}, produto.badge || rotuloCategoria(produto.category) || "Destaque"),
@@ -100,7 +109,7 @@ export function desenharFiltros(produtos, categoriaAtual) {
   ));
 }
 
-export function desenharGrade(produtos, { categoria, busca }) {
+export function desenharGrade(produtos, { categoria, busca, lojaAberta = true }) {
   const alvo = $("#menu");
   if (!alvo) return;
 
@@ -113,6 +122,6 @@ export function desenharGrade(produtos, { categoria, busca }) {
   });
 
   render(alvo, lista.length
-    ? lista.map(cartaoProduto)
+    ? lista.map(produto => cartaoProduto(produto, { lojaAberta }))
     : el("p.faint", {}, "Nenhum item disponível nesse filtro."));
 }

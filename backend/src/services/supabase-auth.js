@@ -25,7 +25,7 @@ function obterCliente() {
   return cliente;
 }
 
-function erroAutenticacao(mensagem = "Usuario ou senha invalidos.") {
+function erroAutenticacao(mensagem = "Usuário ou senha inválidos.") {
   return new ErroApp(mensagem, 401, "credenciais_invalidas");
 }
 

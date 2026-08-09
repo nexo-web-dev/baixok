@@ -73,7 +73,7 @@ const paraUsuarioPublico = linha => ({
 function nomePadraoPorEmail(email) {
   const login = normalizarEmail(email);
   if (login === "baixok@food.com") return "Admin Baixo K";
-  if (login === "balcao@baixok.com") return "Balcao Baixo K";
+  if (login === "balcao@baixok.com") return "Balcão Baixo K";
   const parte = login.split("@")[0] || "usuario";
   return parte.charAt(0).toUpperCase() + parte.slice(1);
 }
@@ -193,7 +193,7 @@ export const authService = {
           await gastarTempoDeHash();
           registrarFalha(usuario);
           logger.warn("Login recusado", { usuario, motivo: encontrado ? "inativo" : "inexistente", ip });
-          throw new ErroApp("Usuario ou senha invalidos.", 401, "credenciais_invalidas");
+          throw new ErroApp("Usuário ou senha inválidos.", 401, "credenciais_invalidas");
         }
 
         limparFalhas(usuario);
@@ -232,13 +232,13 @@ export const authService = {
       await gastarTempoDeHash();
       registrarFalha(usuario);
       logger.warn("Login recusado", { usuario, motivo: encontrado ? "inativo" : "inexistente", ip });
-      throw new ErroApp("Usuario ou senha invalidos.", 401, "credenciais_invalidas");
+      throw new ErroApp("Usuário ou senha inválidos.", 401, "credenciais_invalidas");
     }
 
     if (!(await conferirSenha(senha, encontrado.senha_hash))) {
       registrarFalha(usuario);
       logger.warn("Login recusado", { usuario, motivo: "senha", ip });
-      throw new ErroApp("Usuario ou senha invalidos.", 401, "credenciais_invalidas");
+      throw new ErroApp("Usuário ou senha inválidos.", 401, "credenciais_invalidas");
     }
 
     limparFalhas(usuario);

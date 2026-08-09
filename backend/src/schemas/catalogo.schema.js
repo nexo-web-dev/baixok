@@ -11,10 +11,10 @@ import { texto, dinheiro, idTexto } from "./comum.schema.js";
 const imagemSchema = z
   .string()
   .trim()
-  .max(500_000, "Imagem grande demais. Use ate 500 KB.")
+  .max(500_000, "Imagem grande demais. Use até 500 KB.")
   .refine(
     valor => valor === "" || /^\/?images\/[\w.-]+$/.test(valor) || /^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(valor),
-    "Use uma imagem do proprio site ou envie um arquivo de imagem."
+    "Use uma imagem do próprio site ou envie um arquivo de imagem."
   )
   .transform(valor => valor.replace(/^\/images\//, "images/"))
   .default("");
@@ -54,7 +54,7 @@ export const promocaoSchema = z.object({
 export const cupomSchema = z.object({
   code: z
     .string().trim().toUpperCase()
-    .min(3, "O codigo precisa de pelo menos 3 caracteres.")
+    .min(3, "O código precisa de pelo menos 3 caracteres.")
     .max(30)
     .regex(/^[A-Z0-9-]+$/, "Use apenas letras, numeros e hifen."),
   kind: z.enum(TIPOS_CUPOM, { message: "Tipo de cupom invalido." }),
@@ -64,7 +64,7 @@ export const cupomSchema = z.object({
   until: texto(20)
 }).strict().refine(
   dados => dados.kind !== "pct" || dados.amount <= 100,
-  { message: "Desconto percentual nao pode passar de 100%.", path: ["amount"] }
+  { message: "Desconto percentual não pode passar de 100%.", path: ["amount"] }
 );
 
 /* Validar o cupom que o cliente digitou. Devolve so o efeito no carrinho

@@ -23,7 +23,7 @@ export const cuponsService = {
   /* Avaliacao usada tanto pela previa do carrinho quanto pelo fechamento.
    * Quando chamada pelo fechamento, roda dentro da transacao do pedido. */
   async avaliar({ code, subtotal, telefone = "" }) {
-    if (!code) return recusar("Informe um codigo.");
+    if (!code) return recusar("Informe um código.");
 
     const cupom = await cuponsRepo.buscarAtivo(code);
     if (!cupom) return recusar("Cupom invalido ou expirado.");
@@ -57,7 +57,7 @@ export const cuponsService = {
   },
 
   async criar(dados, { usuario, ip }) {
-    if (await cuponsRepo.buscar(dados.code)) throw conflito("Ja existe um cupom com esse codigo.");
+    if (await cuponsRepo.buscar(dados.code)) throw conflito("Já existe um cupom com esse código.");
     const cupom = await cuponsRepo.criar(dados);
     await auditoriaRepo.registrar({
       usuarioId: usuario.id, usuario: usuario.usuario, acao: "cupom_criado",
@@ -68,7 +68,7 @@ export const cuponsService = {
   },
 
   async alternarAtivo(code, { usuario, ip }) {
-    if (!(await cuponsRepo.buscar(code))) throw naoEncontrado("Cupom nao encontrado.");
+    if (!(await cuponsRepo.buscar(code))) throw naoEncontrado("Cupom não encontrado.");
     const cupom = await cuponsRepo.alternarAtivo(code);
     await auditoriaRepo.registrar({
       usuarioId: usuario.id, usuario: usuario.usuario,
@@ -80,7 +80,7 @@ export const cuponsService = {
   },
 
   async remover(code, { usuario, ip }) {
-    if (!(await cuponsRepo.remover(code))) throw naoEncontrado("Cupom nao encontrado.");
+    if (!(await cuponsRepo.remover(code))) throw naoEncontrado("Cupom não encontrado.");
     await auditoriaRepo.registrar({
       usuarioId: usuario.id, usuario: usuario.usuario, acao: "cupom_removido",
       entidade: "cupom", entidadeId: code, ip

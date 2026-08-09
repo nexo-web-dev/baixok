@@ -40,8 +40,8 @@ export function desenharPlano() {
       el("div.plan-badge", {}, "Plano ativo"),
       el("h2", {}, "Plano do sistema"),
       el("p", {}, isento
-        ? "Agosto esta isento. A primeira mensalidade vence em 15/09/2026."
-        : "A mensalidade vence todo dia 15 de cada mes."),
+        ? "Agosto está isento. A primeira mensalidade vence em 15/09/2026."
+        : "A mensalidade vence todo dia 15 de cada mês."),
       el("div.plan-grid", {},
         el("div.plan-metric", {},
           el("span", {}, "Valor"),
@@ -57,8 +57,8 @@ export function desenharPlano() {
         )
       ),
       el("div.plan-foot", {},
-        el("span.small.faint", {}, `Proximo vencimento: ${formatarData(vencimento)}`),
-        el("span.small.faint", {}, isento ? "A contagem mensal normal comeca depois desta data." : "Se o dia 15 cair hoje, o plano vence hoje.")
+        el("span.small.faint", {}, `Próximo vencimento: ${formatarData(vencimento)}`),
+        el("span.small.faint", {}, isento ? "A contagem mensal normal começa depois desta data." : "Se o dia 15 cair hoje, o plano vence hoje.")
       )
     )
   );

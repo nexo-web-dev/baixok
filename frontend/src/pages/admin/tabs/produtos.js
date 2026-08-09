@@ -7,6 +7,7 @@
 import { el, render, $, delegar } from "../../../utils/dom.js";
 import { reais, paraNumero } from "../../../utils/formato.js";
 import { rotuloCategoria } from "../../../utils/categorias.js";
+import { controlaEstoqueCategoria } from "../../../utils/estoque.js";
 import { apiProdutos } from "../../../services/api.js";
 import { estado, carregar, promocaoDoProduto } from "../store.js";
 import { toast, toastFalha } from "../../../components/toast.js";
@@ -44,7 +45,7 @@ const normalizarImagem = valor => String(valor || "").trim().replace(/^\/images\
 function prepararFoto(arquivo) {
   return new Promise((resolve, reject) => {
     if (!arquivo.type.startsWith("image/")) return reject(new Error("Escolha um arquivo de imagem."));
-    if (arquivo.size > 12 * 1024 * 1024) return reject(new Error("Imagem muito grande. Use ate 12 MB."));
+    if (arquivo.size > 12 * 1024 * 1024) return reject(new Error("Imagem muito grande. Use até 12 MB."));
 
     const url = URL.createObjectURL(arquivo);
     const imagem = new Image();
@@ -62,7 +63,7 @@ function prepararFoto(arquivo) {
     };
     imagem.onerror = () => {
       URL.revokeObjectURL(url);
-      reject(new Error("Nao foi possivel ler a imagem."));
+      reject(new Error("Não foi possível ler a imagem."));
     };
     imagem.src = url;
   });
@@ -81,7 +82,8 @@ function atualizarPreview(valor) {
 
 function cardProduto(produto) {
   const promocao = promocaoDoProduto(produto.id);
-  const semEstoque = produto.stock <= 0;
+  const controlaEstoque = controlaEstoqueCategoria(produto.category);
+  const semEstoque = controlaEstoque && produto.stock <= 0;
 
   return el("article.admin-product-card", { dataset: { id: produto.id } },
     el("div.admin-product-thumb", {}, produto.image
@@ -93,7 +95,7 @@ function cardProduto(produto) {
         el("strong", {}, produto.name),
         el("span.pill", { class: produto.active ? "is-active" : "is-paused" }, produto.active ? (semEstoque ? "Esgotado" : "Ativo") : "Pausado")
       ),
-      el("p", {}, produto.description || "Sem descricao cadastrada."),
+      el("p", {}, produto.description || "Sem descrição cadastrada."),
       el("div.admin-product-meta", {},
         el("span", {}, rotuloCategoria(produto.category)),
         el("span.price", {},
@@ -101,12 +103,14 @@ function cardProduto(produto) {
           promocao ? " " : null,
           reais(promocao ? promocao.price : produto.price)
         ),
-        el("span", { class: produto.stock <= produto.minStock ? "danger-text" : "" }, `${produto.stock} em estoque`)
+        controlaEstoque
+          ? el("span", { class: produto.stock <= produto.minStock ? "danger-text" : "" }, `${produto.stock} em estoque`)
+          : el("span", {}, "sem controle de estoque")
       )
     ),
     el("div.row-actions", { class: "right" },
-      el("button.ghost.small", { type: "button", title: "Subir no cardapio", dataset: { acao: "mover-ordem", id: produto.id, direction: "up" } }, "Subir"),
-      el("button.ghost.small", { type: "button", title: "Descer no cardapio", dataset: { acao: "mover-ordem", id: produto.id, direction: "down" } }, "Descer"),
+      el("button.ghost.small", { type: "button", title: "Subir no cardápio", dataset: { acao: "mover-ordem", id: produto.id, direction: "up" } }, "Subir"),
+      el("button.ghost.small", { type: "button", title: "Descer no cardápio", dataset: { acao: "mover-ordem", id: produto.id, direction: "down" } }, "Descer"),
       el("button.ghost.small", { type: "button", dataset: { acao: "editar", id: produto.id } }, "Editar"),
       el("button.ghost.small", { type: "button", dataset: { acao: "alternar", id: produto.id } },
         produto.active ? "Pausar" : "Ativar"),
@@ -219,7 +223,7 @@ function editar(id) {
   $("#product-image").value = produto.image || "";
   $("#product-active").checked = produto.active;
   $("#product-form-title").textContent = `Editando: ${produto.name}`;
-  $("#product-save-label").textContent = "Salvar alteracoes";
+  $("#product-save-label").textContent = "Salvar alterações";
   atualizarPreview(produto.image || "");
   $("#product-name").focus();
 }
@@ -279,7 +283,7 @@ export function ligarProdutos() {
 
   delegar(lista, "click", "[data-acao='remover']", async (_e, botao) => {
     const produto = estado.produtos.find(item => item.id === botao.dataset.id);
-    if (!confirm(`Excluir "${produto?.name}"? Para so tirar do cardapio, use Pausar.`)) return;
+    if (!confirm(`Excluir "${produto?.name}"? Para só tirar do cardápio, use Pausar.`)) return;
     try {
       await apiProdutos.remover(botao.dataset.id);
       await carregar("produtos");

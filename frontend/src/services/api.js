@@ -29,7 +29,7 @@ export const apiPedidos = {
   abertos: () => http.get("/painel/pedidos/abertos"),
   buscar: id => http.get(`/painel/pedidos/${id}`),
   criarManual: (pedido, opcoes) => http.post("/painel/pedidos", pedido, opcoes),
-  mudarStatus: (id, status) => http.patch(`/painel/pedidos/${id}/status`, { status }),
+  mudarStatus: (id, status, dados = {}) => http.patch(`/painel/pedidos/${id}/status`, { status, ...dados }),
   cancelar: (id, motivo) => http.post(`/painel/pedidos/${id}/cancelar`, { motivo }),
   definirMotoboy: (id, motoboy) => http.patch(`/painel/pedidos/${id}/motoboy`, { motoboy }),
   marcarImpresso: id => http.post(`/painel/pedidos/${id}/impresso`)

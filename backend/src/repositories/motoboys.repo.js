@@ -5,21 +5,25 @@ const paraApi = linha => linha && ({
   usuario: linha.usuario || "",
   nome: linha.usuario_nome_atual || linha.usuario_nome || "Motoboy",
   papel: linha.papel || "entregador",
+  deviceId: linha.dispositivo_id || "principal",
+  deviceName: linha.dispositivo_nome || "",
   lat: Number(linha.lat),
   lng: Number(linha.lng),
   accuracy: linha.precisao == null ? null : Number(linha.precisao),
+  online: new Date(linha.atualizado_em).getTime() >= Date.now() - 15000,
   updatedAt: linha.atualizado_em
 });
 
 export const motoboysRepo = {
-  async salvarLocalizacao(usuario, { lat, lng, accuracy = null }) {
+  async salvarLocalizacao(usuario, { lat, lng, accuracy = null, deviceId = "principal", deviceName = "" }) {
     const linha = await um(`
       INSERT INTO motoboy_localizacoes (
-        usuario_id, usuario_nome, papel, lat, lng, precisao, atualizado_em
-      ) VALUES (?, ?, ?, ?, ?, ?, now())
-      ON CONFLICT (usuario_id) DO UPDATE SET
+        usuario_id, usuario_nome, papel, dispositivo_id, dispositivo_nome, lat, lng, precisao, atualizado_em
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, now())
+      ON CONFLICT (usuario_id, dispositivo_id) DO UPDATE SET
         usuario_nome = EXCLUDED.usuario_nome,
         papel = EXCLUDED.papel,
+        dispositivo_nome = EXCLUDED.dispositivo_nome,
         lat = EXCLUDED.lat,
         lng = EXCLUDED.lng,
         precisao = EXCLUDED.precisao,
@@ -29,6 +33,8 @@ export const motoboysRepo = {
       usuario.id,
       usuario.nome || usuario.usuario || "Motoboy",
       usuario.papel || "entregador",
+      deviceId,
+      deviceName,
       lat,
       lng,
       accuracy

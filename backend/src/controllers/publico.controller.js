@@ -11,6 +11,7 @@ import { pedidosService } from "../services/pedidos.service.js";
 import { cuponsService } from "../services/cupons.service.js";
 import { entregaService } from "../services/entrega.service.js";
 import { ajustesRepo } from "../repositories/ajustes.repo.js";
+import { caixaRepo } from "../repositories/caixa.repo.js";
 import { tokenPublico, temToken } from "../lib/mapbox.js";
 import { ipDe } from "./contexto.js";
 
@@ -21,10 +22,11 @@ export const publicoController = {
    * por aqui. As tres consultas nao dependem uma da outra, entao vao juntas: em
    * fila seriam tres idas ao Postgres antes do primeiro byte. */
   async cardapio(_req, res) {
-    const [ajustes, produtos, entrega] = await Promise.all([
+    const [ajustes, produtos, entrega, caixa] = await Promise.all([
       ajustesRepo.todos(),
       produtosService.cardapioPublico(),
-      entregaService.configPublica()
+      entregaService.configPublica(),
+      caixaRepo.atual()
     ]);
     res.json({
       produtos,
@@ -32,7 +34,8 @@ export const publicoController = {
       loja: {
         nome: ajustes.nome_loja,
         endereco: ajustes.endereco_loja,
-        whatsapp: ajustes.whatsapp_entrega
+        whatsapp: ajustes.whatsapp_entrega,
+        caixaAberto: Boolean(caixa)
       }
     });
   },

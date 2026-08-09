@@ -98,14 +98,14 @@ export async function semear({ silencioso = false } = {}) {
     const senhaBalcao = env.BALCAO_BOOTSTRAP_PASSWORD || randomBytes(12).toString("base64url");
     await usuariosRepo.criar({
       usuario: "balcao@baixok.com",
-      nome: "Balcao Baixo K",
+      nome: "Balcão Baixo K",
       senhaHash: await gerarHashSenha(senhaBalcao),
       papel: "caixa",
       abasVer: PERMISSOES_BALCAO,
       abasEditar: ["pedidos", "mesas"]
     });
     avisar("Usuario de balcao criado: balcao@baixok.com");
-    if (!env.BALCAO_BOOTSTRAP_PASSWORD) avisar(`Senha inicial do balcao: ${senhaBalcao}`);
+    if (!env.BALCAO_BOOTSTRAP_PASSWORD) avisar(`Senha inicial do balcão: ${senhaBalcao}`);
   } else if (env.BALCAO_BOOTSTRAP_PASSWORD) {
     const balcao = await usuariosRepo.buscarPorUsuario("balcao@baixok.com");
     await usuariosRepo.trocarSenha(balcao.id, await gerarHashSenha(env.BALCAO_BOOTSTRAP_PASSWORD));

@@ -57,7 +57,7 @@ export const usuariosService = {
 
   async buscar(id) {
     const usuario = await usuariosRepo.buscar(id);
-    if (!usuario) throw naoEncontrado("Usuario nao encontrado.");
+    if (!usuario) throw naoEncontrado("Usuário não encontrado.");
     return usuario;
   },
 
@@ -66,11 +66,11 @@ export const usuariosService = {
       throw new ErroApp("Informe um e-mail valido para criar o acesso.", 400, "email_invalido");
     }
     if (await usuariosRepo.buscarPorUsuario(dados.usuario)) {
-      throw conflito("Ja existe alguem com esse nome de usuario.");
+      throw conflito("Já existe alguém com esse nome de usuário.");
     }
     if (supabaseAuth.ativo()) {
       const authExistente = await supabaseAuth.buscarUsuarioPorEmail(dados.usuario);
-      if (authExistente) throw conflito("Ja existe alguem com esse nome de usuario.");
+      if (authExistente) throw conflito("Já existe alguém com esse nome de usuário.");
     }
     const abasVer = normalizarLista(dados.abasVer, ABAS_POR_PADRAO[dados.papel] || ["pedidos"]);
     const abasEditar = normalizarLista(dados.abasEditar, EDITAVEIS_POR_PADRAO[dados.papel] || []);
@@ -127,7 +127,7 @@ export const usuariosService = {
     /* Ninguem muda o proprio papel: um caixa que conseguisse chamar esta rota se
      * promoveria a admin sozinho. Trocar de papel exige outra pessoa admin. */
     if (alvo.id === autor.id && dados.papel && dados.papel !== alvo.papel) {
-      throw new ErroApp("Voce nao pode alterar o proprio papel.", 403, "auto_promocao");
+      throw new ErroApp("Você não pode alterar o próprio papel.", 403, "auto_promocao");
     }
 
     const abasVer = dados.abasVer === undefined ? undefined : normalizarLista(dados.abasVer, []);
@@ -183,7 +183,7 @@ export const usuariosService = {
 
   async remover(id, { usuario: autor, ip }) {
     const alvo = await this.buscar(id);
-    if (alvo.id === autor.id) throw conflito("Voce nao pode remover o proprio usuario.");
+    if (alvo.id === autor.id) throw conflito("Você não pode remover o próprio usuário.");
     await garantirQueSobraAdmin(alvo, { ativo: false });
 
     await sessoesRepo.removerDoUsuario(id);

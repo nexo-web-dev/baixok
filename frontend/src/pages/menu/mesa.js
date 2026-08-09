@@ -25,6 +25,9 @@ export function iniciarModoMesa(numero) {
 
   const campoNome = $("#customer-name");
   if (campoNome) campoNome.placeholder = "Nome de quem está pedindo (opcional)";
+
+  const tituloMenu = $("#menu-title");
+  if (tituloMenu) tituloMenu.textContent = "Escolha para a mesa";
 }
 
 export function mostrarVista(vista) {
@@ -35,6 +38,11 @@ export function mostrarVista(vista) {
   mostrar($("#table-comanda"), vista === "comanda");
   for (const node of $$(".shop-layout, .hero, .mobile-cart, .nexo-footer")) {
     mostrar(node, vista === "inicio");
+  }
+  const botaoCarrinho = $("#open-cart");
+  if (botaoCarrinho) {
+    const quantidade = Number($("#cart-count")?.textContent || 0);
+    mostrar(botaoCarrinho, vista === "inicio" && quantidade > 0);
   }
   for (const aba of $$(".table-tab")) {
     aba.classList.toggle("active", aba.dataset.view === vista);

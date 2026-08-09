@@ -27,7 +27,7 @@ function linhaPromocao(promocao) {
   return el("div.promo-row", {},
     el("div", {},
       el("strong", {}, produto?.name || "Produto removido"),
-      el("span", {}, `${reais(promocao.price)} · economia de ${reais(economia)}${promocao.until ? ` · ate ${promocao.until}` : ""}`)
+      el("span", {}, `${reais(promocao.price)} · economia de ${reais(economia)}${promocao.until ? ` · até ${promocao.until}` : ""}`)
     ),
     el("button.ghost.small", { type: "button", dataset: { acao: "remover-promo", id: promocao.id } }, "Encerrar")
   );
@@ -38,7 +38,7 @@ export function desenharPromocoes() {
   if (lista) {
     render(lista, estado.promocoes.length
       ? estado.promocoes.map(linhaPromocao)
-      : el("p.faint", {}, "Nenhuma promocao ativa."));
+      : el("p.faint", {}, "Nenhuma promoção ativa."));
   }
 
   const select = $("#promo-product");
@@ -76,8 +76,8 @@ function linhaCupom(cupom) {
   const partes = [
     cupom.kind === "pct" ? `${cupom.amount}% off` : `${reais(cupom.amount)} off`,
     cupom.min ? `min. ${reais(cupom.min)}` : "",
-    cupom.once ? "uso unico" : "",
-    cupom.until ? `ate ${cupom.until}` : "sem prazo",
+    cupom.once ? "uso único" : "",
+    cupom.until ? `até ${cupom.until}` : "sem prazo",
     `${cupom.uses} usos`
   ].filter(Boolean);
 
@@ -111,7 +111,7 @@ function alternarUsoUnico() {
   usoUnico = !usoUnico;
   const botao = $("#coupon-once");
   botao.classList.toggle("active", usoUnico);
-  botao.textContent = usoUnico ? "✓ Uso unico por cliente" : "Uso unico por cliente";
+  botao.textContent = usoUnico ? "✓ Uso único por cliente" : "Uso único por cliente";
 }
 
 // ---------------------------------------------------------------- ligacao ---
@@ -121,7 +121,7 @@ export function ligarPromocoes() {
       await apiPromocoes.remover(botao.dataset.id);
       await carregar("promocoes");
       desenharPromocoes();
-      toast("Promocao encerrada.");
+      toast("Promoção encerrada.");
     } catch (erro) { toastFalha(erro); }
   });
 
@@ -139,10 +139,10 @@ export function ligarPromocoes() {
     const produto = estado.produtos.find(item => item.id === productId);
 
     if (!productId) return erroDoFormulario("promo-error", "Escolha o produto.");
-    if (price <= 0) return erroDoFormulario("promo-error", "Informe o preco promocional.");
+    if (price <= 0) return erroDoFormulario("promo-error", "Informe o preço promocional.");
     /* O servidor tambem valida. Aqui e so para responder na hora. */
     if (produto && price >= produto.price) {
-      return erroDoFormulario("promo-error", `O preco promocional precisa ser menor que ${reais(produto.price)}.`);
+      return erroDoFormulario("promo-error", `O preço promocional precisa ser menor que ${reais(produto.price)}.`);
     }
 
     try {
@@ -151,7 +151,7 @@ export function ligarPromocoes() {
       desenharPromocoes();
       $("#promo-price").value = "";
       $("#promo-until").value = "";
-      toast("Promocao ativada.");
+      toast("Promoção ativada.");
     } catch (erro) {
       erroDoFormulario("promo-error", erro.message);
     }
@@ -166,7 +166,7 @@ export function ligarPromocoes() {
     const code = $("#coupon-code").value.trim().toUpperCase();
     const amount = paraNumero($("#coupon-amount").value);
 
-    if (!code) return erroDoFormulario("coupon-error", "De um codigo ao cupom.");
+    if (!code) return erroDoFormulario("coupon-error", "Dê um código ao cupom.");
     if (amount <= 0) return erroDoFormulario("coupon-error", "Informe o valor do desconto.");
 
     try {

@@ -12,7 +12,7 @@ import { imprimir } from "../../../components/impressao.js";
 import { abrirQrMesa } from "../../../components/qr-mesa.js";
 import { abrirVendaManual } from "../venda-manual.js";
 
-const ROTULO_STATUS = { livre: "Livre", aberta: "Aberta - QR ativo", fechando: "Conta fechada" };
+const ROTULO_STATUS = { livre: "Livre", aberta: "Usando", fechando: "Falta pagamento" };
 
 function cabecalho(mesa) {
   return el("div.table-head", {},
@@ -28,7 +28,7 @@ function cartao(mesa) {
   if (mesa.status === "livre") {
     return el("article.table-card.is-livre", {},
       cabecalho(mesa),
-      el("p", {}, "Mesa livre. Abrir a comanda libera o QR code para pedidos desta mesa."),
+      el("p", {}, "Mesa livre. Verde significa pronta para abrir uma nova comanda."),
       el("button.primary.wide", { type: "button", dataset: { acao: "abrir", n: String(mesa.n) } }, "Abrir mesa")
     );
   }
@@ -44,7 +44,7 @@ function cartao(mesa) {
     return el("article.table-card.is-aberta", {},
       cabecalho(mesa),
       el("div.order-flags", {},
-        el("span.flag", {}, `aberta há ${esperaLegivel(minutosDesde(mesa.openedAt))}`),
+        el("span.flag", {}, `usando há ${esperaLegivel(minutosDesde(mesa.openedAt))}`),
         el("span.flag", {}, `${mesa.items.length} ${mesa.items.length === 1 ? "item" : "itens"}`)
       ),
       el("div.table-lines", {}, linhas.length ? linhas : el("p.faint", {}, "Nenhum pedido ainda. QR ativo.")),
@@ -66,7 +66,7 @@ function cartao(mesa) {
       )
     ),
     el("div.table-total", {}, el("span", {}, "Total"), el("span", {}, reais(conta.total))),
-    el("p.ok-text.small", {}, "Nota impressa no balcão. QR desativado."),
+    el("p.danger-text.small", {}, "Comanda fechada. Falta confirmar pagamento no balcão."),
     el("button.ghost-green.wide", { type: "button", dataset: { acao: "liberar", n: String(mesa.n) } }, "Pago - liberar mesa")
   );
 }

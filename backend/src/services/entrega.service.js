@@ -38,7 +38,7 @@ export const entregaService = {
       km: Math.round(km * 10) / 10,
       taxa: faixa ? Number(faixa.fee) : 0,
       minimo: faixa ? Number(faixa.min || 0) : 0,
-      zona: faixa ? `ate ${faixa.km} km` : null,
+      zona: faixa ? `até ${faixa.km} km` : null,
       endereco
     };
   },
@@ -48,7 +48,7 @@ export const entregaService = {
   async cotarPorEndereco(endereco) {
     const loja = await entregaRepo.config();
     const achados = await geocodificar(endereco, loja);
-    if (!achados.length) throw new ErroApp("Nao encontramos esse endereco.", 404, "endereco_nao_encontrado");
+    if (!achados.length) throw new ErroApp("Não encontramos esse endereço.", 404, "endereco_nao_encontrado");
     return this.calcularParaCoordenada(endereco, achados[0]);
   },
 

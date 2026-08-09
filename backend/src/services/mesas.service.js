@@ -46,7 +46,7 @@ export const mesasService = {
 
   async buscar(n) {
     const [mesa, percentual] = await Promise.all([mesasRepo.buscar(n), taxaServico()]);
-    if (!mesa) throw naoEncontrado("Mesa nao encontrada.");
+    if (!mesa) throw naoEncontrado("Mesa não encontrada.");
     return { ...mesa, conta: montarConta(mesa, percentual) };
   },
 
@@ -55,7 +55,7 @@ export const mesasService = {
    * ou qualquer coisa das demais mesas. */
   async comandaPublica(n) {
     const [mesa, percentual] = await Promise.all([mesasRepo.buscar(n), taxaServico()]);
-    if (!mesa) throw naoEncontrado("Mesa nao encontrada.");
+    if (!mesa) throw naoEncontrado("Mesa não encontrada.");
     return {
       n: mesa.n,
       status: mesa.status,
@@ -106,7 +106,7 @@ export const mesasService = {
    * acontece no balcao; liberar a mesa e um segundo passo, deliberadamente. */
   async fecharConta(n, { usuario, ip }) {
     const mesa = await this.buscar(n);
-    if (mesa.status === "livre") throw conflito("Esta mesa nao tem comanda aberta.");
+    if (mesa.status === "livre") throw conflito("Esta mesa não tem comanda aberta.");
 
     await mesasRepo.marcarFechando(n);
     const conta = mesa.conta;

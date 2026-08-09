@@ -12,7 +12,7 @@ export const senhaSchema = z
   .string()
   .min(10, "A senha precisa de pelo menos 10 caracteres.")
   .max(200, "Senha longa demais.")
-  .refine(valor => valor.trim().length >= 10, "A senha nao pode ser so espacos.");
+  .refine(valor => valor.trim().length >= 10, "A senha não pode ser só espaços.");
 
 export const loginSchema = z.object({
   usuario: z.string().trim().min(3, "Informe o usuario.").max(50),

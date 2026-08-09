@@ -19,7 +19,7 @@ import { ABAS, abaInicial, podeVer } from "./abas.js";
 import { ligarVendaManual } from "./venda-manual.js";
 
 import { desenharPedidos, ligarPedidos } from "./tabs/pedidos.js";
-import { desenharMotoboy, ligarMotoboy } from "./tabs/motoboy.js";
+import { desenharMotoboy, ligarMotoboy, iniciarRastreamentoMotoboy } from "./tabs/motoboy.js";
 import { desenharMesas, ligarMesas } from "./tabs/mesas.js";
 import { desenharProdutos, ligarProdutos } from "./tabs/produtos.js";
 import { desenharPromocoes, desenharCupons, ligarPromocoes } from "./tabs/promocoes.js";
@@ -199,6 +199,7 @@ async function iniciar() {
   estado.usuario = sessao.usuario;
   $("#usuario-nome").textContent = sessao.usuario.nome;
   $("#usuario-papel").textContent = { admin: "Administrador", caixa: "Caixa", cozinha: "Cozinha", entregador: "Entregador" }[sessao.usuario.papel];
+  iniciarRastreamentoMotoboy();
 
   montarMenu(sessao.usuario);
   ligarShell();
@@ -206,13 +207,7 @@ async function iniciar() {
   await carregar(...areasIniciais(sessao.usuario));
   desenharMetricas();
 
-  /* Admin sempre volta para Produtos ao entrar. Para os outros papeis, a URL
-   * ainda ajuda tablets de operacao a recarregar na aba em uso. */
-  const daUrl = location.hash.slice(1);
-  const chaveInicial = sessao.usuario.papel === "admin"
-    ? abaInicial(sessao.usuario)
-    : podeVer(daUrl, sessao.usuario) ? daUrl : abaInicial(sessao.usuario);
-  await abrirAba(chaveInicial);
+  await abrirAba(abaInicial(sessao.usuario));
 
   conectarEventos({
     canal: "operacao",

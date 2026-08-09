@@ -6,6 +6,7 @@ import { el, render, $, delegar } from "../../../utils/dom.js";
 import { apiProdutos, apiInsumos } from "../../../services/api.js";
 import { estado, carregar } from "../store.js";
 import { toast, toastFalha } from "../../../components/toast.js";
+import { controlaEstoqueCategoria } from "../../../utils/estoque.js";
 
 let insumoEmEdicao = null;
 
@@ -22,8 +23,9 @@ const quantidade = valor => new Intl.NumberFormat("pt-BR", {
 function cartaoProduto(produto) {
   const critico = produto.stock <= produto.minStock;
 
-  return el("article.stock-card", { class: critico ? "low" : "", dataset: { id: produto.id } },
+  return el("article.stock-card.beverage-stock", { class: critico ? "low" : "", dataset: { id: produto.id } },
     el("strong", {}, produto.name),
+    critico ? el("span.stock-alert", {}, "ALERTA DE ESTOQUE") : null,
     el("span.stock-value", { class: critico ? "danger-text" : "" }, String(produto.stock)),
     el("span.small", {}, `minimo ${produto.minStock}`),
     el("div.counter", {},
@@ -35,7 +37,7 @@ function cartaoProduto(produto) {
       }),
       el("button", { type: "button", dataset: { acao: "estoque", id: produto.id, delta: "1" }, "aria-label": `Adicionar uma unidade de ${produto.name}` }, "+")
     ),
-    !produto.active ? el("span.small.faint", {}, "pausado no cardapio") : null
+    !produto.active ? el("span.small.faint", {}, "pausado no cardápio") : null
   );
 }
 
@@ -47,6 +49,7 @@ function cartaoInsumo(insumo) {
       el("strong", {}, insumo.name),
       el("span.pill", { class: insumo.active ? "is-active" : "is-paused" }, insumo.active ? "Ativo" : "Pausado")
     ),
+    critico ? el("span.stock-alert", {}, "ALERTA DE INSUMO") : null,
     el("span.small", {}, `${insumo.category || "Geral"} | ${insumo.unit || "un"}`),
     el("span.stock-value", { class: critico ? "danger-text" : "" }, `${quantidade(insumo.qty)} ${insumo.unit || ""}`.trim()),
     el("span.small", {}, `minimo ${quantidade(insumo.minQty)} ${insumo.unit || ""}`.trim()),
@@ -99,8 +102,9 @@ export function desenharEstoque() {
   const alvo = $("#stock-grid");
   if (!alvo) return;
 
-  const produtos = [...estado.produtos].sort((a, b) =>
-    (a.stock - a.minStock) - (b.stock - b.minStock));
+  const produtos = [...estado.produtos]
+    .filter(produto => controlaEstoqueCategoria(produto.category))
+    .sort((a, b) => (a.stock - a.minStock) - (b.stock - b.minStock));
   const insumos = [...(estado.insumos || [])].sort((a, b) =>
     (a.qty - a.minQty) - (b.qty - b.minQty));
 
@@ -108,19 +112,19 @@ export function desenharEstoque() {
     el("section.stock-section", {},
       el("div.section-head", { class: "compact" },
         el("div", {},
-          el("h2", {}, "Produtos do cardapio"),
-          el("p", {}, "Ajuste o estoque que deixa o item visivel ou fora do cardapio.")
+          el("h2", {}, "Bebidas do cardápio"),
+          el("p", {}, "Controle refrigerante, drink e outras bebidas. Comida fica no cardápio enquanto estiver ativa; para tirar do ar, use Pausar em Produtos.")
         )
       ),
       el("div.stock-cards", {}, produtos.length
         ? produtos.map(cartaoProduto)
-        : el("p.faint.pad", {}, "Nenhum produto cadastrado."))
+        : el("p.faint.pad", {}, "Nenhuma bebida cadastrada no cardápio."))
     ),
     el("section.stock-section", {},
       el("div.section-head", { class: "compact" },
         el("div", {},
           el("h2", {}, "Insumos da operacao"),
-          el("p", {}, "Controle ingredientes, bebidas, descartaveis, embalagens e compras internas.")
+          el("p", {}, "Controle ingredientes, descartaveis, embalagens e compras internas.")
         )
       ),
       el("div.insumo-layout", {},

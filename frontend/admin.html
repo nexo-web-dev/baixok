@@ -77,14 +77,14 @@
         <button class="primary" type="button" id="open-manual-sale">+ Lançar pedido manual</button>
       </div>
       <div class="kanban" id="orders-kanban"></div>
-      <p class="tab-hint">Dica: arraste um card para qualquer coluna, para frente ou para tras, para corrigir o status.</p>
+      <p class="tab-hint">Dica: arraste um card para qualquer coluna, para frente ou para trás, para corrigir o status.</p>
     </section>
 
     <!-- ------------------------------------------------------------ motoboy -->
     <section class="admin-tab hidden" id="tab-motoboy">
       <div class="tab-guide">
         <strong>Como usar esta aba</strong>
-        <p>Mostra apenas pedidos de entrega que estao prontos ou ja foram entregues. Salve o nome do motoboy responsavel para ficar registrado no historico da venda.</p>
+        <p>Mostra apenas pedidos de entrega que estão prontos ou já foram entregues. Salve o nome do motoboy responsável para ficar registrado no histórico da venda.</p>
       </div>
       <div class="motoboy-location-panel" id="motoboy-location-panel"></div>
       <div class="motoboy-list" id="motoboy-list"></div>
@@ -134,7 +134,7 @@
           <input id="product-description" required placeholder="Descrição curta" maxlength="300">
           <div class="field-row">
             <input id="product-price" type="number" step="0.01" min="0" required placeholder="Preço (R$)">
-            <input id="product-stock" type="number" step="1" min="0" required placeholder="Estoque">
+            <input id="product-stock" type="number" step="1" min="0" placeholder="Estoque (bebidas)">
           </div>
           <input id="product-order" type="number" step="1" min="1" placeholder="Ordem no cardápio (ex: 1)">
           <input id="product-category" required maxlength="60" list="product-category-options" placeholder="Categoria (ex: Pizzas, Burguers, Combos)">
@@ -144,7 +144,7 @@
             <div class="photo-presets" id="photo-presets"></div>
             <div class="photo-upload">
               <button class="secondary" type="button" id="product-photo-button">📷 Enviar foto</button>
-              <img class="hidden" id="product-photo-preview" src="" alt="Previa da foto">
+              <img class="hidden" id="product-photo-preview" src="" alt="Prévia da foto">
               <span class="photo-empty">Sem foto cadastrada</span>
             </div>
             <input id="product-image" type="text" placeholder="Escreva a foto: images/produto-pizza.png ou envie pelo botão">
@@ -424,7 +424,7 @@
     </div>
   </div>
 
-  <iframe class="print-frame" id="print-frame" title="Impressao"></iframe>
+  <iframe class="print-frame" id="print-frame" title="Impressão"></iframe>
 
   <div class="modal hidden" id="cash-password-modal" role="dialog" aria-modal="true" aria-labelledby="cash-password-title">
     <form class="modal-card" id="cash-password-form">
@@ -481,7 +481,7 @@
         <div class="support-card">
           <span>E-mail</span>
           <strong>solucaonexo.co@gmail.com</strong>
-          <p>Solicitacoes formais, escopos e informacoes complementares.</p>
+          <p>Solicitações formais, escopos e informações complementares.</p>
           <a class="secondary" href="mailto:solucaonexo.co@gmail.com">Enviar</a>
         </div>
       </div>

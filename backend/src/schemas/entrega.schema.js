@@ -29,7 +29,7 @@ export const buscarEnderecoSchema = z.object({
  * forjadas, so enganam a propria tela: no fechamento do pedido o servidor
  * geocodifica o endereco de novo e refaz a conta do zero. */
 export const cotarEntregaSchema = z.object({
-  q: z.string().trim().min(3, "Endereco muito curto.").max(256),
+  q: z.string().trim().min(3, "Endereço muito curto.").max(256),
   lng: longitude.optional(),
   lat: latitude.optional()
 });

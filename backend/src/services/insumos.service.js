@@ -8,7 +8,7 @@ export const insumosService = {
 
   async buscar(id) {
     const insumo = await insumosRepo.buscar(id);
-    if (!insumo) throw naoEncontrado("Insumo nao encontrado.");
+    if (!insumo) throw naoEncontrado("Insumo não encontrado.");
     return insumo;
   },
 
@@ -26,7 +26,7 @@ export const insumosService = {
   async atualizar(id, dados, { usuario, ip }) {
     const anterior = await this.buscar(id);
     const insumo = await insumosRepo.atualizar(id, dados);
-    if (!insumo) throw naoEncontrado("Insumo nao encontrado.");
+    if (!insumo) throw naoEncontrado("Insumo não encontrado.");
 
     await auditoriaRepo.registrar({
       usuarioId: usuario.id, usuario: usuario.usuario, acao: "insumo_alterado",
@@ -44,7 +44,7 @@ export const insumosService = {
   async ajustar(id, ajuste, { usuario, ip }) {
     const anterior = await this.buscar(id);
     const insumo = await insumosRepo.ajustar(id, ajuste);
-    if (!insumo) throw naoEncontrado("Insumo nao encontrado.");
+    if (!insumo) throw naoEncontrado("Insumo não encontrado.");
 
     await auditoriaRepo.registrar({
       usuarioId: usuario.id, usuario: usuario.usuario, acao: "insumo_estoque",
@@ -57,7 +57,7 @@ export const insumosService = {
 
   async remover(id, { usuario, ip }) {
     const insumo = await this.buscar(id);
-    if (!(await insumosRepo.remover(id))) throw naoEncontrado("Insumo nao encontrado.");
+    if (!(await insumosRepo.remover(id))) throw naoEncontrado("Insumo não encontrado.");
     await auditoriaRepo.registrar({
       usuarioId: usuario.id, usuario: usuario.usuario, acao: "insumo_removido",
       entidade: "insumo", entidadeId: id, detalhes: { nome: insumo.name }, ip

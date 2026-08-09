@@ -37,7 +37,7 @@ export const pedidosController = {
   },
   async mudarStatus(req, res) {
     const { id } = req.validado.params;
-    res.json({ pedido: await pedidosService.mudarStatus(id, req.validado.body.status, contexto(req)) });
+    res.json({ pedido: await pedidosService.mudarStatus(id, req.validado.body, contexto(req)) });
   },
   async cancelar(req, res) {
     const { id } = req.validado.params;

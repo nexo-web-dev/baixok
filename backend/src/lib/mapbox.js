@@ -26,11 +26,11 @@ async function chamar(url) {
   const controle = AbortSignal.timeout(TEMPO_LIMITE_MS);
   const resposta = await fetch(url, { signal: controle }).catch(erro => {
     logger.warn("Mapbox inacessivel", { erro: erro.message });
-    throw indisponivel("Servico de endereco indisponivel no momento.");
+    throw indisponivel("Serviço de endereço indisponível no momento.");
   });
   if (!resposta.ok) {
     logger.warn("Mapbox recusou", { status: resposta.status });
-    throw indisponivel(`Servico de endereco respondeu ${resposta.status}.`);
+    throw indisponivel(`Serviço de endereço respondeu ${resposta.status}.`);
   }
   return resposta;
 }
@@ -39,7 +39,7 @@ async function chamar(url) {
  * existe em varias cidades, e sem isso a primeira resposta podia ser de outro
  * estado. */
 export async function geocodificar(texto, loja = {}) {
-  if (!temToken()) throw indisponivel("Busca de endereco nao configurada.");
+  if (!temToken()) throw indisponivel("Busca de endereço não configurada.");
 
   const params = new URLSearchParams({
     q: String(texto).slice(0, 256),
