@@ -25,8 +25,19 @@ function imagemParaApi(valor) {
   return imagem.length <= LIMITE_IMAGEM_API ? imagem : "";
 }
 
+function temImagemEmbutida(linha) {
+  return linha?.imagem_embutida === true
+    || linha?.imagem_embutida === 1
+    || linha?.imagem_embutida === "1"
+    || linha?.imagem_embutida === "true";
+}
+
 function imagemPublica(linha) {
   if (!linha) return "";
+  if (temImagemEmbutida(linha)) {
+    const versao = encodeURIComponent(linha.atualizado_em || "");
+    return `/api/publico/produtos/${encodeURIComponent(linha.id)}/imagem${versao ? `?v=${versao}` : ""}`;
+  }
   const imagem = String(linha.imagem || "");
   if (!imagem) return "";
   if (DATA_IMAGE_RE.test(imagem)) {
