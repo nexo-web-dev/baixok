@@ -34,7 +34,7 @@ export const toastOk = mensagem => toast(mensagem, { tipo: "ok" });
  * quem esta no balcao no meio do movimento nao ajuda ninguem. */
 export function toastFalha(erro, prefixo = "") {
   const mensagem = erro?.codigo === "offline"
-    ? "Sem conexao com o servidor. Verifique a rede da loja."
-    : erro?.message || "Nao foi possivel completar a acao.";
+    ? "Sem conexão com o servidor. Verifique a rede da loja."
+    : erro?.message || "Não foi possível completar a ação.";
   toastErro(prefixo ? `${prefixo}: ${mensagem}` : mensagem);
 }
