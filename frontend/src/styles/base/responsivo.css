@@ -155,9 +155,15 @@
     border-radius: var(--radius-md) var(--radius-md) 0 0;
     transform: translateY(100%);
   }
+  body[data-page="menu"][data-mode="mesa"] .cart {
+    top: 124px;
+    max-height: calc(100dvh - 124px);
+    padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  }
   body[data-page="menu"].cart-open .cart { transform: translateY(0); }
   body[data-page="menu"].cart-open .shop-layout { padding-right: 20px; }
   body[data-page="menu"] .cart-head { border-radius: var(--radius-md) var(--radius-md) 0 0; }
+  body[data-page="menu"][data-mode="mesa"] .cart-head { top: -14px; }
   body[data-page="menu"] .cart-row { grid-template-columns: 78px minmax(0, 1fr); gap: 12px; padding: 10px; }
   body[data-page="menu"] .cart-thumb { width: 78px; }
   body[data-page="menu"] .cart-thumb img, body[data-page="menu"] .cart-thumb .no-photo { width: 78px; height: 78px; min-height: 78px; }
