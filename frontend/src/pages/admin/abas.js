@@ -22,49 +22,49 @@ const PAPEL_PADRAO_EDITAR = Object.freeze({
 export const ABAS = Object.freeze({
   pedidos: {
     titulo: "Fila de pedidos",
-    subtitulo: "Tudo que entra pelo cardapio, WhatsApp ou lancamento manual.",
+    subtitulo: "Tudo que entra pelo cardápio, WhatsApp ou lançamento manual.",
     icone: "☰",
     rotulo: "Pedidos",
     papeis: ["admin", "caixa", "cozinha", "entregador"]
   },
   motoboy: {
     titulo: "Motoboy",
-    subtitulo: "Entregas prontas e entregues, com responsavel pela rota.",
+    subtitulo: "Entregas prontas e entregues, com responsável pela rota.",
     icone: "MB",
     rotulo: "Motoboy",
     papeis: ["admin", "caixa", "entregador"]
   },
   mesas: {
-    titulo: "Mesas do salao",
+    titulo: "Mesas do salão",
     subtitulo: "Comanda por mesa com QR code, parcial e fechamento de conta.",
     icone: "▪",
-    rotulo: "Mesas (salao)",
+    rotulo: "Mesas (salão)",
     papeis: ["admin", "caixa"]
   },
   produtos: {
     titulo: "Produtos",
-    subtitulo: "Cardapio que o cliente ve. Pausar tira do ar sem apagar o cadastro.",
+    subtitulo: "Cardápio que o cliente vê. Pausar tira do ar sem apagar o cadastro.",
     icone: "◱",
     rotulo: "Produtos",
     papeis: ["admin"]
   },
   promos: {
-    titulo: "Promocoes e cupons",
-    subtitulo: "Preco promocional e cupons de desconto.",
+    titulo: "Promoções e cupons",
+    subtitulo: "Preço promocional e cupons de desconto.",
     icone: "✦",
-    rotulo: "Promocoes",
+    rotulo: "Promoções",
     papeis: ["admin"]
   },
   entrega: {
-    titulo: "Area de entrega",
-    subtitulo: "Ponto da loja e faixas de raio com taxa e pedido minimo.",
+    titulo: "Área de entrega",
+    subtitulo: "Ponto da loja e faixas de raio com taxa e pedido mínimo.",
     icone: "◈",
-    rotulo: "Area de entrega",
+    rotulo: "Área de entrega",
     papeis: ["admin"]
   },
   estoque: {
     titulo: "Estoque",
-    subtitulo: "Contador por produto. Item zerado sai do cardapio sozinho.",
+    subtitulo: "Contador por produto. Item zerado sai do cardápio sozinho.",
     icone: "▤",
     rotulo: "Estoque",
     papeis: ["admin", "caixa"]
@@ -78,7 +78,7 @@ export const ABAS = Object.freeze({
   },
   fechamentos: {
     titulo: "Fechamentos de caixa",
-    subtitulo: "Historico de aberturas, fechamentos e relatorios para imprimir ou salvar em PDF.",
+    subtitulo: "Histórico de aberturas, fechamentos e relatórios para imprimir ou salvar em PDF.",
     icone: "FC",
     rotulo: "Fechamentos",
     papeis: ["admin", "caixa"]
@@ -91,7 +91,7 @@ export const ABAS = Object.freeze({
     papeis: ["admin"]
   },
   usuarios: {
-    titulo: "Usuarios e auditoria",
+    titulo: "Usuários e auditoria",
     subtitulo: "Quem tem acesso, o que pode ver/editar, e o registro do que foi feito.",
     icone: "◍",
     rotulo: "Usuarios",
