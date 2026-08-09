@@ -98,6 +98,15 @@
         <strong>Como usar esta aba</strong>
         <p>Comanda por mesa com QR code: o cliente escaneia, envia o primeiro pedido e a mesa abre automaticamente no sistema. O balcão acompanha o parcial, recebe alerta e fecha a conta imprimindo a nota.</p>
       </div>
+      <div class="tab-guide" id="menu-url-panel">
+        <strong>Endereço público do cardápio</strong>
+        <p>O QR da mesa aponta pra cá. Sem preencher, ele usa o endereço que você está usando agora no navegador — funciona só nesse aparelho, e por isso o QR "quebra" quando outra pessoa escaneia. Preencha com o link público de verdade (ex: o endereço do Netlify).</p>
+        <div class="field-row">
+          <input id="menu-url-input" type="text" placeholder="https://baixok.netlify.app" style="flex:1">
+          <button class="primary" type="button" id="menu-url-save">Salvar endereço</button>
+        </div>
+        <p class="form-error hidden" id="menu-url-error" role="alert"></p>
+      </div>
       <div class="tables-bar">
         <strong>Mesas no salão</strong>
         <div class="counter">
@@ -161,7 +170,7 @@
             <input id="product-photo-file" type="file" accept="image/*" capture="environment" class="hidden">
           </div>
           <label class="check-field"><input id="product-active" type="checkbox" checked> Ativo no cardápio</label>
-          <label class="check-field"><input id="product-sabor-pizza" type="checkbox"> Permite pizza de 2 sabores (aparece na tela "quantos sabores?" do cliente)</label>
+          <label class="check-field"><input id="product-sabor-pizza" type="checkbox" disabled> Pizza de 2 sabores (automático para a categoria "pizzas" — configure as combinações na aba Combos)</label>
           <div class="field-row">
             <button class="primary wide" type="submit" id="product-save-label">Cadastrar produto</button>
             <button class="secondary" type="button" id="product-reset">Limpar</button>
@@ -227,7 +236,7 @@
           <h2>Combinações de sabores</h2>
           <div class="promo-list" id="sabor-combo-list"></div>
           <div class="panel-divider">
-            <strong class="field-label gold">Nova combinação</strong>
+            <strong class="field-label gold" id="sabor-combo-form-title">Nova combinação</strong>
             <div class="field-row">
               <select id="sabor-combo-a" aria-label="Primeiro sabor"></select>
               <select id="sabor-combo-b" aria-label="Segundo sabor"></select>

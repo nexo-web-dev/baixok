@@ -17,7 +17,13 @@ function normalizarEstoqueDoProduto(dados) {
   return {
     ...dados,
     stock: controla ? Number(dados.stock || 0) : 0,
-    minStock: controla ? Number(dados.minStock ?? 4) : 0
+    minStock: controla ? Number(dados.minStock ?? 4) : 0,
+    /* Pizza de 2 sabores nao e escolha por produto: e a categoria inteira.
+     * Quais combinacoes realmente vendem quem decide e a tela de
+     * combinacoes de sabores — aqui e so "esse produto e um sabor". Ignora o
+     * que vier do cliente de proposito, igual ao preco: decisao da casa, nao
+     * do formulario. */
+    saborPizza: dados.category === "pizzas"
   };
 }
 

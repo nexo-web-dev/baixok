@@ -8,8 +8,12 @@ const normalizarBusca = valor => String(valor || "")
   .replace(/\p{Diacritic}/gu, "")
   .toLowerCase();
 
+/* "promocoes" nao e categoria de verdade: e um filtro por cima de qualquer
+ * categoria, entao so aparece quando ha pelo menos um item promocional no
+ * momento — nao faz sentido oferecer um filtro que sempre daria vazio. */
 function categoriasFiltro(produtos) {
   const categorias = new Map([["todos", "Todos"]]);
+  if ((produtos || []).some(produto => produto.emPromocao)) categorias.set("promocoes", "Promoções");
   for (const produto of produtos || []) {
     const categoria = String(produto.category || "").trim();
     if (categoria && !categorias.has(categoria)) categorias.set(categoria, rotuloCategoria(categoria));
@@ -131,7 +135,8 @@ export function desenharGrade(produtos, { categoria, busca, lojaAberta = true })
 
   const termo = normalizarBusca(busca || "").trim();
   const lista = produtos.filter(produto => {
-    const categoriaOk = categoria === "todos" || produto.category === categoria;
+    const categoriaOk = categoria === "todos"
+      || (categoria === "promocoes" ? Boolean(produto.emPromocao) : produto.category === categoria);
     const buscaOk = !termo ||
       normalizarBusca(`${produto.name} ${produto.description || ""} ${produto.badge || ""} ${produto.category || ""}`).includes(termo);
     return categoriaOk && buscaOk;

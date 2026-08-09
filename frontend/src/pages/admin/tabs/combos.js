@@ -33,6 +33,13 @@ function linhaSaborCombo(combinacao) {
     ),
     el("button.ghost.small", {
       type: "button",
+      dataset: {
+        acao: "editar-sabor-combo",
+        a: combinacao.produtoAId, b: combinacao.produtoBId, preco: String(combinacao.preco)
+      }
+    }, "Editar"),
+    el("button.danger.small", {
+      type: "button",
       dataset: { acao: "remover-sabor-combo", a: combinacao.produtoAId, b: combinacao.produtoBId }
     }, "Remover")
   );
@@ -165,10 +172,22 @@ export function ligarCombos() {
       await carregar("combinacoesSabores");
       desenharCombinacoesSabores();
       $("#sabor-combo-preco").value = "";
+      const titulo = $("#sabor-combo-form-title");
+      if (titulo) titulo.textContent = "Nova combinação";
       toast("Combinação salva.");
     } catch (erro) {
       erroDoFormulario("sabor-combo-error", erro.message);
     }
+  });
+
+  delegar($("#sabor-combo-list"), "click", "[data-acao='editar-sabor-combo']", (_e, botao) => {
+    erroDoFormulario("sabor-combo-error", "");
+    $("#sabor-combo-a").value = botao.dataset.a;
+    $("#sabor-combo-b").value = botao.dataset.b;
+    $("#sabor-combo-preco").value = botao.dataset.preco;
+    const titulo = $("#sabor-combo-form-title");
+    if (titulo) titulo.textContent = "Editando combinação";
+    $("#sabor-combo-a").scrollIntoView({ behavior: "smooth", block: "center" });
   });
 
   delegar($("#sabor-combo-list"), "click", "[data-acao='remover-sabor-combo']", async (_e, botao) => {

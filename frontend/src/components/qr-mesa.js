@@ -32,35 +32,98 @@ function carregarImagem(src) {
   });
 }
 
-function escreverCentralizado(ctx, texto, y, tamanho, peso = 700) {
+const COPPER = "#c97443";
+const GOLD = "#d99a68";
+const INK = "#20180f";
+const MUTED = "#8a7d6c";
+
+function escreverCentralizado(ctx, texto, x, y, tamanho, peso = 700, cor = INK) {
   ctx.font = `${peso} ${tamanho}px Arial, sans-serif`;
-  ctx.fillText(texto, 360, y);
+  ctx.fillStyle = cor;
+  ctx.fillText(texto, x, y);
+}
+
+function retanguloArredondado(ctx, x, y, largura, altura, raio) {
+  ctx.beginPath();
+  ctx.moveTo(x + raio, y);
+  ctx.arcTo(x + largura, y, x + largura, y + altura, raio);
+  ctx.arcTo(x + largura, y + altura, x, y + altura, raio);
+  ctx.arcTo(x, y + altura, x, y, raio);
+  ctx.arcTo(x, y, x + largura, y, raio);
+  ctx.closePath();
 }
 
 async function gerarQrParaImpressao(numero, url) {
-  const qr = await QRCode.toDataURL(url, { ...OPCOES, width: 560, margin: 2 });
-  const imagemQr = await carregarImagem(qr);
+  const qr = await QRCode.toDataURL(url, { ...OPCOES, width: 640, margin: 1 });
+  const [imagemQr, logo] = await Promise.all([
+    carregarImagem(qr),
+    carregarImagem("/images/baixok-logo-v2.png").catch(() => null)
+  ]);
+
+  const LARGURA = 760;
+  const ALTURA = 1260;
+  const CENTRO = LARGURA / 2;
   const canvas = document.createElement("canvas");
-  canvas.width = 720;
-  canvas.height = 900;
+  canvas.width = LARGURA;
+  canvas.height = ALTURA;
 
   const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
   ctx.textAlign = "center";
-  ctx.fillStyle = "#12100e";
-  escreverCentralizado(ctx, "BAIXO K", 66, 34, 800);
-  escreverCentralizado(ctx, `MESA ${numero}`, 138, 56, 900);
-  escreverCentralizado(ctx, "Escaneie para pedir na mesa", 182, 24, 700);
 
-  ctx.strokeStyle = "#12100e";
-  ctx.lineWidth = 4;
-  ctx.strokeRect(52, 96, 616, 112);
-  ctx.drawImage(imagemQr, 80, 240, 560, 560);
+  // Fundo e faixa de topo — o resto da folha fica branco de proposito, pra
+  // gastar o minimo de tinta possivel numa impressora de balcao.
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, LARGURA, ALTURA);
+  ctx.fillStyle = COPPER;
+  ctx.fillRect(0, 0, LARGURA, 14);
 
-  ctx.fillStyle = "#333333";
-  escreverCentralizado(ctx, "Chame o garcom para fechar a conta.", 846, 21, 700);
+  // Logo + marca.
+  if (logo) {
+    const raioLogo = 44;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(CENTRO, 96, raioLogo, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.clip();
+    ctx.drawImage(logo, CENTRO - raioLogo, 96 - raioLogo, raioLogo * 2, raioLogo * 2);
+    ctx.restore();
+    ctx.strokeStyle = GOLD;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(CENTRO, 96, raioLogo, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  escreverCentralizado(ctx, "BAIXO K", CENTRO, 182, 30, 800, INK);
+
+  // Numero da mesa em destaque — e o que precisa ser lido de longe.
+  const pillY = 218;
+  const pillH = 96;
+  ctx.fillStyle = COPPER;
+  retanguloArredondado(ctx, CENTRO - 220, pillY, 440, pillH, pillH / 2);
+  ctx.fill();
+  escreverCentralizado(ctx, `MESA ${numero}`, CENTRO, pillY + pillH / 2 + 20, 54, 900, "#ffffff");
+
+  escreverCentralizado(ctx, "Aponte a câmera do celular para o código abaixo", CENTRO, pillY + pillH + 46, 22, 600, MUTED);
+
+  // Cartao do QR, com respiro generoso em volta.
+  const qrLado = 560;
+  const cartaoLado = qrLado + 96;
+  const cartaoX = CENTRO - cartaoLado / 2;
+  const cartaoY = pillY + pillH + 78;
+  ctx.strokeStyle = "#e7dfd3";
+  ctx.lineWidth = 2;
+  retanguloArredondado(ctx, cartaoX, cartaoY, cartaoLado, cartaoLado, 28);
+  ctx.stroke();
+  ctx.drawImage(imagemQr, cartaoX + 48, cartaoY + 48, qrLado, qrLado);
+
+  // Rodape: chamada de acao dentro de um badge leve, com mais distancia do QR.
+  const rodapeY = cartaoY + cartaoLado + 70;
+  ctx.fillStyle = "#f7ede3";
+  retanguloArredondado(ctx, CENTRO - 260, rodapeY, 520, 56, 28);
+  ctx.fill();
+  escreverCentralizado(ctx, "Chame o garçom para fechar a conta", CENTRO, rodapeY + 36, 22, 700, "#8a4a24");
+
+  escreverCentralizado(ctx, "Escaneie, monte seu pedido e envie direto para a cozinha", CENTRO, rodapeY + 100, 19, 500, MUTED);
 
   return canvas.toDataURL("image/png");
 }

@@ -55,6 +55,16 @@ function atualizarCampoEstoqueProduto() {
   if (!controla) campo.value = "";
 }
 
+/* Sabor de pizza nao e escolha por produto: e a categoria inteira. Quem
+ * decide quais combinacoes vendem de verdade e a aba de combinacoes de
+ * sabores — aqui e so informativo, sempre travado. */
+function atualizarCampoSaborPizza() {
+  const campo = $("#product-sabor-pizza");
+  if (!campo) return;
+  campo.checked = $("#product-category")?.value.trim() === "pizzas";
+  campo.disabled = true;
+}
+
 /* Redimensiona e recomprime no proprio navegador antes de enviar. */
 function prepararFoto(arquivo) {
   return new Promise((resolve, reject) => {
@@ -239,9 +249,9 @@ function limparFormulario() {
   $("#product-featured").value = "0";
   $("#product-category").value = "";
   atualizarCampoEstoqueProduto();
+  atualizarCampoSaborPizza();
   $("#product-image").value = "";
   $("#product-active").checked = true;
-  $("#product-sabor-pizza").checked = false;
   $("#product-form-title").textContent = "Novo produto";
   $("#product-save-label").textContent = "Cadastrar produto";
   atualizarPreview("");
@@ -259,10 +269,10 @@ function editar(id) {
   $("#product-featured").value = String(produto.featuredOrder || 0);
   $("#product-category").value = produto.category;
   atualizarCampoEstoqueProduto();
+  atualizarCampoSaborPizza();
   $("#product-stock").value = controlaEstoqueCategoria(produto.category) ? String(produto.stock) : "";
   $("#product-image").value = produto.image || "";
   $("#product-active").checked = produto.active;
-  $("#product-sabor-pizza").checked = Boolean(produto.saborPizza);
   $("#product-form-title").textContent = `Editando: ${produto.name}`;
   $("#product-save-label").textContent = "Salvar alterações";
   atualizarPreview(produto.image || "");
@@ -355,9 +365,10 @@ export function ligarProdutos() {
     desenharProdutos();
   });
   $("#product-image")?.addEventListener("input", evento => atualizarPreview(evento.target.value));
-  $("#product-category")?.addEventListener("input", atualizarCampoEstoqueProduto);
-  $("#product-category")?.addEventListener("change", atualizarCampoEstoqueProduto);
+  $("#product-category")?.addEventListener("input", () => { atualizarCampoEstoqueProduto(); atualizarCampoSaborPizza(); });
+  $("#product-category")?.addEventListener("change", () => { atualizarCampoEstoqueProduto(); atualizarCampoSaborPizza(); });
   atualizarCampoEstoqueProduto();
+  atualizarCampoSaborPizza();
   $("#product-photo-button")?.addEventListener("click", () => $("#product-photo-file").click());
 
   $("#product-photo-file")?.addEventListener("change", async evento => {

@@ -5,7 +5,7 @@
  * trava novos pedidos ate o pagamento liberar a mesa. */
 import { el, render, $, delegar, mostrar, ligarModal } from "../../../utils/dom.js";
 import { reais, minutosDesde, esperaLegivel } from "../../../utils/formato.js";
-import { apiMesas } from "../../../services/api.js";
+import { apiMesas, apiAjustes } from "../../../services/api.js";
 import { estado, carregar } from "../store.js";
 import { toast, toastFalha } from "../../../components/toast.js";
 import { imprimir } from "../../../components/impressao.js";
@@ -79,6 +79,11 @@ export function desenharMesas() {
   if (contador) contador.textContent = String(estado.mesas.length);
 
   render(alvo, ...estado.mesas.map(cartao));
+
+  /* So preenche se o campo nao estiver com foco: o admin pode estar digitando
+   * quando um evento em tempo real redesenha a aba. */
+  const campoUrl = $("#menu-url-input");
+  if (campoUrl && document.activeElement !== campoUrl) campoUrl.value = estado.ajustes.menu_url || "";
 }
 
 async function recarregar() {
@@ -140,6 +145,19 @@ export function ligarMesas() {
 
   delegar(alvo, "click", "[data-acao='qr']", (_e, botao) =>
     abrirQrMesa(Number(botao.dataset.n), estado.ajustes.menu_url));
+
+  $("#menu-url-save")?.addEventListener("click", async () => {
+    const erro = $("#menu-url-error");
+    if (erro) mostrar(erro, false);
+    const valor = $("#menu-url-input")?.value.trim() || "";
+    try {
+      await apiAjustes.gravar({ menu_url: valor });
+      await carregar("ajustes");
+      toast("Endereço do cardápio salvo. QR novos das mesas já usam esse link.");
+    } catch (falha) {
+      if (erro) { erro.textContent = falha.message; mostrar(erro, true); }
+    }
+  });
 
   delegar(alvo, "click", "[data-acao='fechar']", (_e, botao) => abrirFecharConta(Number(botao.dataset.n)));
 
