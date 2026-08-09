@@ -55,13 +55,15 @@ function atualizarCampoEstoqueProduto() {
   if (!controla) campo.value = "";
 }
 
-/* Sabor de pizza nao e escolha por produto: e a categoria inteira. Quem
- * decide quais combinacoes vendem de verdade e a aba de combinacoes de
- * sabores — aqui e so informativo, sempre travado. */
+/* Sabor de pizza nao e escolha por produto: e a categoria inteira. Categoria
+ * e texto livre ("Pizzas Salgadas", "Pizzas Doces", "pizzas"...), entao a
+ * checagem e por conter "pizza", nao pela string inteira igual. Quem decide
+ * quais combinacoes vendem de verdade e a aba de combinacoes de sabores —
+ * aqui e so informativo, sempre travado. */
 function atualizarCampoSaborPizza() {
   const campo = $("#product-sabor-pizza");
   if (!campo) return;
-  campo.checked = $("#product-category")?.value.trim() === "pizzas";
+  campo.checked = normalizarBusca($("#product-category")?.value).includes("pizza");
   campo.disabled = true;
 }
 

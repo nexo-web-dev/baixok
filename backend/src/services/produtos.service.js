@@ -12,6 +12,18 @@ const SELO_POR_CATEGORIA = {
   pizzas: "Pizza", burgues: "Burguer", massas: "Massa", drinks: "Drink", porcoes: "Porcao"
 };
 
+/* Categoria e texto livre ("Pizzas Salgadas", "Pizzas Doces", "pizzas"...),
+ * entao a checagem e por conter "pizza", nao por bater a string inteira —
+ * assim toda variante de pizza cai na regra sem precisar padronizar o nome
+ * exato da categoria no cadastro. */
+function ehCategoriaPizza(categoria) {
+  return String(categoria || "")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .includes("pizza");
+}
+
 function normalizarEstoqueDoProduto(dados) {
   const controla = controlaEstoqueCategoria(dados.category);
   return {
@@ -23,7 +35,7 @@ function normalizarEstoqueDoProduto(dados) {
      * combinacoes de sabores — aqui e so "esse produto e um sabor". Ignora o
      * que vier do cliente de proposito, igual ao preco: decisao da casa, nao
      * do formulario. */
-    saborPizza: dados.category === "pizzas"
+    saborPizza: ehCategoriaPizza(dados.category)
   };
 }
 
