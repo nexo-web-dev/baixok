@@ -74,7 +74,7 @@ const paraApi = linha => linha && ({
   order: linha.ordem ?? 9999,
   featuredOrder: linha.destaque_ordem ?? 0,
   active: doBanco(linha.ativo),
-  image: imagemParaApi(linha.imagem),
+  image: imagemPublica(linha),
   badge: linha.selo,
   description: linha.descricao,
   createdAt: linha.criado_em,
@@ -91,6 +91,7 @@ export const produtosRepo = {
                WHEN imagem LIKE 'data:image/%' AND length(imagem) > ${LIMITE_IMAGEM_API} THEN ''
                ELSE imagem
              END AS imagem,
+             imagem LIKE 'data:image/%;base64,%' AS imagem_embutida,
              selo, descricao, criado_em, atualizado_em
         FROM produtos
        ORDER BY ordem ASC, categoria, nome
@@ -133,7 +134,7 @@ export const produtosRepo = {
   },
 
   async imagemPublica(id) {
-    const linha = await um("SELECT imagem, atualizado_em FROM produtos WHERE id = ? AND ativo = 1", [id]);
+    const linha = await um("SELECT imagem, atualizado_em FROM produtos WHERE id = ?", [id]);
     const match = String(linha?.imagem || "").match(DATA_IMAGE_RE);
     if (!match) return null;
     return {

@@ -23,6 +23,48 @@ export function urlDaMesa(numero, menuUrl) {
   return `${base}${separador}mesa=${numero}`;
 }
 
+function carregarImagem(src) {
+  return new Promise((resolve, reject) => {
+    const imagem = new Image();
+    imagem.onload = () => resolve(imagem);
+    imagem.onerror = reject;
+    imagem.src = src;
+  });
+}
+
+function escreverCentralizado(ctx, texto, y, tamanho, peso = 700) {
+  ctx.font = `${peso} ${tamanho}px Arial, sans-serif`;
+  ctx.fillText(texto, 360, y);
+}
+
+async function gerarQrParaImpressao(numero, url) {
+  const qr = await QRCode.toDataURL(url, { ...OPCOES, width: 560, margin: 2 });
+  const imagemQr = await carregarImagem(qr);
+  const canvas = document.createElement("canvas");
+  canvas.width = 720;
+  canvas.height = 900;
+
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#12100e";
+  escreverCentralizado(ctx, "BAIXO K", 66, 34, 800);
+  escreverCentralizado(ctx, `MESA ${numero}`, 138, 56, 900);
+  escreverCentralizado(ctx, "Escaneie para pedir na mesa", 182, 24, 700);
+
+  ctx.strokeStyle = "#12100e";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(52, 96, 616, 112);
+  ctx.drawImage(imagemQr, 80, 240, 560, 560);
+
+  ctx.fillStyle = "#333333";
+  escreverCentralizado(ctx, "Chame o garcom para fechar a conta.", 846, 21, 700);
+
+  return canvas.toDataURL("image/png");
+}
+
 export async function abrirQrMesa(numero, menuUrl) {
   const modal = $("#qr-modal");
   if (!modal) return;
@@ -33,7 +75,7 @@ export async function abrirQrMesa(numero, menuUrl) {
 
   try {
     const paraTela = await QRCode.toDataURL(url, { ...OPCOES, width: 220 });
-    const paraImpressao = await QRCode.toDataURL(url, { ...OPCOES, width: 800, margin: 2 });
+    const paraImpressao = await gerarQrParaImpressao(numero, url);
 
     $("#qr-image").src = paraTela;
     $("#qr-print").href = paraImpressao;

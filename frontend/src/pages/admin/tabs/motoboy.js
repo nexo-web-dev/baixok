@@ -68,11 +68,54 @@ function deviceId() {
   }
 }
 
-function deviceName() {
+function navegadorNome(ua) {
+  if (/edg\//i.test(ua)) return "Edge";
+  if (/opr\//i.test(ua)) return "Opera";
+  if (/firefox\//i.test(ua)) return "Firefox";
+  if (/crios\//i.test(ua)) return "Chrome iOS";
+  if (/chrome\//i.test(ua)) return "Chrome";
+  if (/safari\//i.test(ua)) return "Safari";
+  return "";
+}
+
+function sistemaNome(ua, plataforma = "") {
+  const base = `${ua} ${plataforma}`;
+  if (/iphone/i.test(base)) return "iPhone";
+  if (/ipad/i.test(base)) return "iPad";
+  if (/android/i.test(base)) return "Android";
+  if (/windows/i.test(base)) return "Windows";
+  if (/mac/i.test(base)) return "macOS";
+  if (/linux/i.test(base)) return "Linux";
+  return plataforma || "";
+}
+
+async function deviceName() {
+  const ua = navigator.userAgent || "";
   const partes = [];
-  partes.push(/mobile|android|iphone|ipad/i.test(navigator.userAgent) ? "celular" : "computador");
-  if (navigator.platform) partes.push(navigator.platform);
-  return partes.join(" - ").slice(0, 80);
+  const uaData = navigator.userAgentData;
+  let plataforma = navigator.platform || "";
+  let modelo = "";
+  let mobile = /mobile|android|iphone|ipad/i.test(ua);
+
+  try {
+    if (uaData?.getHighEntropyValues) {
+      const dados = await uaData.getHighEntropyValues(["platform", "model", "mobile"]);
+      plataforma = dados.platform || plataforma;
+      modelo = dados.model || "";
+      mobile = Boolean(dados.mobile);
+    }
+  } catch {
+    /* O navegador pode negar esses detalhes por privacidade. */
+  }
+
+  partes.push(mobile ? "celular" : "computador");
+  const sistema = sistemaNome(ua, plataforma);
+  if (sistema) partes.push(sistema);
+  if (modelo) partes.push(modelo);
+  const navegador = navegadorNome(ua);
+  if (navegador) partes.push(navegador);
+
+  return Array.from(new Set(partes)).join(" - ").slice(0, 120);
 }
 
 function minutosDesde(data) {
@@ -198,7 +241,7 @@ async function enviarLocalizacao(posicao, { forcar = false } = {}) {
       lng: posicao.coords.longitude,
       accuracy: posicao.coords.accuracy,
       deviceId: deviceId(),
-      deviceName: deviceName(),
+      deviceName: await deviceName(),
       motoboy: nomeMotoboyLocal() || undefined
     });
     const status = $("#motoboy-location-status");

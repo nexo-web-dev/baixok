@@ -27,7 +27,12 @@ export function iniciarModoMesa(numero) {
   if (campoNome) campoNome.placeholder = "Nome de quem está pedindo (opcional)";
 
   const tituloMenu = $("#menu-title");
-  if (tituloMenu) tituloMenu.textContent = "Escolha para a mesa";
+  if (tituloMenu) tituloMenu.textContent = "Escolha o que vai para a mesa";
+
+  const subtituloMenu = $("#menu-subtitle");
+  if (subtituloMenu) {
+    subtituloMenu.textContent = "Toque em + para enviar itens para a cozinha. A conta fecha com o garçom no final.";
+  }
 }
 
 export function mostrarVista(vista) {
