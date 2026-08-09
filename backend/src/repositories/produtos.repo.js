@@ -84,6 +84,7 @@ const paraApi = linha => linha && ({
   featuredOrder: linha.destaque_ordem ?? 0,
   active: doBanco(linha.ativo),
   image: imagemPublica(linha),
+  saborPizza: doBanco(linha.sabor_pizza),
   badge: linha.selo,
   description: linha.descricao,
   createdAt: linha.criado_em,
@@ -95,7 +96,7 @@ export const produtosRepo = {
     const destaque = await temDestaqueOrdem();
     return (await todos(`
       SELECT id, nome, categoria, preco, estoque, estoque_min, ordem, ${destaque ? "destaque_ordem" : "0 AS destaque_ordem"},
-             ativo,
+             ativo, sabor_pizza,
              CASE
                WHEN imagem LIKE 'data:image/%' AND length(imagem) > ${LIMITE_IMAGEM_API} THEN ''
                ELSE imagem
@@ -112,7 +113,7 @@ export const produtosRepo = {
   async listarPublico() {
     const destaque = await temDestaqueOrdem();
     const linhas = await todos(`
-      SELECT id, nome, categoria, preco,
+      SELECT id, nome, categoria, preco, sabor_pizza,
              CASE
                WHEN imagem LIKE 'data:image/%;base64,%' THEN ''
                ELSE imagem
@@ -129,6 +130,7 @@ export const produtosRepo = {
       category: linha.categoria,
       price: linha.preco,
       image: linha.imagem_embutida ? imagemPublica(linha) : imagemParaApi(linha.imagem),
+      saborPizza: doBanco(linha.sabor_pizza),
       badge: linha.selo,
       description: linha.descricao,
       order: linha.ordem ?? 9999,
@@ -158,23 +160,23 @@ export const produtosRepo = {
     const destaque = await temDestaqueOrdem();
     if (!destaque) {
       return paraApi(await um(`
-        INSERT INTO produtos (id, nome, categoria, preco, estoque, estoque_min, ordem, ativo, imagem, selo, descricao)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO produtos (id, nome, categoria, preco, estoque, estoque_min, ordem, ativo, imagem, selo, descricao, sabor_pizza)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         RETURNING *
       `, [
         produto.id, produto.name, produto.category, produto.price,
         produto.stock, produto.minStock, ordem, paraBanco(produto.active),
-        produto.image, produto.badge, produto.description
+        produto.image, produto.badge, produto.description, paraBanco(produto.saborPizza)
       ]));
     }
     return paraApi(await um(`
-      INSERT INTO produtos (id, nome, categoria, preco, estoque, estoque_min, ordem, destaque_ordem, ativo, imagem, selo, descricao)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO produtos (id, nome, categoria, preco, estoque, estoque_min, ordem, destaque_ordem, ativo, imagem, selo, descricao, sabor_pizza)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       RETURNING *
     `, [
       produto.id, produto.name, produto.category, produto.price,
       produto.stock, produto.minStock, ordem, produto.featuredOrder || 0, paraBanco(produto.active),
-      produto.image, produto.badge, produto.description
+      produto.image, produto.badge, produto.description, paraBanco(produto.saborPizza)
     ]));
   },
 
@@ -185,25 +187,29 @@ export const produtosRepo = {
       return paraApi(await um(`
         UPDATE produtos
            SET nome = ?, categoria = ?, preco = ?, estoque = ?, estoque_min = ?, ordem = ?,
-               ativo = ?, imagem = CASE WHEN ? = 1 THEN imagem ELSE ? END, selo = ?, descricao = ?, atualizado_em = now()
+               ativo = ?, imagem = CASE WHEN ? = 1 THEN imagem ELSE ? END, selo = ?, descricao = ?,
+               sabor_pizza = ?, atualizado_em = now()
          WHERE id = ?
         RETURNING *
       `, [
         produto.name, produto.category, produto.price, produto.stock, produto.minStock,
         produto.order || 9999,
-        paraBanco(produto.active), preservarImagem ? 1 : 0, produto.image, produto.badge, produto.description, id
+        paraBanco(produto.active), preservarImagem ? 1 : 0, produto.image, produto.badge, produto.description,
+        paraBanco(produto.saborPizza), id
       ]));
     }
     return paraApi(await um(`
       UPDATE produtos
          SET nome = ?, categoria = ?, preco = ?, estoque = ?, estoque_min = ?, ordem = ?, destaque_ordem = ?,
-             ativo = ?, imagem = CASE WHEN ? = 1 THEN imagem ELSE ? END, selo = ?, descricao = ?, atualizado_em = now()
+             ativo = ?, imagem = CASE WHEN ? = 1 THEN imagem ELSE ? END, selo = ?, descricao = ?,
+             sabor_pizza = ?, atualizado_em = now()
        WHERE id = ?
       RETURNING *
     `, [
       produto.name, produto.category, produto.price, produto.stock, produto.minStock,
       produto.order || 9999, produto.featuredOrder || 0,
-      paraBanco(produto.active), preservarImagem ? 1 : 0, produto.image, produto.badge, produto.description, id
+      paraBanco(produto.active), preservarImagem ? 1 : 0, produto.image, produto.badge, produto.description,
+      paraBanco(produto.saborPizza), id
     ]));
   },
 

@@ -81,6 +81,21 @@ export const apiMesas = {
   liberar: n => http.post(`/painel/mesas/${n}/liberar`)
 };
 
+export const apiCombos = {
+  listar: () => http.get("/painel/combos"),
+  criar: combo => http.post("/painel/combos", combo),
+  atualizar: (id, combo) => http.put(`/painel/combos/${id}`, combo),
+  remover: id => http.delete(`/painel/combos/${id}`),
+  alternarAtivo: id => http.post(`/painel/combos/${id}/alternar`)
+};
+
+export const apiCombinacoesSabores = {
+  listar: () => http.get("/painel/combinacoes-sabores"),
+  salvar: combinacao => http.post("/painel/combinacoes-sabores", combinacao),
+  remover: (produtoAId, produtoBId) =>
+    http.delete(`/painel/combinacoes-sabores/${encodeURIComponent(produtoAId)}/${encodeURIComponent(produtoBId)}`)
+};
+
 export const apiEntrega = {
   config: () => http.get("/painel/entrega"),
   salvar: config => http.put("/painel/entrega", config),

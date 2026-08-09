@@ -264,6 +264,24 @@
     </div>
   </div>
 
+  <div class="modal hidden" id="flavor-modal" role="dialog" aria-modal="true" aria-labelledby="flavor-title">
+    <div class="modal-card">
+      <div>
+        <h2 id="flavor-title">Quantos sabores?</h2>
+        <p><strong id="flavor-product-name"></strong> — escolha 1 sabor ou monte meio a meio.</p>
+      </div>
+      <div class="field-row">
+        <button class="secondary wide" type="button" id="flavor-one">1 sabor</button>
+        <button class="secondary wide" type="button" id="flavor-two">2 sabores</button>
+      </div>
+      <div class="hidden" id="flavor-second-step">
+        <p class="modal-hint">Escolha o segundo sabor:</p>
+        <div class="chip-row" id="flavor-options"></div>
+      </div>
+      <button class="secondary wide" type="button" id="flavor-cancel">Cancelar</button>
+    </div>
+  </div>
+
   <div class="toast" id="toast" role="alert" aria-live="polite"></div>
 
   <script type="module" src="/src/pages/menu/index.js"></script>

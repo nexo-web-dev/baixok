@@ -22,6 +22,7 @@ import { desenharPedidos, ligarPedidos } from "./tabs/pedidos.js";
 import { desenharMotoboy, ligarMotoboy, iniciarRastreamentoMotoboy, garantirNomeMotoboy } from "./tabs/motoboy.js";
 import { desenharMesas, ligarMesas } from "./tabs/mesas.js";
 import { desenharProdutos, ligarProdutos } from "./tabs/produtos.js";
+import { desenharCombos, ligarCombos } from "./tabs/combos.js";
 import { desenharPromocoes, desenharCupons, ligarPromocoes } from "./tabs/promocoes.js";
 import { desenharEntrega, ligarEntrega, recarregarRascunhoEntrega } from "./tabs/entrega.js";
 import { desenharEstoque, ligarEstoque } from "./tabs/estoque.js";
@@ -43,6 +44,7 @@ const DESENHO = {
   motoboy: desenharMotoboy,
   mesas: desenharMesas,
   produtos: desenharProdutos,
+  combos: desenharCombos,
   promos: () => { desenharPromocoes(); desenharCupons(); },
   entrega: desenharEntrega,
   estoque: desenharEstoque,
@@ -56,7 +58,7 @@ const DESENHO = {
  * comportamento antigo: qualquer alteracao redesenhava o sistema inteiro. */
 const AFETADAS = {
   pedidos: ["pedidos", "motoboy", "mesas", "dashboard"],
-  produtos: ["produtos", "estoque", "promos", "dashboard"],
+  produtos: ["produtos", "estoque", "promos", "combos", "dashboard"],
   insumos: ["estoque"],
   promocoes: ["promos", "produtos"],
   cupons: ["promos"],
@@ -71,6 +73,7 @@ const DEPENDENCIAS_ABA = {
   motoboy: [],
   mesas: ["mesas", "produtos"],
   produtos: ["produtos", "promocoes"],
+  combos: ["produtos", "combos", "combinacoesSabores"],
   promos: ["produtos", "promocoes", "cupons"],
   entrega: ["entrega"],
   estoque: ["produtos", "insumos"],
@@ -194,6 +197,7 @@ function ligarShell() {
   ligarMotoboy();
   ligarMesas();
   ligarProdutos();
+  ligarCombos();
   ligarPromocoes();
   ligarEntrega();
   ligarEstoque();
@@ -242,7 +246,7 @@ async function iniciar() {
     aoMudar: async assunto => {
       const areas = {
         pedidos: ["pedidos", "mesas", "caixa"],
-        produtos: ["produtos"],
+        produtos: ["produtos", "combos", "combinacoesSabores"],
         insumos: ["insumos"],
         promocoes: ["promocoes"],
         cupons: ["cupons"],

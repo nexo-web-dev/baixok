@@ -6,11 +6,23 @@ import { texto, idTexto, quantidade, dataIso, latitude, longitude } from "./comu
  *
  * Nao ha campo de preco aqui de proposito: se existisse, alguem mandaria
  * `price: 0.01` e o schema aceitaria de bom grado. O preco vem do cadastro,
- * buscado pelo servico na hora de montar o pedido. */
+ * buscado pelo servico na hora de montar o pedido.
+ *
+ * Tres formatos possiveis: produto normal (`id`), combo (`comboId`) ou pizza
+ * de 2 sabores (`id` + `id2`, os dois produtos escolhidos). Exatamente um de
+ * `id`/`comboId` precisa vir preenchido — `id2` so faz sentido junto de `id`. */
 const itemPedidoSchema = z.object({
-  id: idTexto,
+  id: idTexto.optional(),
+  id2: idTexto.optional(),
+  comboId: idTexto.optional(),
   qty: quantidade
-});
+}).strict().refine(
+  item => Boolean(item.id) !== Boolean(item.comboId),
+  { message: "Informe um produto ou um combo, nunca os dois.", path: ["id"] }
+).refine(
+  item => !item.id2 || (Boolean(item.id) && item.id2 !== item.id),
+  { message: "Segundo sabor invalido.", path: ["id2"] }
+);
 
 export const criarPedidoPublicoSchema = z.object({
   items: z.array(itemPedidoSchema).min(1, "Adicione ao menos um item.").max(LIMITES.ITENS_POR_PEDIDO),

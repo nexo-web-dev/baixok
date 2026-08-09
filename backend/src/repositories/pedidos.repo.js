@@ -60,12 +60,19 @@ const paraApi = (linha, itens = []) => linha && ({
   items: itens
 });
 
+function imagemCombo(linha) {
+  const imagem = String(linha.combo_imagem || "").trim();
+  return imagem;
+}
+
 const itemParaApi = linha => ({
   id: linha.produto_id,
+  id2: linha.produto_id_2 || null,
+  comboId: linha.combo_id || null,
   name: linha.nome,
   qty: linha.quantidade,
   price: linha.preco_unit,
-  image: imagemProduto(linha)
+  image: linha.combo_id ? imagemCombo(linha) : imagemProduto(linha)
 });
 
 /* Uma consulta para os pedidos e uma para todos os itens desses pedidos.
@@ -75,9 +82,10 @@ async function anexarItens(linhas) {
   if (!linhas.length) return [];
   const marcadores = linhas.map(() => "?").join(",");
   const itens = await todos(
-    `SELECT i.*, p.imagem AS produto_imagem, p.atualizado_em AS produto_atualizado_em
+    `SELECT i.*, p.imagem AS produto_imagem, p.atualizado_em AS produto_atualizado_em, c.imagem AS combo_imagem
        FROM pedido_itens i
        LEFT JOIN produtos p ON p.id = i.produto_id
+       LEFT JOIN combos c ON c.id = i.combo_id
       WHERE i.pedido_id IN (${marcadores})
       ORDER BY i.id`,
     linhas.map(linha => linha.id)
@@ -209,12 +217,12 @@ export const pedidosRepo = {
     if (pedido.items.length) {
       const valores = [];
       const marcadores = pedido.items.map(item => {
-        valores.push(pedido.id, item.id, item.name, item.qty, item.price);
-        return "(?, ?, ?, ?, ?)";
+        valores.push(pedido.id, item.id ?? null, item.id2 ?? null, item.comboId ?? null, item.name, item.qty, item.price);
+        return "(?, ?, ?, ?, ?, ?, ?)";
       }).join(", ");
 
       await alteradas(`
-        INSERT INTO pedido_itens (pedido_id, produto_id, nome, quantidade, preco_unit)
+        INSERT INTO pedido_itens (pedido_id, produto_id, produto_id_2, combo_id, nome, quantidade, preco_unit)
         VALUES ${marcadores}
       `, valores);
     }

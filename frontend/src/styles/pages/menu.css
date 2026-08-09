@@ -46,7 +46,7 @@ body.store-closed .live-badge::before { background: var(--danger); box-shadow: 0
 /* â€” signature strip â€” */
 .signature-strip { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .signature-strip article {
-  position: relative; min-height: 0; aspect-ratio: 16 / 9; overflow: hidden; border-radius: var(--radius-md);
+  position: relative; min-height: 0; aspect-ratio: 4 / 3; overflow: hidden; border-radius: var(--radius-md);
   background: #120f0d; box-shadow: var(--shadow-md); cursor: pointer; transition: transform .18s ease, box-shadow .18s ease;
 }
 .signature-strip article:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }

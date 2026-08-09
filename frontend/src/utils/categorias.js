@@ -10,7 +10,8 @@ export const CATEGORIAS_ROTULO = Object.freeze({
   burgues: "Burguers",
   massas: "Massas",
   drinks: "Drinks",
-  porcoes: "Porções"
+  porcoes: "Porções",
+  combos: "Combos"
 });
 
 export function rotuloCategoria(categoria) {

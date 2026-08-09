@@ -25,6 +25,8 @@ import { emTransacao } from "../db/postgres.js";
 import { pedidosRepo } from "../repositories/pedidos.repo.js";
 import { produtosRepo } from "../repositories/produtos.repo.js";
 import { promocoesRepo } from "../repositories/promocoes.repo.js";
+import { combosRepo } from "../repositories/combos.repo.js";
+import { combinacoesSaboresRepo } from "../repositories/combinacoes-sabores.repo.js";
 import { mesasRepo } from "../repositories/mesas.repo.js";
 import { caixaRepo } from "../repositories/caixa.repo.js";
 import { auditoriaRepo } from "../repositories/auditoria.repo.js";
@@ -37,23 +39,79 @@ import { STATUS_ABERTOS } from "../config/constants.js";
 import { controlaEstoqueCategoria } from "../lib/estoque.js";
 
 /* Precifica os itens pelo cadastro, ignorando qualquer preco que tenha vindo do
- * cliente. Roda dentro da transacao. */
+ * cliente. Roda dentro da transacao.
+ *
+ * Tres formatos de item: produto normal, combo (`comboId`) ou pizza de 2
+ * sabores (`id` + `id2`). Os dois ultimos viram UMA linha no pedido — o nome
+ * composto e o preco fechado, exatamente como o cliente escolheu — mas
+ * carregam `componentes` para a baixa de estoque saber o que decontar de onde
+ * (o combo de produtos e a pizza continuam sem controle de estoque proprio;
+ * quem controla e cada produto componente). */
 async function precificar(itens) {
   const promocoes = new Map((await promocoesRepo.listar()).map(promo => [promo.productId, promo.price]));
 
   const precificados = [];
   for (const item of itens) {
+    if (item.comboId) {
+      const combo = await combosRepo.buscar(item.comboId);
+      if (!combo) throw new ErroApp("Combo fora do cardápio.", 400, "combo_invalido");
+      if (!combo.active) throw new ErroApp(`${combo.name} está pausado no momento.`, 409, "combo_pausado");
+
+      const componentes = [];
+      for (const compItem of combo.items) {
+        const produtoComp = await produtosRepo.buscar(compItem.productId);
+        if (!produtoComp) throw new ErroApp("Combo com produto fora do cardápio.", 400, "combo_invalido");
+        componentes.push({
+          id: produtoComp.id,
+          name: produtoComp.name,
+          qty: compItem.quantity * item.qty,
+          stockControl: controlaEstoqueCategoria(produtoComp.category)
+        });
+      }
+
+      precificados.push({
+        id: null, id2: null, comboId: combo.id,
+        name: combo.name, qty: item.qty, price: Number(combo.price),
+        componentes
+      });
+      continue;
+    }
+
     const produto = await produtosRepo.buscar(item.id);
     if (!produto) throw new ErroApp(`Produto fora do cardápio.`, 400, "produto_invalido");
     if (!produto.active) throw new ErroApp(`${produto.name} está pausado no momento.`, 409, "produto_pausado");
 
+    if (item.id2) {
+      const produto2 = await produtosRepo.buscar(item.id2);
+      if (!produto2) throw new ErroApp(`Produto fora do cardápio.`, 400, "produto_invalido");
+      if (!produto2.active) throw new ErroApp(`${produto2.name} está pausado no momento.`, 409, "produto_pausado");
+      if (!produto.saborPizza || !produto2.saborPizza) {
+        throw new ErroApp("Esses itens não aceitam pizza de 2 sabores.", 400, "sabor_invalido");
+      }
+
+      const combinacao = await combinacoesSaboresRepo.buscar(produto.id, produto2.id);
+      if (!combinacao) {
+        throw new ErroApp("Essa combinação de sabores ainda não foi configurada pela loja.", 400, "combinacao_nao_configurada");
+      }
+
+      precificados.push({
+        id: produto.id, id2: produto2.id, comboId: null,
+        name: `Pizza 1/2 ${produto.name} + 1/2 ${produto2.name}`,
+        qty: item.qty, price: Number(combinacao.preco),
+        componentes: [
+          { id: produto.id, name: produto.name, qty: item.qty, stockControl: controlaEstoqueCategoria(produto.category) },
+          { id: produto2.id, name: produto2.name, qty: item.qty, stockControl: controlaEstoqueCategoria(produto2.category) }
+        ]
+      });
+      continue;
+    }
+
     const promocional = promocoes.get(produto.id);
+    const preco = promocional != null ? Number(promocional) : Number(produto.price);
     precificados.push({
-      id: produto.id,
-      name: produto.name,
-      qty: item.qty,
-      price: promocional != null ? Number(promocional) : Number(produto.price),
-      stockControl: controlaEstoqueCategoria(produto.category)
+      id: produto.id, id2: null, comboId: null,
+      name: produto.name, qty: item.qty, price: preco,
+      componentes: [{ id: produto.id, name: produto.name, qty: item.qty, stockControl: controlaEstoqueCategoria(produto.category) }]
     });
   }
   return precificados;
@@ -77,19 +135,22 @@ async function cotarEntregaSeNecessario(dados) {
   return { taxa: cotacao.taxa, km: cotacao.km, zona: cotacao.zona, minimo: cotacao.minimo };
 }
 
-/* Baixa o estoque item a item. O UPDATE traz `WHERE estoque >= ?` embutido:
- * se outro pedido levou a ultima unidade um instante antes, o rowCount volta 0,
- * lancamos, e a transacao inteira e desfeita — inclusive as baixas anteriores. */
+/* Baixa o estoque componente a componente. O UPDATE traz `WHERE estoque >= ?`
+ * embutido: se outro pedido levou a ultima unidade um instante antes, o
+ * rowCount volta 0, lancamos, e a transacao inteira e desfeita — inclusive as
+ * baixas anteriores (as do proprio item e as de itens anteriores do pedido). */
 async function baixarEstoque(itens) {
   for (const item of itens) {
-    if (!item.stockControl) continue;
-    if (!(await produtosRepo.baixarEstoque(item.id, item.qty))) {
-      const atual = await produtosRepo.buscar(item.id);
-      throw new ErroApp(
-        `${item.name}: restam ${atual?.stock ?? 0} unidades.`,
-        409,
-        "estoque_insuficiente"
-      );
+    for (const componente of item.componentes) {
+      if (!componente.stockControl) continue;
+      if (!(await produtosRepo.baixarEstoque(componente.id, componente.qty))) {
+        const atual = await produtosRepo.buscar(componente.id);
+        throw new ErroApp(
+          `${componente.name}: restam ${atual?.stock ?? 0} unidades.`,
+          409,
+          "estoque_insuficiente"
+        );
+      }
     }
   }
 }
@@ -176,7 +237,7 @@ export const pedidosService = {
       }
 
       await baixarEstoque(itens);
-      const estoqueBaixado = itens.some(item => item.stockControl);
+      const estoqueBaixado = itens.some(item => item.componentes.some(componente => componente.stockControl));
 
       const novo = await pedidosRepo.inserir({
         id: idPedido(),
@@ -256,7 +317,7 @@ export const pedidosService = {
       }
 
       await baixarEstoque(itens);
-      const estoqueBaixado = itens.some(item => item.stockControl);
+      const estoqueBaixado = itens.some(item => item.componentes.some(componente => componente.stockControl));
 
       const novo = await pedidosRepo.inserir({
         id: idPedido(),
@@ -358,9 +419,24 @@ export const pedidosService = {
 
       if (atual.stockDeducted) {
         for (const item of atual.items) {
-          if (!item.id) continue;
-          const produto = await produtosRepo.buscar(item.id);
-          if (controlaEstoqueCategoria(produto?.category)) await produtosRepo.devolverEstoque(item.id, item.qty);
+          if (item.comboId) {
+            const combo = await combosRepo.buscar(item.comboId);
+            for (const compItem of (combo?.items || [])) {
+              const produtoComp = await produtosRepo.buscar(compItem.productId);
+              if (controlaEstoqueCategoria(produtoComp?.category)) {
+                await produtosRepo.devolverEstoque(compItem.productId, compItem.quantity * item.qty);
+              }
+            }
+            continue;
+          }
+          if (item.id) {
+            const produto = await produtosRepo.buscar(item.id);
+            if (controlaEstoqueCategoria(produto?.category)) await produtosRepo.devolverEstoque(item.id, item.qty);
+          }
+          if (item.id2) {
+            const produto2 = await produtosRepo.buscar(item.id2);
+            if (controlaEstoqueCategoria(produto2?.category)) await produtosRepo.devolverEstoque(item.id2, item.qty);
+          }
         }
         await pedidosRepo.marcarEstoqueDevolvido(id);
       }

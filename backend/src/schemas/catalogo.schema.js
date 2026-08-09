@@ -32,8 +32,36 @@ export const produtoSchema = z.object({
   featuredOrder: z.coerce.number().int().min(0).max(3).default(0),
   active: z.boolean().default(true),
   image: imagemSchema,
+  saborPizza: z.boolean().default(false),
   description: texto(300)
 }).strict();
+
+/* Combo: item vendavel proprio, composto de produtos existentes em alguma
+ * quantidade. Sem itens nao ha o que vender — pelo menos 1, e no maximo 10
+ * pra nao virar um pedido inteiro disfarcado de combo. */
+export const comboSchema = z.object({
+  name: texto(80, { obrigatorio: true }),
+  description: texto(300),
+  price: dinheiro,
+  image: imagemSchema,
+  active: z.boolean().default(true),
+  order: z.coerce.number().int().min(1).max(9999).optional(),
+  items: z.array(z.object({
+    productId: idTexto,
+    quantity: z.coerce.number().int().min(1).max(20)
+  })).min(1, "Escolha ao menos um produto para o combo.").max(10)
+}).strict();
+
+/* Preco da combinacao de 2 sabores. Sempre digitado pelo lojista — nao existe
+ * calculo automatico (media, sabor mais caro etc). */
+export const combinacaoSaborSchema = z.object({
+  produtoAId: idTexto,
+  produtoBId: idTexto,
+  preco: dinheiro
+}).strict().refine(
+  dados => dados.produtoAId !== dados.produtoBId,
+  { message: "Escolha dois sabores diferentes.", path: ["produtoBId"] }
+);
 
 export const reordenarProdutoSchema = z.object({
   direction: z.enum(["up", "down"], { message: "Direcao invalida." })

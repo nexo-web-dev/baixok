@@ -10,6 +10,8 @@ import { mesasService } from "../services/mesas.service.js";
 import { pedidosService } from "../services/pedidos.service.js";
 import { cuponsService } from "../services/cupons.service.js";
 import { entregaService } from "../services/entrega.service.js";
+import { combosService } from "../services/combos.service.js";
+import { combinacoesSaboresService } from "../services/combinacoes-sabores.service.js";
 import { ajustesRepo } from "../repositories/ajustes.repo.js";
 import { caixaRepo } from "../repositories/caixa.repo.js";
 import { tokenPublico, temToken } from "../lib/mapbox.js";
@@ -20,14 +22,22 @@ let cacheCardapio = { ate: 0, payload: null };
 let cardapioEmVoo = null;
 
 async function montarPayloadCardapio() {
-  const [ajustes, produtos, entrega, caixa] = await Promise.all([
+  const [ajustes, produtos, entrega, caixa, combos, combinacoesSabores] = await Promise.all([
     ajustesRepo.todos(),
     produtosService.cardapioPublico(),
     entregaService.configPublica(),
-    caixaRepo.atual()
+    caixaRepo.atual(),
+    combosService.listarPublico(),
+    combinacoesSaboresService.listar()
   ]);
   return {
     produtos,
+    combos,
+    /* So o preco de cada par ja configurado: e o que decide, no cardapio,
+     * quais segundos sabores aparecem como opcao para um sabor escolhido. */
+    combinacoesSabores: combinacoesSabores.map(c => ({
+      produtoAId: c.produtoAId, produtoBId: c.produtoBId, preco: c.preco
+    })),
     entrega,
     loja: {
       nome: ajustes.nome_loja,

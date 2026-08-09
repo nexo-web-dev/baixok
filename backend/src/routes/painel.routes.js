@@ -8,17 +8,20 @@ import { Router } from "express";
 import {
   pedidosController, produtosController, promocoesController, cuponsController,
   mesasController, entregaController, relatoriosController, usuariosController, ajustesController,
-  insumosController, caixaController, motoboysController
+  insumosController, caixaController, motoboysController, combosController, combinacoesSaboresController
 } from "../controllers/painel.controller.js";
 import { exigirLogin, exigirPapel, exigirAba } from "../middlewares/auth.js";
 import { validarCorpo, validarQuery, validarParams } from "../middlewares/validate.js";
-import { paramsId, paramsNumero } from "../schemas/comum.schema.js";
+import { paramsId, paramsNumero, paramsParProdutos } from "../schemas/comum.schema.js";
 import {
   criarPedidoManualSchema, mudarStatusSchema, cancelarPedidoSchema, motoboyPedidoSchema,
   listarPedidosSchema, relatorioSchema, localizacaoMotoboySchema
 } from "../schemas/pedido.schema.js";
 import { abrirCaixaSchema, fecharCaixaSchema, listarFechamentosSchema } from "../schemas/caixa.schema.js";
-import { produtoSchema, ajusteEstoqueSchema, reordenarProdutoSchema, promocaoSchema, cupomSchema } from "../schemas/catalogo.schema.js";
+import {
+  produtoSchema, ajusteEstoqueSchema, reordenarProdutoSchema, promocaoSchema, cupomSchema,
+  comboSchema, combinacaoSaborSchema
+} from "../schemas/catalogo.schema.js";
 import { insumoSchema, ajusteInsumoSchema } from "../schemas/insumo.schema.js";
 import { configEntregaSchema } from "../schemas/entrega.schema.js";
 import { criarUsuarioSchema, atualizarUsuarioSchema, redefinirSenhaSchema } from "../schemas/auth.schema.js";
@@ -71,6 +74,18 @@ rotasPainel.delete("/produtos/:id", ADMIN, validarParams(paramsId), produtosCont
 rotasPainel.post("/produtos/:id/alternar", ADMIN, validarParams(paramsId), produtosController.alternarAtivo);
 rotasPainel.patch("/produtos/:id/estoque", EDIT_ESTOQUE, validarParams(paramsId), validarCorpo(ajusteEstoqueSchema), produtosController.ajustarEstoque);
 rotasPainel.patch("/produtos/:id/ordem", ADMIN, validarParams(paramsId), validarCorpo(reordenarProdutoSchema), produtosController.moverOrdem);
+
+// -------------------------------------------------------------------- combos ---
+rotasPainel.get("/combos", combosController.listar);
+rotasPainel.post("/combos", ADMIN, validarCorpo(comboSchema), combosController.criar);
+rotasPainel.put("/combos/:id", ADMIN, validarParams(paramsId), validarCorpo(comboSchema), combosController.atualizar);
+rotasPainel.delete("/combos/:id", ADMIN, validarParams(paramsId), combosController.remover);
+rotasPainel.post("/combos/:id/alternar", ADMIN, validarParams(paramsId), combosController.alternarAtivo);
+
+// ------------------------------------------------------ combinacoes de sabores ---
+rotasPainel.get("/combinacoes-sabores", combinacoesSaboresController.listar);
+rotasPainel.post("/combinacoes-sabores", ADMIN, validarCorpo(combinacaoSaborSchema), combinacoesSaboresController.salvar);
+rotasPainel.delete("/combinacoes-sabores/:a/:b", ADMIN, validarParams(paramsParProdutos), combinacoesSaboresController.remover);
 
 // ------------------------------------------------------------------ insumos ---
 rotasPainel.get("/insumos", VER_ESTOQUE, insumosController.listar);

@@ -55,6 +55,13 @@ export const ABAS = Object.freeze({
     rotulo: "Promoções",
     papeis: ["admin"]
   },
+  combos: {
+    titulo: "Pizza 2 sabores e combos",
+    subtitulo: "Preço de cada combinação de sabores e cadastro de combos.",
+    icone: "◆",
+    rotulo: "Combos",
+    papeis: ["admin"]
+  },
   entrega: {
     titulo: "Área de entrega",
     subtitulo: "Ponto da loja e faixas de raio com taxa e pedido mínimo.",

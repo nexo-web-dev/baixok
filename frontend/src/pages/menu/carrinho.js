@@ -45,7 +45,7 @@ function fotoCarrinho(item) {
 }
 
 function linhaItem(item) {
-  return el("div.cart-row", { dataset: { id: item.id } },
+  return el("div.cart-row", { dataset: { chave: item.chave } },
     el("div.cart-thumb", {}, fotoCarrinho(item)),
     el("div.cart-row-body", {},
       el("div.price-row", {},
@@ -54,11 +54,11 @@ function linhaItem(item) {
       ),
       el("div.qty-actions", {},
         el("button", {
-          type: "button", dataset: { acao: "qtd", id: item.id, delta: "-1" },
+          type: "button", dataset: { acao: "qtd", chave: item.chave, delta: "-1" },
           "aria-label": `Remover uma unidade de ${item.name}`
         }, "-"),
         el("button", {
-          type: "button", dataset: { acao: "qtd", id: item.id, delta: "1" },
+          type: "button", dataset: { acao: "qtd", chave: item.chave, delta: "1" },
           "aria-label": `Adicionar uma unidade de ${item.name}`
         }, "+")
       )
@@ -66,11 +66,11 @@ function linhaItem(item) {
   );
 }
 
-export function desenharCarrinho({ produtosPorId, modalidade, cotacao, modoMesa }) {
+export function desenharCarrinho({ produtosPorId, combosPorId, combinacoesMap, modalidade, cotacao, modoMesa }) {
   const alvo = $("#cart-items");
   if (!alvo) return { subtotal: 0, total: 0 };
 
-  const { linhas, avisos } = carrinho.comCatalogo(produtosPorId);
+  const { linhas, avisos } = carrinho.comCatalogo({ produtosPorId, combosPorId, combinacoesMap });
   if (avisos.length) toast(avisos[0]);
 
   render(alvo, linhas.length

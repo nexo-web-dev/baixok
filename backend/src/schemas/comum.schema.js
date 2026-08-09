@@ -29,6 +29,8 @@ export const idTexto = z
 
 export const paramsId = z.object({ id: idTexto });
 
+export const paramsParProdutos = z.object({ a: idTexto, b: idTexto });
+
 export const paramsNumero = z.object({
   n: z.coerce.number().int().min(1).max(999)
 });

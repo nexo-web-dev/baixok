@@ -25,23 +25,46 @@ import { mesaDaUrl, sessaoMesa, iniciarModoMesa, mostrarVista, atualizarMesa } f
 const estado = {
   produtos: [],
   produtosPorId: new Map(),
+  combosPorId: new Map(),
+  combinacoesMap: new Map(),
   loja: { caixaAberto: false },
   categoria: "todos",
   busca: "",
   modalidade: "retirada"
 };
 
+/* Combo entra na mesma grade dos produtos — mesmo cartao, mesma busca, mesmo
+ * filtro de categoria — marcado com `__combo` pra saber, na hora de adicionar
+ * ao carrinho, que e um `comboId` e nao um `id` de produto normal. */
+function comboComoProduto(combo) {
+  return {
+    id: combo.id, name: combo.name, description: combo.description,
+    price: combo.price, image: combo.image, category: "combos", badge: "Combo",
+    active: combo.active, saborPizza: false, disponivel: true,
+    emPromocao: false, precoOriginal: null, __combo: true
+  };
+}
+
+const chaveCombinacao = (idA, idB) => [idA, idB].sort().join("|");
+
 // ------------------------------------------------------------------ dados ---
 async function carregarCardapio() {
   try {
-    const { produtos, loja } = await apiPublica.cardapio();
-    estado.produtos = produtos;
-    estado.produtosPorId = new Map(produtos.map(produto => [produto.id, produto]));
+    const { produtos, combos, combinacoesSabores, loja } = await apiPublica.cardapio();
+    const combosProdutos = (combos || []).map(comboComoProduto);
+    estado.produtos = [...produtos, ...combosProdutos];
+    estado.produtosPorId = new Map(estado.produtos.map(produto => [produto.id, produto]));
+    estado.combosPorId = new Map((combos || []).map(combo => [combo.id, combo]));
+    estado.combinacoesMap = new Map(
+      (combinacoesSabores || []).map(c => [chaveCombinacao(c.produtoAId, c.produtoBId), c.preco])
+    );
     estado.loja = loja || {};
     return true;
   } catch (erro) {
     estado.produtos = [];
     estado.produtosPorId = new Map();
+    estado.combosPorId = new Map();
+    estado.combinacoesMap = new Map();
     estado.loja = { ...estado.loja, caixaAberto: false };
     toastFalha(erro, "Cardápio");
     return false;
@@ -57,6 +80,8 @@ function redesenhar() {
   desenharGrade(estado.produtos, { categoria: estado.categoria, busca: estado.busca, lojaAberta: lojaAberta() });
   const resumo = desenharCarrinho({
     produtosPorId: estado.produtosPorId,
+    combosPorId: estado.combosPorId,
+    combinacoesMap: estado.combinacoesMap,
     modalidade: estado.modalidade,
     cotacao: entrega.cotacao,
     modoMesa: Boolean(sessaoMesa.n)
@@ -164,10 +189,76 @@ function abrirCarrinho({ forcar = false } = {}) {
   }
 }
 
+let saborPendente = null;
+
+function opcoesSegundoSabor(produto) {
+  return estado.produtos.filter(item =>
+    item.saborPizza && item.id !== produto.id && estado.combinacoesMap.has(chaveCombinacao(produto.id, item.id))
+  );
+}
+
+function fecharEscolhaSabores() {
+  mostrar($("#flavor-modal"), false);
+  saborPendente = null;
+}
+
+function abrirEscolhaSabores(produto) {
+  saborPendente = produto;
+  const nome = $("#flavor-product-name");
+  if (nome) nome.textContent = produto.name;
+  mostrar($("#flavor-second-step"), false);
+  mostrar($("#flavor-modal"), true);
+}
+
+function escolherUmSabor() {
+  if (!saborPendente) return;
+  const produto = saborPendente;
+  fecharEscolhaSabores();
+  carrinho.adicionar(produto.id);
+  abrirCarrinho();
+  toast("Item adicionado ao pedido.");
+}
+
+function mostrarSegundoSabor() {
+  if (!saborPendente) return;
+  const opcoes = opcoesSegundoSabor(saborPendente);
+  render($("#flavor-options"), ...(opcoes.length
+    ? opcoes.map(produto2 => el("button.chip", {
+        type: "button",
+        dataset: { acao: "escolher-segundo-sabor", id: produto2.id }
+      }, `${produto2.name} — ${reais(estado.combinacoesMap.get(chaveCombinacao(saborPendente.id, produto2.id)))}`))
+    : [el("p.faint", {}, "Nenhuma combinação de 2 sabores configurada para esse item ainda.")]));
+  mostrar($("#flavor-second-step"), true);
+}
+
+function escolherSegundoSabor(id2) {
+  if (!saborPendente) return;
+  const id = saborPendente.id;
+  fecharEscolhaSabores();
+  carrinho.adicionarComposto({ id, id2 });
+  abrirCarrinho();
+  toast("Item adicionado ao pedido.");
+}
+
 function adicionarAoCarrinho(id) {
   if (!lojaAberta()) return toast("Estabelecimento fechado no momento. O cardápio está disponível só para consulta.");
   const produto = estado.produtosPorId.get(id);
   if (!produto) return toast("Item indisponível.");
+
+  if (produto.__combo) {
+    carrinho.adicionarComposto({ comboId: produto.id });
+    abrirCarrinho();
+    mostrar($("#product-modal"), false);
+    toast("Item adicionado ao pedido.");
+    return;
+  }
+
+  if (produto.saborPizza) {
+    mostrar($("#product-modal"), false);
+    abrirEscolhaSabores(produto);
+    return;
+  }
+
   carrinho.adicionar(id);
   abrirCarrinho();
   mostrar($("#product-modal"), false);
@@ -269,9 +360,13 @@ async function enviarPedido() {
     coupon: modoMesa ? "" : codigoAplicado(),
     fulfillment: modoMesa ? "mesa" : estado.modalidade,
     tableNumber: modoMesa ? sessaoMesa.n : null,
-    /* So id e quantidade. Preco e total ficam de fora de proposito: sao decisao
-     * do servidor, e mandar daqui seria oferecer um campo para adulterar. */
-    items: linhas.map(linha => ({ id: linha.id, qty: linha.qty }))
+    /* So o que foi escolhido e a quantidade. Preco e total ficam de fora de
+     * proposito: sao decisao do servidor, e mandar daqui seria oferecer um
+     * campo para adulterar. Cada linha manda so os campos que faz sentido pra
+     * ela — client nulo bate no `.optional()` do schema como "nao mandou". */
+    items: linhas.map(linha => (linha.comboId
+      ? { comboId: linha.comboId, qty: linha.qty }
+      : { id: linha.id, ...(linha.id2 ? { id2: linha.id2 } : {}), qty: linha.qty }))
   };
 
   botao.disabled = true;
@@ -370,7 +465,10 @@ function ligarEventos() {
     $("#menu-shell")?.scrollIntoView({ behavior: "smooth" });
   });
   delegar(document.body, "click", "[data-acao='qtd']", (_evento, alvo) => {
-    carrinho.mudarQuantidade(alvo.dataset.id, Number(alvo.dataset.delta));
+    carrinho.mudarQuantidade(alvo.dataset.chave, Number(alvo.dataset.delta));
+  });
+  delegar(document.body, "click", "[data-acao='escolher-segundo-sabor']", (_evento, alvo) => {
+    escolherSegundoSabor(alvo.dataset.id);
   });
   delegar(document.body, "click", "[data-acao='escolher-endereco']", (_evento, alvo) => {
     entrega.escolherEndereco({
@@ -434,6 +532,12 @@ function ligarEventos() {
   const modalProduto = $("#product-modal");
   $("#product-close")?.addEventListener("click", () => mostrar(modalProduto, false));
   ligarModal(modalProduto, () => mostrar(modalProduto, false));
+
+  const modalSabores = $("#flavor-modal");
+  $("#flavor-one")?.addEventListener("click", escolherUmSabor);
+  $("#flavor-two")?.addEventListener("click", mostrarSegundoSabor);
+  $("#flavor-cancel")?.addEventListener("click", fecharEscolhaSabores);
+  ligarModal(modalSabores, fecharEscolhaSabores);
 
   /* Revalida o cupom quando o carrinho muda: um cupom com pedido minimo deixa
    * de valer se o cliente tirar itens, e o total tem que refletir na hora. */

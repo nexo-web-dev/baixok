@@ -241,6 +241,7 @@ function limparFormulario() {
   atualizarCampoEstoqueProduto();
   $("#product-image").value = "";
   $("#product-active").checked = true;
+  $("#product-sabor-pizza").checked = false;
   $("#product-form-title").textContent = "Novo produto";
   $("#product-save-label").textContent = "Cadastrar produto";
   atualizarPreview("");
@@ -261,6 +262,7 @@ function editar(id) {
   $("#product-stock").value = controlaEstoqueCategoria(produto.category) ? String(produto.stock) : "";
   $("#product-image").value = produto.image || "";
   $("#product-active").checked = produto.active;
+  $("#product-sabor-pizza").checked = Boolean(produto.saborPizza);
   $("#product-form-title").textContent = `Editando: ${produto.name}`;
   $("#product-save-label").textContent = "Salvar alterações";
   atualizarPreview(produto.image || "");
@@ -283,6 +285,7 @@ async function salvar(evento) {
     order: Math.max(1, Math.floor(paraNumero($("#product-order").value) || ((estado.produtos.length || 0) + 1))),
     featuredOrder: Math.max(0, Math.min(3, Math.floor(paraNumero($("#product-featured").value) || 0))),
     active: $("#product-active").checked,
+    saborPizza: $("#product-sabor-pizza").checked,
     image: normalizarImagem($("#product-image").value)
   };
 

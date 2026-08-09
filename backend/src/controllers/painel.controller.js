@@ -14,6 +14,8 @@ import { relatoriosService } from "../services/relatorios.service.js";
 import { caixaService } from "../services/caixa.service.js";
 import { usuariosService } from "../services/usuarios.service.js";
 import { motoboysService } from "../services/motoboys.service.js";
+import { combosService } from "../services/combos.service.js";
+import { combinacoesSaboresService } from "../services/combinacoes-sabores.service.js";
 import { ajustesRepo } from "../repositories/ajustes.repo.js";
 import { mapaEstatico } from "../lib/mapbox.js";
 import { contexto } from "./contexto.js";
@@ -106,6 +108,38 @@ export const produtosController = {
   },
   async emFalta(_req, res) {
     res.json({ produtos: await produtosService.emFalta() });
+  }
+};
+
+export const combosController = {
+  async listar(_req, res) {
+    res.json({ combos: await combosService.listar() });
+  },
+  async criar(req, res) {
+    res.status(201).json({ combo: await combosService.criar(req.validado.body, contexto(req)) });
+  },
+  async atualizar(req, res) {
+    res.json({ combo: await combosService.atualizar(req.validado.params.id, req.validado.body, contexto(req)) });
+  },
+  async remover(req, res) {
+    await combosService.remover(req.validado.params.id, contexto(req));
+    res.json({ ok: true });
+  },
+  async alternarAtivo(req, res) {
+    res.json({ combo: await combosService.alternarAtivo(req.validado.params.id, contexto(req)) });
+  }
+};
+
+export const combinacoesSaboresController = {
+  async listar(_req, res) {
+    res.json({ combinacoes: await combinacoesSaboresService.listar() });
+  },
+  async salvar(req, res) {
+    res.status(201).json({ combinacao: await combinacoesSaboresService.salvar(req.validado.body, contexto(req)) });
+  },
+  async remover(req, res) {
+    await combinacoesSaboresService.remover(req.validado.params.a, req.validado.params.b, contexto(req));
+    res.json({ ok: true });
   }
 };
 
