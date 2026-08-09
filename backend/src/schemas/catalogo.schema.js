@@ -11,7 +11,7 @@ import { texto, dinheiro, idTexto } from "./comum.schema.js";
 const imagemSchema = z
   .string()
   .trim()
-  .max(500_000, "Imagem grande demais. Use até 500 KB.")
+  .max(260_000, "Imagem grande demais. Envie uma foto menor.")
   .refine(
     valor => valor === "" || /^\/?images\/[\w.-]+$/.test(valor) || /^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(valor),
     "Use uma imagem do próprio site ou envie um arquivo de imagem."
@@ -26,6 +26,7 @@ export const produtoSchema = z.object({
   stock: z.coerce.number().int().min(0).max(99999).default(0),
   minStock: z.coerce.number().int().min(0).max(9999).default(4),
   order: z.coerce.number().int().min(1).max(9999).optional(),
+  featuredOrder: z.coerce.number().int().min(0).max(3).default(0),
   active: z.boolean().default(true),
   image: imagemSchema,
   description: texto(300)

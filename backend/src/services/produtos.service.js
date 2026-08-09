@@ -58,14 +58,21 @@ export const produtosService = {
 
   async criar(dados, { usuario, ip }) {
     const normalizado = normalizarEstoqueDoProduto(dados);
-    const produto = await produtosRepo.criar({
-      ...normalizado,
-      id: uid("prod"),
-      badge: SELO_POR_CATEGORIA[normalizado.category] || "Item"
+    const produto = await emTransacao(async () => {
+      const criado = await produtosRepo.criar({
+        ...normalizado,
+        featuredOrder: 0,
+        id: uid("prod"),
+        badge: SELO_POR_CATEGORIA[normalizado.category] || "Item"
+      });
+      return normalizado.featuredOrder
+        ? produtosRepo.definirDestaque(criado.id, normalizado.featuredOrder)
+        : criado;
     });
     await auditoriaRepo.registrar({
       usuarioId: usuario.id, usuario: usuario.usuario, acao: "produto_criado",
-      entidade: "produto", entidadeId: produto.id, detalhes: { nome: produto.name, preco: produto.price }, ip
+      entidade: "produto", entidadeId: produto.id,
+      detalhes: { nome: produto.name, preco: produto.price, destaque: produto.featuredOrder || 0 }, ip
     });
     publicar("produtos", [CANAL.PUBLICO, CANAL.OPERACAO]);
     return produto;
@@ -74,9 +81,12 @@ export const produtosService = {
   async atualizar(id, dados, { usuario, ip }) {
     const anterior = await this.buscar(id);
     const normalizado = normalizarEstoqueDoProduto(dados);
-    const produto = await produtosRepo.atualizar(id, {
-      ...normalizado,
-      badge: SELO_POR_CATEGORIA[normalizado.category] || "Item"
+    const produto = await emTransacao(async () => {
+      await produtosRepo.atualizar(id, {
+        ...normalizado,
+        badge: SELO_POR_CATEGORIA[normalizado.category] || "Item"
+      });
+      return produtosRepo.definirDestaque(id, normalizado.featuredOrder || 0);
     });
 
     /* A auditoria guarda o que mudou, nao o objeto inteiro: um relatorio de

@@ -66,13 +66,18 @@ function cartaoProduto(produto, { lojaAberta = true } = {}) {
   );
 }
 
-/* Escolhe tres destaques: o item de assinatura, depois um de cada categoria. */
+/* Prioriza os tres destaques escolhidos no painel. Se faltar algum, completa
+ * sozinho para a vitrine nunca ficar vazia. */
 function destaques(produtos) {
   const escolhidos = [];
   const juntar = produto => {
     if (produto && !escolhidos.some(item => item.id === produto.id)) escolhidos.push(produto);
   };
 
+  produtos
+    .filter(produto => Number(produto.featuredOrder || 0) > 0)
+    .sort((a, b) => Number(a.featuredOrder || 0) - Number(b.featuredOrder || 0))
+    .forEach(juntar);
   juntar(produtos.find(produto => /baixo k|mais pedida|especial/i.test(`${produto.name} ${produto.badge || ""}`)));
   for (const categoria of ["burgues", "drinks", "pizzas", "massas"]) juntar(produtos.find(produto => produto.category === categoria));
   produtos.forEach(juntar);

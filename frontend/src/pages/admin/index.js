@@ -87,11 +87,6 @@ function areasIniciais(usuario) {
   return [...areas];
 }
 
-function abaDaUrl(usuario) {
-  const chave = location.hash.replace(/^#/, "");
-  return chave && podeVer(chave, usuario) ? chave : abaInicial(usuario);
-}
-
 // ------------------------------------------------------------------- sessao ---
 definirTratamentoDeSessao(() => {
   location.replace("/entrar.html?de=%2Fadmin.html");
@@ -211,7 +206,7 @@ async function iniciar() {
   await carregar(...areasIniciais(sessao.usuario));
   desenharMetricas();
 
-  await abrirAba(abaDaUrl(sessao.usuario));
+  await abrirAba(abaInicial(sessao.usuario));
 
   conectarEventos({
     canal: "operacao",

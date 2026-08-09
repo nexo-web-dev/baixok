@@ -19,8 +19,9 @@ const PRESETS = [
   { label: "Drink", src: "images/produto-drinks.png" }
 ];
 
-const LADO_MAXIMO = 900;
-const QUALIDADE = 0.82;
+const LADO_MAXIMO = 720;
+const QUALIDADE = 0.72;
+const LIMITE_IMAGEM = 260_000;
 let filtroCategoria = "todos";
 let filtroBusca = "";
 
@@ -71,7 +72,7 @@ function prepararFoto(arquivo) {
       canvas.getContext("2d").drawImage(imagem, 0, 0, canvas.width, canvas.height);
 
       const dataUrl = canvas.toDataURL("image/jpeg", QUALIDADE);
-      if (dataUrl.length > 500_000) return reject(new Error("Imagem ainda muito pesada. Tente uma foto menor."));
+      if (dataUrl.length > LIMITE_IMAGEM) return reject(new Error("Imagem ainda muito pesada. Tente uma foto menor."));
       resolve(dataUrl);
     };
     imagem.onerror = () => {
@@ -105,6 +106,9 @@ function cardProduto(produto) {
     el("div.admin-product-main", {},
       el("div.admin-product-title", {},
         el("span.pill.order-pill", {}, `Ordem ${produto.order || "-"}`),
+        produto.featuredOrder
+          ? el("span.pill.featured-pill", {}, `Destaque ${produto.featuredOrder}`)
+          : null,
         el("strong", {}, produto.name),
         el("span.pill", { class: produto.active ? "is-active" : "is-paused" }, produto.active ? (semEstoque ? "Esgotado" : "Ativo") : "Pausado")
       ),
@@ -214,6 +218,7 @@ function limparFormulario() {
   $("#product-price").value = "";
   $("#product-stock").value = "";
   $("#product-order").value = "";
+  $("#product-featured").value = "0";
   $("#product-category").value = "";
   atualizarCampoEstoqueProduto();
   $("#product-image").value = "";
@@ -232,6 +237,7 @@ function editar(id) {
   $("#product-description").value = produto.description || "";
   $("#product-price").value = String(produto.price);
   $("#product-order").value = String(produto.order || "");
+  $("#product-featured").value = String(produto.featuredOrder || 0);
   $("#product-category").value = produto.category;
   atualizarCampoEstoqueProduto();
   $("#product-stock").value = controlaEstoqueCategoria(produto.category) ? String(produto.stock) : "";
@@ -257,6 +263,7 @@ async function salvar(evento) {
     stock: controlaEstoque ? Math.max(0, Math.floor(paraNumero($("#product-stock").value))) : 0,
     minStock: controlaEstoque ? (estado.produtos.find(item => item.id === id)?.minStock ?? 4) : 0,
     order: Math.max(1, Math.floor(paraNumero($("#product-order").value) || ((estado.produtos.length || 0) + 1))),
+    featuredOrder: Math.max(0, Math.min(3, Math.floor(paraNumero($("#product-featured").value) || 0))),
     active: $("#product-active").checked,
     image: normalizarImagem($("#product-image").value)
   };

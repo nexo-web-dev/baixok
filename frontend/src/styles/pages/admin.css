@@ -253,6 +253,7 @@
 .admin-product-main { display: grid; gap: 5px; min-width: 0; }
 .admin-product-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .admin-product-title strong { color: var(--ink); font-size: .9rem; }
+.featured-pill { border-color: rgba(217,154,104,.42); color: var(--gold-light); background: rgba(217,154,104,.14); }
 .admin-product-main p { margin: 0; color: var(--muted); font-size: .78rem; line-height: 1.35; }
 .admin-product-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; color: var(--muted-2); font-size: .76rem; }
 .data-head { padding: 13px 18px; border-bottom: 1px solid var(--line-soft); color: var(--muted); font-size: .68rem; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; }

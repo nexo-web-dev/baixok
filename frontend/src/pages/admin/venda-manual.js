@@ -172,7 +172,9 @@ function desenharProdutos() {
             : el("span.manual-thumb.no-photo", {}, "Sem foto"),
           el("span.manual-name", {}, produto.name),
           el("span.manual-price", {}, reais(precoEfetivo(produto))),
-          el("small", {}, `${produto.stock} em estoque`)
+          el("small", {}, controlaEstoqueCategoria(produto.category)
+            ? `${produto.stock} em estoque`
+            : "sem controle de estoque")
         ))
     : [el("p.faint", {}, "Nenhum produto encontrado.")]));
 }
@@ -343,9 +345,10 @@ export function ligarVendaManual() {
   delegar(modal, "click", "[data-acao='add-item']", (_e, botao) => {
     const produto = estado.produtos.find(item => item.id === botao.dataset.id);
     if (!produto) return;
+    const controlaEstoque = controlaEstoqueCategoria(produto.category);
     const existente = rascunho.itens.find(item => item.id === produto.id);
     if (existente) {
-      if (existente.qty >= produto.stock) return definirErro(`${produto.name}: restam ${produto.stock} em estoque.`);
+      if (controlaEstoque && existente.qty >= produto.stock) return definirErro(`${produto.name}: restam ${produto.stock} em estoque.`);
       existente.qty += 1;
     } else {
       rascunho.itens.push({ id: produto.id, name: produto.name, image: produto.image || "", price: precoEfetivo(produto), qty: 1 });

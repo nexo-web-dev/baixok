@@ -16,6 +16,14 @@
  *    delas em toda operacao de escrita. */
 import { todos, um, alteradas, paraBanco, doBanco } from "../db/postgres.js";
 
+const LIMITE_IMAGEM_API = 260_000;
+
+function imagemParaApi(valor) {
+  const imagem = String(valor || "");
+  if (!imagem.startsWith("data:image/")) return imagem;
+  return imagem.length <= LIMITE_IMAGEM_API ? imagem : "";
+}
+
 const paraApi = linha => linha && ({
   id: linha.id,
   name: linha.nome,
@@ -24,8 +32,9 @@ const paraApi = linha => linha && ({
   stock: linha.estoque,
   minStock: linha.estoque_min,
   order: linha.ordem ?? 9999,
+  featuredOrder: linha.destaque_ordem ?? 0,
   active: doBanco(linha.ativo),
-  image: linha.imagem,
+  image: imagemParaApi(linha.imagem),
   badge: linha.selo,
   description: linha.descricao,
   createdAt: linha.criado_em,
@@ -34,14 +43,29 @@ const paraApi = linha => linha && ({
 
 export const produtosRepo = {
   async listar() {
-    return (await todos("SELECT * FROM produtos ORDER BY ordem ASC, categoria, nome")).map(paraApi);
+    return (await todos(`
+      SELECT id, nome, categoria, preco, estoque, estoque_min, ordem, destaque_ordem,
+             ativo,
+             CASE
+               WHEN imagem LIKE 'data:image/%' AND length(imagem) > ${LIMITE_IMAGEM_API} THEN ''
+               ELSE imagem
+             END AS imagem,
+             selo, descricao, criado_em, atualizado_em
+        FROM produtos
+       ORDER BY ordem ASC, categoria, nome
+    `)).map(paraApi);
   },
 
   /* Cardapio publico: so o que esta a venda, e sem estoque_min nem custo —
    * quantas unidades restam e informacao de operacao, nao de vitrine. */
   async listarPublico() {
     const linhas = await todos(`
-      SELECT id, nome, categoria, preco, imagem, selo, descricao, estoque, ordem
+      SELECT id, nome, categoria, preco,
+             CASE
+               WHEN imagem LIKE 'data:image/%' AND length(imagem) > ${LIMITE_IMAGEM_API} THEN ''
+               ELSE imagem
+             END AS imagem,
+             selo, descricao, estoque, ordem, destaque_ordem
         FROM produtos
        WHERE ativo = 1
        ORDER BY ordem ASC, categoria, nome
@@ -51,10 +75,11 @@ export const produtosRepo = {
       name: linha.nome,
       category: linha.categoria,
       price: linha.preco,
-      image: linha.imagem,
+      image: imagemParaApi(linha.imagem),
       badge: linha.selo,
       description: linha.descricao,
       order: linha.ordem ?? 9999,
+      featuredOrder: linha.destaque_ordem ?? 0,
       stock: linha.estoque,
       disponivel: linha.estoque > 0
     }));
@@ -67,12 +92,12 @@ export const produtosRepo = {
   async criar(produto) {
     const ordem = produto.order || (await um("SELECT COALESCE(MAX(ordem), 0) + 1 AS proxima FROM produtos"))?.proxima || 1;
     return paraApi(await um(`
-      INSERT INTO produtos (id, nome, categoria, preco, estoque, estoque_min, ordem, ativo, imagem, selo, descricao)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO produtos (id, nome, categoria, preco, estoque, estoque_min, ordem, destaque_ordem, ativo, imagem, selo, descricao)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       RETURNING *
     `, [
       produto.id, produto.name, produto.category, produto.price,
-      produto.stock, produto.minStock, ordem, paraBanco(produto.active),
+      produto.stock, produto.minStock, ordem, produto.featuredOrder || 0, paraBanco(produto.active),
       produto.image, produto.badge, produto.description
     ]));
   },
@@ -80,15 +105,28 @@ export const produtosRepo = {
   async atualizar(id, produto) {
     return paraApi(await um(`
       UPDATE produtos
-         SET nome = ?, categoria = ?, preco = ?, estoque = ?, estoque_min = ?, ordem = ?,
+         SET nome = ?, categoria = ?, preco = ?, estoque = ?, estoque_min = ?, ordem = ?, destaque_ordem = ?,
              ativo = ?, imagem = ?, selo = ?, descricao = ?, atualizado_em = now()
        WHERE id = ?
       RETURNING *
     `, [
       produto.name, produto.category, produto.price, produto.stock, produto.minStock,
-      produto.order || 9999,
+      produto.order || 9999, produto.featuredOrder || 0,
       paraBanco(produto.active), produto.image, produto.badge, produto.description, id
     ]));
+  },
+
+  async definirDestaque(id, ordem) {
+    const destaque = Math.max(0, Math.min(3, Number(ordem || 0)));
+    if (destaque > 0) {
+      await alteradas("UPDATE produtos SET destaque_ordem = 0, atualizado_em = now() WHERE destaque_ordem = ? AND id <> ?", [destaque, id]);
+    }
+    return paraApi(await um(`
+      UPDATE produtos
+         SET destaque_ordem = ?, atualizado_em = now()
+       WHERE id = ?
+      RETURNING *
+    `, [destaque, id]));
   },
 
   async reordenarIds(ids) {
