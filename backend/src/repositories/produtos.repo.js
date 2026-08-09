@@ -15,6 +15,7 @@
  *    de graca; aqui cada consulta e uma ida a rede, e RETURNING corta metade
  *    delas em toda operacao de escrita. */
 import { todos, um, alteradas, paraBanco, doBanco } from "../db/postgres.js";
+import { controlaEstoqueCategoria } from "../lib/estoque.js";
 
 const LIMITE_IMAGEM_API = 180_000;
 const DATA_IMAGE_RE = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/s;
@@ -273,6 +274,8 @@ export const produtosRepo = {
   },
 
   async emFalta() {
-    return (await todos("SELECT * FROM produtos WHERE estoque <= estoque_min ORDER BY estoque ASC")).map(paraApi);
+    return (await todos("SELECT * FROM produtos WHERE estoque <= estoque_min ORDER BY estoque ASC"))
+      .map(paraApi)
+      .filter(produto => controlaEstoqueCategoria(produto.category));
   }
 };

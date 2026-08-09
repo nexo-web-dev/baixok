@@ -19,6 +19,18 @@ const telefoneDigits = valor => {
   return digits.length > 11 && digits.startsWith("55") ? digits.slice(2) : digits;
 };
 
+const DATA_IMAGE_RE = /^data:image\/[a-z0-9.+-]+;base64,/i;
+
+function imagemProduto(linha) {
+  const imagem = String(linha.produto_imagem || "").trim();
+  if (!imagem) return "";
+  if (DATA_IMAGE_RE.test(imagem)) {
+    const versao = encodeURIComponent(linha.produto_atualizado_em || "");
+    return `/api/publico/produtos/${encodeURIComponent(linha.produto_id)}/imagem${versao ? `?v=${versao}` : ""}`;
+  }
+  return imagem;
+}
+
 const paraApi = (linha, itens = []) => linha && ({
   id: linha.id,
   createdAt: linha.criado_em,
@@ -52,7 +64,8 @@ const itemParaApi = linha => ({
   id: linha.produto_id,
   name: linha.nome,
   qty: linha.quantidade,
-  price: linha.preco_unit
+  price: linha.preco_unit,
+  image: imagemProduto(linha)
 });
 
 /* Uma consulta para os pedidos e uma para todos os itens desses pedidos.
@@ -62,7 +75,11 @@ async function anexarItens(linhas) {
   if (!linhas.length) return [];
   const marcadores = linhas.map(() => "?").join(",");
   const itens = await todos(
-    `SELECT * FROM pedido_itens WHERE pedido_id IN (${marcadores}) ORDER BY id`,
+    `SELECT i.*, p.imagem AS produto_imagem, p.atualizado_em AS produto_atualizado_em
+       FROM pedido_itens i
+       LEFT JOIN produtos p ON p.id = i.produto_id
+      WHERE i.pedido_id IN (${marcadores})
+      ORDER BY i.id`,
     linhas.map(linha => linha.id)
   );
 

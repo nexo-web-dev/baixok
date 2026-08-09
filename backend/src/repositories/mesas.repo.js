@@ -1,6 +1,18 @@
 /* Acesso a `mesas` e `mesa_itens`. */
 import { todos, um, alteradas } from "../db/postgres.js";
 
+const DATA_IMAGE_RE = /^data:image\/[a-z0-9.+-]+;base64,/i;
+
+function imagemProduto(linha) {
+  const imagem = String(linha.produto_imagem || "").trim();
+  if (!imagem) return "";
+  if (DATA_IMAGE_RE.test(imagem)) {
+    const versao = encodeURIComponent(linha.produto_atualizado_em || "");
+    return `/api/publico/produtos/${encodeURIComponent(linha.produto_id)}/imagem${versao ? `?v=${versao}` : ""}`;
+  }
+  return imagem;
+}
+
 const paraApi = (linha, itens = []) => linha && ({
   n: linha.n,
   status: linha.status,
@@ -14,6 +26,7 @@ const itemParaApi = linha => ({
   name: linha.nome,
   qty: linha.quantidade,
   price: linha.preco_unit,
+  image: imagemProduto(linha),
   orderId: linha.pedido_id
 });
 
@@ -25,7 +38,12 @@ export const mesasRepo = {
     /* Uma consulta para as mesas e uma para todos os itens. Buscar item dentro
      * do map faria N+1 — no SQLite ja era ruim, aqui cada uma seria uma ida a
      * rede. */
-    const itens = await todos("SELECT * FROM mesa_itens ORDER BY id");
+    const itens = await todos(`
+      SELECT i.*, p.imagem AS produto_imagem, p.atualizado_em AS produto_atualizado_em
+        FROM mesa_itens i
+        LEFT JOIN produtos p ON p.id = i.produto_id
+       ORDER BY i.id
+    `);
     const porMesa = new Map();
     for (const item of itens) {
       if (!porMesa.has(item.mesa_n)) porMesa.set(item.mesa_n, []);
@@ -44,7 +62,13 @@ export const mesasRepo = {
   async buscar(n) {
     const mesa = await um("SELECT * FROM mesas WHERE n = ?", [n]);
     if (!mesa) return null;
-    const itens = await todos("SELECT * FROM mesa_itens WHERE mesa_n = ? ORDER BY id", [n]);
+    const itens = await todos(`
+      SELECT i.*, p.imagem AS produto_imagem, p.atualizado_em AS produto_atualizado_em
+        FROM mesa_itens i
+        LEFT JOIN produtos p ON p.id = i.produto_id
+       WHERE i.mesa_n = ?
+       ORDER BY i.id
+    `, [n]);
     return paraApi(mesa, itens.map(itemParaApi));
   },
 

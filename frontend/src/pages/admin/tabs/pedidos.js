@@ -47,10 +47,11 @@ function produtoDoItem(item) {
 
 function miniFotoItem(item) {
   const produto = produtoDoItem(item);
-  if (!produto?.image) return el("div.order-detail-thumb.no-photo", {}, "Sem foto");
+  const imagem = item?.image || produto?.image || "";
+  if (!imagem) return el("div.order-detail-thumb.no-photo", {}, "Sem foto");
   return el("img.order-detail-thumb", {
-    src: produto.image,
-    alt: item.name || produto.name || "Produto",
+    src: imagem,
+    alt: item.name || produto?.name || "Produto",
     loading: "lazy",
     decoding: "async",
     onerror: evento => evento.target.replaceWith(el("div.order-detail-thumb.no-photo", {}, "Sem foto"))

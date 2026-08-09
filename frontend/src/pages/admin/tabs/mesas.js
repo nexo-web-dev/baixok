@@ -1,8 +1,8 @@
 /* Mesas do salao.
  *
- * O ciclo continua o mesmo: abrir libera o QR, fechar a conta trava o QR e
- * imprime a nota, liberar devolve a mesa ao proximo cliente. A taxa de servico
- * agora vem calculada do servidor. */
+ * O QR fica sempre disponivel na mesa. Quando o cliente escaneia e envia o
+ * primeiro pedido, o servidor abre a comanda automaticamente. Fechar a conta
+ * trava novos pedidos ate o pagamento liberar a mesa. */
 import { el, render, $, delegar } from "../../../utils/dom.js";
 import { reais, minutosDesde, esperaLegivel } from "../../../utils/formato.js";
 import { apiMesas } from "../../../services/api.js";
@@ -28,8 +28,8 @@ function cartao(mesa) {
   if (mesa.status === "livre") {
     return el("article.table-card.is-livre", {},
       cabecalho(mesa),
-      el("p", {}, "Mesa livre. Verde significa pronta para abrir uma nova comanda."),
-      el("button.primary.wide", { type: "button", dataset: { acao: "abrir", n: String(mesa.n) } }, "Abrir mesa")
+      el("p", {}, "Mesa livre. Quando o cliente escanear o QR e enviar o primeiro pedido, a comanda abre automaticamente."),
+      el("button.primary.wide", { type: "button", dataset: { acao: "qr", n: String(mesa.n) } }, "Ver QR da mesa")
     );
   }
 

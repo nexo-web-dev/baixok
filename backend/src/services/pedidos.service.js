@@ -142,7 +142,14 @@ export const pedidosService = {
     const pedido = await emTransacao(async () => {
       if (dados.tableNumber != null) {
         const mesa = await mesasRepo.buscar(dados.tableNumber);
-        if (!mesa || mesa.status !== "aberta") {
+        if (!mesa) throw naoEncontrado("Mesa nao encontrada.");
+        if (mesa.status === "fechando") {
+          throw new ErroApp("A conta desta mesa ja foi fechada. Chame o garcom para pedir de novo.", 409, "mesa_fechando");
+        }
+        if (mesa.status === "livre") {
+          await mesasRepo.abrir(dados.tableNumber);
+          mesaAbertaAutomaticamente = true;
+        } else if (mesa.status !== "aberta") {
           throw new ErroApp("A comanda desta mesa não está aberta.", 409, "mesa_fechada");
         }
       }
@@ -205,11 +212,19 @@ export const pedidosService = {
       return novo;
     });
 
+    if (mesaAbertaAutomaticamente) {
+      await auditoriaRepo.registrar({
+        acao: "mesa_aberta_auto", entidade: "mesa", entidadeId: dados.tableNumber,
+        detalhes: { pedido: pedido.id }, ip
+      });
+    }
+
     await auditoriaRepo.registrar({
       acao: "pedido_criado", entidade: "pedido", entidadeId: pedido.id,
       detalhes: { canal: "cardapio", total: pedido.total, itens: pedido.items.length }, ip
     });
     publicar("pedidos", [CANAL.OPERACAO, CANAL.TELAO, CANAL.PUBLICO]);
+    if (pedido.tableNumber != null) publicar("mesas", [CANAL.OPERACAO, CANAL.PUBLICO]);
     return pedido;
   },
 
@@ -335,6 +350,7 @@ export const pedidosService = {
       throw new ErroApp("Informe o motivo do cancelamento.", 400, "motivo_obrigatorio");
     }
 
+    let mesaAbertaAutomaticamente = false;
     const pedido = await emTransacao(async () => {
       const atual = await pedidosRepo.buscar(id);
       if (!atual) throw naoEncontrado("Pedido não encontrado.");
