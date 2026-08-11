@@ -90,6 +90,7 @@ export function criarApp() {
   if (fs.existsSync(PASTA_FRONT)) {
     app.get(["/admin", "/admin.html", "/telao", "/telao.html"], (req, res, next) => {
       if (req.usuario) return next();
+      res.set("Cache-Control", "no-store, must-revalidate");
       res.sendFile(path.join(PASTA_FRONT, "entrar.html"));
     });
 
@@ -109,6 +110,7 @@ export function criarApp() {
 
     app.use((req, res) => {
       if (PAGINAS_RESTRITAS.has(req.path) && !req.usuario) {
+        res.set("Cache-Control", "no-store, must-revalidate");
         return res.sendFile(path.join(PASTA_FRONT, "entrar.html"));
       }
       res.status(404).sendFile(path.join(PASTA_FRONT, "index.html"));

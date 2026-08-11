@@ -11,11 +11,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/admin-P4d1G7uV.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/api-DmBccviS.js">
-  <link rel="modulepreload" crossorigin href="/assets/estoque-CrifzjOz.js">
-  <link rel="modulepreload" crossorigin href="/assets/categorias-BWVpYey5.js">
-  <link rel="stylesheet" crossorigin href="/assets/admin-DQqR9ckH.css">
+  <script type="module" crossorigin src="/assets/admin-DytML8uR.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/api-D3WwLbNr.js">
+  <link rel="modulepreload" crossorigin href="/assets/estoque-CJc7iiE0.js">
+  <link rel="modulepreload" crossorigin href="/assets/categorias-HQM12cpL.js">
+  <link rel="stylesheet" crossorigin href="/assets/admin-BMZo7OHm.css">
 </head>
 <body data-page="admin">
   <div class="aviso-offline" role="alert">Sem conexão com o servidor. As alterações não estão sendo salvas.</div>
@@ -35,6 +35,7 @@
       <button class="nav-item" type="button" data-tab="mesas"><span class="nav-icon" aria-hidden="true">▢</span>Mesas (salão)</button>
       <button class="nav-item" type="button" data-tab="produtos"><span class="nav-icon" aria-hidden="true">◱</span>Produtos</button>
       <button class="nav-item" type="button" data-tab="promos"><span class="nav-icon" aria-hidden="true">✦</span>Promoções</button>
+      <button class="nav-item" type="button" data-tab="combos"><span class="nav-icon" aria-hidden="true">◆</span>Combos</button>
       <button class="nav-item" type="button" data-tab="entrega"><span class="nav-icon" aria-hidden="true">◈</span>Área de entrega</button>
       <button class="nav-item" type="button" data-tab="estoque"><span class="nav-icon" aria-hidden="true">▤</span>Estoque</button>
       <button class="nav-item" type="button" data-tab="dashboard"><span class="nav-icon" aria-hidden="true">◔</span>Dashboard</button>
@@ -102,6 +103,15 @@
         <strong>Como usar esta aba</strong>
         <p>Comanda por mesa com QR code: o cliente escaneia, envia o primeiro pedido e a mesa abre automaticamente no sistema. O balcão acompanha o parcial, recebe alerta e fecha a conta imprimindo a nota.</p>
       </div>
+      <div class="tab-guide" id="menu-url-panel">
+        <strong>Endereço público do cardápio</strong>
+        <p>O QR da mesa aponta pra cá. Sem preencher, ele usa o endereço que você está usando agora no navegador — funciona só nesse aparelho, e por isso o QR "quebra" quando outra pessoa escaneia. Preencha com o link público de verdade (ex: o endereço do Netlify).</p>
+        <div class="field-row">
+          <input id="menu-url-input" type="text" placeholder="https://baixok.netlify.app" style="flex:1">
+          <button class="primary" type="button" id="menu-url-save">Salvar endereço</button>
+        </div>
+        <p class="form-error hidden" id="menu-url-error" role="alert"></p>
+      </div>
       <div class="tables-bar">
         <strong>Mesas no salão</strong>
         <div class="counter">
@@ -165,6 +175,7 @@
             <input id="product-photo-file" type="file" accept="image/*" capture="environment" class="hidden">
           </div>
           <label class="check-field"><input id="product-active" type="checkbox" checked> Ativo no cardápio</label>
+          <label class="check-field"><input id="product-sabor-pizza" type="checkbox" disabled> Pizza de 2 sabores (automático para a categoria "pizzas" — configure as combinações na aba Combos)</label>
           <div class="field-row">
             <button class="primary wide" type="submit" id="product-save-label">Cadastrar produto</button>
             <button class="secondary" type="button" id="product-reset">Limpar</button>
@@ -214,6 +225,55 @@
             <button class="chip-toggle" type="button" id="coupon-once">Uso único por cliente</button>
             <p class="form-error hidden" id="coupon-error" role="alert"></p>
             <button class="primary wide" type="button" id="save-coupon">Criar cupom</button>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------------- 2 sabores e combos -->
+    <section class="admin-tab hidden" id="tab-combos">
+      <div class="tab-guide">
+        <strong>Como usar esta aba</strong>
+        <p>Marque "Permite pizza de 2 sabores" no cadastro do produto (aba Produtos) para o sabor entrar aqui. Sem um preço configurado para o par, essa combinação não aparece como opção pro cliente. Combos são itens novos no cardápio, compostos de produtos existentes por um preço fechado.</p>
+      </div>
+      <div class="promo-layout">
+        <section class="panel">
+          <h2>Combinações de sabores</h2>
+          <div class="promo-list" id="sabor-combo-list"></div>
+          <div class="panel-divider">
+            <strong class="field-label gold" id="sabor-combo-form-title">Nova combinação</strong>
+            <div class="field-row">
+              <select id="sabor-combo-a" aria-label="Primeiro sabor"></select>
+              <select id="sabor-combo-b" aria-label="Segundo sabor"></select>
+            </div>
+            <input id="sabor-combo-preco" placeholder="Preço da combinação (R$)" inputmode="decimal">
+            <p class="form-error hidden" id="sabor-combo-error" role="alert"></p>
+            <button class="primary wide" type="button" id="save-sabor-combo">Salvar combinação</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Combos cadastrados</h2>
+          <div class="promo-list" id="combo-list"></div>
+          <div class="panel-divider">
+            <strong class="field-label gold" id="combo-form-title">Novo combo</strong>
+            <input id="combo-id" type="hidden">
+            <input id="combo-name" placeholder="Nome do combo (ex: Combo Burguer)" maxlength="80">
+            <input id="combo-description" placeholder="Descrição curta" maxlength="300">
+            <input id="combo-price" placeholder="Preço do combo (R$)" inputmode="decimal">
+            <input id="combo-image" placeholder="Foto: images/produto-burguer.png ou cole uma URL">
+            <div class="field-row">
+              <select id="combo-item-product" aria-label="Produto do combo"></select>
+              <input id="combo-item-qty" type="number" min="1" step="1" value="1" style="max-width:90px">
+              <button class="secondary" type="button" id="combo-item-add">+ Adicionar</button>
+            </div>
+            <div class="chip-row" id="combo-items-list"></div>
+            <label class="check-field"><input id="combo-active" type="checkbox" checked> Ativo no cardápio</label>
+            <p class="form-error hidden" id="combo-error" role="alert"></p>
+            <div class="field-row">
+              <button class="primary wide" type="button" id="save-combo">Cadastrar combo</button>
+              <button class="secondary" type="button" id="combo-reset">Limpar</button>
+            </div>
           </div>
         </section>
       </div>
@@ -435,6 +495,21 @@
         <button class="primary wide" type="button" id="manual-save">Registrar pedido</button>
         <button class="secondary" type="button" id="manual-close">Cancelar</button>
       </div>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="service-fee-modal" role="dialog" aria-modal="true" aria-labelledby="service-fee-title">
+    <div class="modal-card">
+      <div>
+        <h2 id="service-fee-title">Fechar conta</h2>
+        <p id="service-fee-summary"></p>
+      </div>
+      <p class="modal-hint">A taxa do garçom foi cobrada do cliente nesta conta?</p>
+      <div class="field-row">
+        <button class="primary wide" type="button" id="service-fee-yes">Sim, cobrar taxa</button>
+        <button class="secondary wide" type="button" id="service-fee-no">Não, fechar sem taxa</button>
+      </div>
+      <button class="secondary wide" type="button" id="service-fee-cancel">Cancelar</button>
     </div>
   </div>
 
