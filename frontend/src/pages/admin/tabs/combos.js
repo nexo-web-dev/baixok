@@ -68,9 +68,25 @@ function desenharPreviewSelectProduto(selectId, previewId, rotuloVazio) {
   render(alvo, cardProdutoCombo(produtoPorId(select.value), rotuloVazio));
 }
 
+function desenharPreviewsSabores() {
+  const primeiro = $("#sabor-combo-a");
+  const segundo = $("#sabor-combo-b");
+  if (!primeiro || !segundo) return;
+
+  let alvo = $("#sabor-combo-preview-list");
+  if (!alvo) {
+    alvo = el("div#sabor-combo-preview-list.combo-product-preview-grid", {});
+    primeiro.closest(".field-row")?.insertAdjacentElement("afterend", alvo);
+  }
+
+  render(alvo,
+    cardProdutoCombo(produtoPorId(primeiro.value), "Primeiro sabor"),
+    cardProdutoCombo(produtoPorId(segundo.value), "Segundo sabor")
+  );
+}
+
 function desenharPreviewsCombos() {
-  desenharPreviewSelectProduto("sabor-combo-a", "sabor-combo-a-preview", "Primeiro sabor");
-  desenharPreviewSelectProduto("sabor-combo-b", "sabor-combo-b-preview", "Segundo sabor");
+  desenharPreviewsSabores();
   desenharPreviewSelectProduto("combo-item-product", "combo-item-product-preview", "Produto do combo");
 }
 
@@ -135,10 +151,19 @@ function resumoItensCombo(itens) {
 }
 
 function linhaCombo(combo) {
+  const itensComFoto = combo.items.map(item => ({ ...item, produto: produtoPorId(item.productId) }));
   return el("div.promo-row", { class: combo.active ? "" : "muted" },
     el("div", {},
       el("strong", {}, combo.name),
-      el("span", {}, `${reais(combo.price)} · ${resumoItensCombo(combo.items) || "sem itens"}`)
+      el("span", {}, `${reais(combo.price)} · ${resumoItensCombo(combo.items) || "sem itens"}`),
+      itensComFoto.length
+        ? el("div.combo-inline-items", {}, itensComFoto.map(item =>
+          el("span.combo-inline-item", {},
+            fotoProduto(item.produto, "mini"),
+            `${item.quantity}x ${item.name}`
+          )
+        ))
+        : null
     ),
     el("button.ghost.small", { type: "button", dataset: { acao: "editar-combo", id: combo.id } }, "Editar"),
     el("button.ghost.small", { type: "button", dataset: { acao: "alternar-combo", id: combo.id } },
@@ -161,11 +186,14 @@ function desenharSelectItemCombo() {
   const escolhido = select.value;
   render(select, ...estado.produtos.map(produto => el("option", { value: produto.id }, produto.name)));
   if (escolhido) select.value = escolhido;
+  desenharPreviewsCombos();
 }
 
 function chipItemCombo(item, indice) {
-  return el("span.chip", {},
-    `${item.quantity}x ${item.name}`,
+  const produto = produtoPorId(item.productId);
+  return el("span.chip.combo-item-chip", {},
+    fotoProduto(produto, "mini"),
+    el("span", {}, `${item.quantity}x ${item.name}`),
     el("button", { type: "button", "aria-label": `Remover ${item.name}`, dataset: { acao: "remover-item-combo", indice: String(indice) } }, "×")
   );
 }
@@ -190,6 +218,7 @@ function limparFormularioCombo() {
   $("#combo-form-title").textContent = "Novo combo";
   $("#save-combo").textContent = "Cadastrar combo";
   erroDoFormulario("combo-error", "");
+  desenharPreviewsCombos();
   desenharItensCombo();
 }
 
@@ -248,6 +277,7 @@ export function ligarCombos() {
     $("#sabor-combo-preco").value = botao.dataset.preco;
     const titulo = $("#sabor-combo-form-title");
     if (titulo) titulo.textContent = "Editando combinação";
+    desenharPreviewsCombos();
     $("#sabor-combo-a").scrollIntoView({ behavior: "smooth", block: "center" });
   });
 
@@ -270,6 +300,7 @@ export function ligarCombos() {
     if (existente) existente.quantity += quantity;
     else rascunhoCombo.itens.push({ productId, name: produto.name, quantity });
     $("#combo-item-qty").value = "1";
+    desenharPreviewsCombos();
     desenharItensCombo();
   });
 
@@ -305,6 +336,9 @@ export function ligarCombos() {
   });
 
   $("#combo-reset")?.addEventListener("click", limparFormularioCombo);
+  $("#sabor-combo-a")?.addEventListener("change", desenharPreviewsCombos);
+  $("#sabor-combo-b")?.addEventListener("change", desenharPreviewsCombos);
+  $("#combo-item-product")?.addEventListener("change", desenharPreviewsCombos);
 
   delegar($("#combo-list"), "click", "[data-acao='editar-combo']", (_e, botao) => editarCombo(botao.dataset.id));
 
