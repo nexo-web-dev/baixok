@@ -13,6 +13,48 @@ import { estado, carregar } from "../store.js";
 import { toast, toastFalha } from "../../../components/toast.js";
 
 const rascunhoCombo = { id: null, itens: [] };
+const LADO_MAXIMO = 720;
+const QUALIDADE = 0.72;
+const LIMITE_IMAGEM = 260_000;
+const normalizarImagem = valor => String(valor || "").trim().replace(/^\/images\//, "images/");
+
+function prepararFoto(arquivo) {
+  return new Promise((resolve, reject) => {
+    if (arquivo.type && !arquivo.type.startsWith("image/")) return reject(new Error("Escolha um arquivo de imagem."));
+    if (arquivo.size > 12 * 1024 * 1024) return reject(new Error("Imagem muito grande. Use até 12 MB."));
+
+    const url = URL.createObjectURL(arquivo);
+    const imagem = new Image();
+    imagem.onload = () => {
+      URL.revokeObjectURL(url);
+      const escala = Math.min(1, LADO_MAXIMO / Math.max(imagem.width, imagem.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(imagem.width * escala);
+      canvas.height = Math.round(imagem.height * escala);
+      canvas.getContext("2d").drawImage(imagem, 0, 0, canvas.width, canvas.height);
+
+      const dataUrl = canvas.toDataURL("image/jpeg", QUALIDADE);
+      if (dataUrl.length > LIMITE_IMAGEM) return reject(new Error("Imagem ainda muito pesada. Tente uma foto menor."));
+      resolve(dataUrl);
+    };
+    imagem.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Não foi possível ler a imagem."));
+    };
+    imagem.src = url;
+  });
+}
+
+function atualizarPreviewCombo(valor) {
+  const normalizado = normalizarImagem(valor);
+  const preview = $("#combo-photo-preview");
+  const vazio = $("#combo-photo-empty");
+  if (preview) {
+    preview.src = normalizado || "";
+    preview.classList.toggle("hidden", !normalizado);
+  }
+  if (vazio) vazio.classList.toggle("hidden", Boolean(normalizado));
+}
 
 function erroDoFormulario(id, mensagem) {
   const alvo = $(`#${id}`);
@@ -218,6 +260,7 @@ function limparFormularioCombo() {
   $("#combo-form-title").textContent = "Novo combo";
   $("#save-combo").textContent = "Cadastrar combo";
   erroDoFormulario("combo-error", "");
+  atualizarPreviewCombo("");
   desenharPreviewsCombos();
   desenharItensCombo();
 }
@@ -235,6 +278,7 @@ function editarCombo(id) {
   $("#combo-form-title").textContent = `Editando: ${combo.name}`;
   $("#save-combo").textContent = "Salvar alterações";
   erroDoFormulario("combo-error", "");
+  atualizarPreviewCombo(combo.image || "");
   desenharItensCombo();
   $("#combo-name").focus();
 }
@@ -315,7 +359,7 @@ export function ligarCombos() {
       name: $("#combo-name").value.trim(),
       description: $("#combo-description").value.trim(),
       price: paraNumero($("#combo-price").value),
-      image: $("#combo-image").value.trim(),
+      image: normalizarImagem($("#combo-image").value),
       active: $("#combo-active").checked,
       items: rascunhoCombo.itens.map(item => ({ productId: item.productId, quantity: item.quantity }))
     };
@@ -336,6 +380,22 @@ export function ligarCombos() {
   });
 
   $("#combo-reset")?.addEventListener("click", limparFormularioCombo);
+  $("#combo-image")?.addEventListener("input", evento => atualizarPreviewCombo(evento.target.value));
+  $("#combo-photo-button")?.addEventListener("click", () => $("#combo-photo-file")?.click());
+  $("#combo-photo-file")?.addEventListener("change", async evento => {
+    const arquivo = evento.target.files?.[0];
+    if (!arquivo) return;
+    try {
+      const dataUrl = await prepararFoto(arquivo);
+      $("#combo-image").value = dataUrl;
+      atualizarPreviewCombo(dataUrl);
+      toast("Foto do combo carregada.");
+    } catch (erro) {
+      toastFalha(erro);
+    } finally {
+      evento.target.value = "";
+    }
+  });
   $("#sabor-combo-a")?.addEventListener("change", desenharPreviewsCombos);
   $("#sabor-combo-b")?.addEventListener("change", desenharPreviewsCombos);
   $("#combo-item-product")?.addEventListener("change", desenharPreviewsCombos);
