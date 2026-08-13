@@ -5,6 +5,7 @@
  * cardapio conseguia ler todos os codigos no devtools. */
 import { el, render, $, delegar, mostrar } from "../../../utils/dom.js";
 import { reais, paraNumero } from "../../../utils/formato.js";
+import { rotuloCategoria } from "../../../utils/categorias.js";
 import { apiPromocoes, apiCupons } from "../../../services/api.js";
 import { estado, carregar } from "../store.js";
 import { toast, toastFalha } from "../../../components/toast.js";
@@ -20,11 +21,75 @@ function erroDoFormulario(id, mensagem) {
 }
 
 // ------------------------------------------------------------- promocoes ---
+function fotoProduto(produto) {
+  if (!produto?.image) return el("span.promo-product-thumb.no-photo", {}, "Sem foto");
+  return el("span.fit-media.promo-product-thumb", {},
+    el("img.fit-media-bg", {
+      src: produto.image,
+      alt: "",
+      loading: "lazy",
+      decoding: "async",
+      "aria-hidden": "true"
+    }),
+    el("img.fit-media-main", {
+      src: produto.image,
+      alt: produto.name || "Produto",
+      loading: "lazy",
+      decoding: "async",
+      onerror: evento => evento.target.closest(".promo-product-thumb")?.replaceWith(el("span.promo-product-thumb.no-photo", {}, "Sem foto"))
+    })
+  );
+}
+
+function produtoPromocaoSelecionado() {
+  const id = $("#promo-product")?.value;
+  return estado.produtos.find(produto => produto.id === id);
+}
+
+function garantirPreviewPromocao() {
+  const select = $("#promo-product");
+  if (!select) return null;
+
+  let alvo = $("#promo-product-preview");
+  if (!alvo) {
+    alvo = el("div#promo-product-preview.promo-product-preview", { "aria-live": "polite" });
+    select.insertAdjacentElement("afterend", alvo);
+  }
+  return alvo;
+}
+
+function desenharPreviewPromocao() {
+  const alvo = garantirPreviewPromocao();
+  if (!alvo) return;
+
+  const produto = produtoPromocaoSelecionado();
+  if (!produto) {
+    render(alvo,
+      el("span.promo-product-thumb.no-photo", {}, "Sem foto"),
+      el("div.promo-product-info", {},
+        el("strong", {}, "Escolha um produto"),
+        el("span", {}, "A foto cadastrada aparece aqui antes de ativar a promocao.")
+      )
+    );
+    return;
+  }
+
+  render(alvo,
+    fotoProduto(produto),
+    el("div.promo-product-info", {},
+      el("strong", {}, produto.name),
+      el("span", {}, `${rotuloCategoria(produto.category)} - preco normal ${reais(produto.price)}`),
+      el("small", { class: produto.active ? "ok-text" : "danger-text" }, produto.active ? "Ativo no cardapio" : "Pausado no cardapio")
+    )
+  );
+}
+
 function linhaPromocao(promocao) {
   const produto = estado.produtos.find(item => item.id === promocao.productId);
   const economia = produto ? produto.price - promocao.price : 0;
 
   return el("div.promo-row", {},
+    fotoProduto(produto),
     el("div", {},
       el("strong", {}, produto?.name || "Produto removido"),
       el("span", {}, `${reais(promocao.price)} · economia de ${reais(economia)}${promocao.until ? ` · até ${promocao.until}` : ""}`)
@@ -48,6 +113,7 @@ export function desenharPromocoes() {
       el("option", { value: produto.id }, `${produto.name} — ${reais(produto.price)}`)
     ));
     if (escolhido) select.value = escolhido;
+    desenharPreviewPromocao();
   }
 
   desenharDicas();
@@ -65,8 +131,11 @@ function desenharDicas() {
 
   render(alvo, ...parados.map(produto =>
     el("button.promo-tip", { type: "button", dataset: { acao: "usar-dica", id: produto.id } },
-      el("strong", {}, produto.name),
+      fotoProduto(produto),
+      el("span.promo-tip-info", {},
+        el("strong", {}, produto.name),
       el("span", {}, `${produto.stock} em estoque · sugerir ${reais(produto.price * 0.85)}`)
+    )
     )
   ));
 }
@@ -130,7 +199,10 @@ export function ligarPromocoes() {
     if (!produto) return;
     $("#promo-product").value = produto.id;
     $("#promo-price").value = (produto.price * 0.85).toFixed(2);
+    desenharPreviewPromocao();
   });
+
+  $("#promo-product")?.addEventListener("change", desenharPreviewPromocao);
 
   $("#save-promo")?.addEventListener("click", async () => {
     erroDoFormulario("promo-error", "");

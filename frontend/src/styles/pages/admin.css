@@ -350,6 +350,11 @@
 
 /* â€” promocoes e cupons â€” */
 .promo-tips { display: grid; gap: 10px; margin-bottom: 14px; }
+.promo-tip { display: grid; grid-template-columns: 52px minmax(0, 1fr); align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border-radius: var(--radius-sm); border: 1.5px dashed rgba(217,154,104,.45); background: var(--soft); color: var(--ink); text-align: left; }
+.promo-tip .promo-product-thumb { width: 46px; height: 46px; min-width: 46px; border-radius: 12px; }
+.promo-tip-info { display: grid; gap: 2px; min-width: 0; }
+.promo-tip-info strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .82rem; }
+.promo-tip-info span { color: var(--muted); font-size: .72rem; }
 .tip-row { display: flex; align-items: center; gap: 14px; padding: 13px 18px; border-radius: var(--radius-sm); background: var(--soft); border: 1.5px dashed rgba(217,154,104,.45); }
 .tip-row > span:nth-child(2) { flex: 1; color: var(--muted-2); font-size: .82rem; line-height: 1.4; }
 .tip-mark { color: var(--gold); font-size: 1.05rem; }
@@ -359,6 +364,14 @@
 .promo-row > div { flex: 1; min-width: 0; }
 .promo-row strong { display: block; font-size: .84rem; }
 .promo-row span { display: block; margin-top: 2px; color: var(--muted); font-size: .76rem; }
+.promo-product-preview { display: grid; grid-template-columns: 64px minmax(0, 1fr); align-items: center; gap: 12px; min-height: 78px; padding: 10px; border-radius: var(--radius-sm); background: var(--soft); border: 1.5px solid var(--line-soft); }
+.promo-product-thumb { width: 58px; height: 58px; min-width: 58px; border-radius: 14px; background: var(--sidebar); }
+.promo-product-thumb.fit-media { display: block; overflow: hidden; }
+.promo-product-thumb.no-photo { display: grid; place-items: center; padding: 6px; color: var(--gold); font-size: .62rem; font-weight: 800; text-align: center; }
+.promo-product-info { min-width: 0; display: grid; gap: 3px; }
+.promo-product-info strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .88rem; }
+.promo-product-info span { color: var(--muted); font-size: .76rem; }
+.promo-product-info small { font-size: .7rem; font-weight: 800; }
 .coupon-row.muted { opacity: .45; }
 .coupon-row code { padding: 5px 12px; border-radius: var(--radius-xs); background: var(--soft); color: var(--gold-light); font-family: ui-monospace, Menlo, monospace; font-size: .76rem; font-weight: 700; letter-spacing: 1px; }
 .coupon-row > span { flex: 1; min-width: 0; color: var(--muted); font-size: .74rem; }
