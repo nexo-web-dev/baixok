@@ -7,6 +7,7 @@
  * o cliente (nada de media ou "sabor mais caro" calculado sozinho). */
 import { el, render, $, delegar, mostrar } from "../../../utils/dom.js";
 import { reais, paraNumero } from "../../../utils/formato.js";
+import { rotuloCategoria } from "../../../utils/categorias.js";
 import { apiCombos, apiCombinacoesSabores } from "../../../services/api.js";
 import { estado, carregar } from "../store.js";
 import { toast, toastFalha } from "../../../components/toast.js";
@@ -20,13 +21,72 @@ function erroDoFormulario(id, mensagem) {
   mostrar(alvo, Boolean(mensagem));
 }
 
+function produtoPorId(id) {
+  return estado.produtos.find(produto => produto.id === id);
+}
+
+function fotoProduto(produto, classe = "") {
+  if (!produto?.image) return el("div.combo-product-thumb.no-photo", { class: classe }, "Sem foto");
+  return el("span.combo-product-thumb.fit-media", { class: classe },
+    el("img.fit-media-bg", {
+      src: produto.image,
+      alt: "",
+      loading: "lazy",
+      decoding: "async",
+      "aria-hidden": "true"
+    }),
+    el("img.fit-media-main", {
+      src: produto.image,
+      alt: produto.name || "Produto",
+      loading: "lazy",
+      decoding: "async",
+      onerror: evento => evento.target.closest(".fit-media")?.replaceWith(el("div.combo-product-thumb.no-photo", { class: classe }, "Sem foto"))
+    })
+  );
+}
+
+function cardProdutoCombo(produto, rotuloVazio = "Escolha um produto") {
+  return el("div.combo-product-preview", { class: produto ? "" : "empty" },
+    fotoProduto(produto),
+    el("div.combo-product-info", {},
+      el("strong", {}, produto?.name || rotuloVazio),
+      el("span", {}, produto
+        ? `${rotuloCategoria(produto.category)} · ${reais(produto.price)}`
+        : "A foto cadastrada aparece aqui para conferir antes de salvar.")
+    )
+  );
+}
+
+function desenharPreviewSelectProduto(selectId, previewId, rotuloVazio) {
+  const select = $(`#${selectId}`);
+  if (!select) return;
+  let alvo = $(`#${previewId}`);
+  if (!alvo) {
+    alvo = el("div", { id: previewId });
+    select.closest(".field-row")?.insertAdjacentElement("afterend", alvo);
+  }
+  render(alvo, cardProdutoCombo(produtoPorId(select.value), rotuloVazio));
+}
+
+function desenharPreviewsCombos() {
+  desenharPreviewSelectProduto("sabor-combo-a", "sabor-combo-a-preview", "Primeiro sabor");
+  desenharPreviewSelectProduto("sabor-combo-b", "sabor-combo-b-preview", "Segundo sabor");
+  desenharPreviewSelectProduto("combo-item-product", "combo-item-product-preview", "Produto do combo");
+}
+
 // ------------------------------------------------------ combinacoes de sabores ---
 function produtosSaborPizza() {
   return estado.produtos.filter(produto => produto.saborPizza);
 }
 
 function linhaSaborCombo(combinacao) {
+  const produtoA = produtoPorId(combinacao.produtoAId);
+  const produtoB = produtoPorId(combinacao.produtoBId);
   return el("div.promo-row", {},
+    el("div.combo-mini-pair", {},
+      fotoProduto(produtoA, "mini"),
+      fotoProduto(produtoB, "mini")
+    ),
     el("div", {},
       el("strong", {}, `${combinacao.nomeA} + ${combinacao.nomeB}`),
       el("span", {}, reais(combinacao.preco))
@@ -57,6 +117,7 @@ function desenharSelectsSabor() {
     );
     if (escolhido) select.value = escolhido;
   }
+  desenharPreviewsCombos();
 }
 
 function desenharCombinacoesSabores() {
