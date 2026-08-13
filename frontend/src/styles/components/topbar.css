@@ -3,7 +3,7 @@
 /* â€” topbar (menu + admin top) â€” */
 .topbar {
   position: sticky; top: 0; z-index: 18; display: flex; align-items: center; justify-content: space-between;
-  gap: 14px; padding: 14px clamp(14px, 4vw, 46px); background: rgba(21,18,16,.92); backdrop-filter: blur(14px);
+  gap: 14px; padding: 14px clamp(14px, 4vw, 46px); background: rgba(21,18,16,.96);
   border-bottom: 1px solid var(--line-soft);
 }
 .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }

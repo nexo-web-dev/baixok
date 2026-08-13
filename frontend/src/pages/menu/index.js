@@ -71,31 +71,53 @@ async function carregarCardapio() {
   }
 }
 
-function redesenhar() {
+let resumoCarrinhoAtual = { subtotal: 0, desconto: 0, frete: 0, total: 0, linhas: [] };
+let desenhandoCarrinho = false;
+
+function redesenharGradeAtual() {
+  desenharGrade(estado.produtos, { categoria: estado.categoria, busca: estado.busca, lojaAberta: lojaAberta() });
+}
+
+function desenharCarrinhoEResumo() {
+  if (desenhandoCarrinho) return resumoCarrinhoAtual;
+  desenhandoCarrinho = true;
+  try {
+    const resumo = desenharCarrinho({
+      produtosPorId: estado.produtosPorId,
+      combosPorId: estado.combosPorId,
+      combinacoesMap: estado.combinacoesMap,
+      modalidade: estado.modalidade,
+      cotacao: entrega.cotacao,
+      modoMesa: Boolean(sessaoMesa.n)
+    });
+    resumoCarrinhoAtual = resumo;
+    atualizarResumoTroco(resumo.total);
+    atualizarStatusLoja();
+    return resumo;
+  } finally {
+    desenhandoCarrinho = false;
+  }
+}
+
+function redesenharCatalogo() {
   if (estado.categoria !== "todos" && !estado.produtos.some(produto => produto.category === estado.categoria)) {
     estado.categoria = "todos";
   }
   desenharDestaques(estado.produtos);
   desenharFiltros(estado.produtos, estado.categoria);
-  desenharGrade(estado.produtos, { categoria: estado.categoria, busca: estado.busca, lojaAberta: lojaAberta() });
-  const resumo = desenharCarrinho({
-    produtosPorId: estado.produtosPorId,
-    combosPorId: estado.combosPorId,
-    combinacoesMap: estado.combinacoesMap,
-    modalidade: estado.modalidade,
-    cotacao: entrega.cotacao,
-    modoMesa: Boolean(sessaoMesa.n)
-  });
-  atualizarResumoTroco(resumo.total);
-  atualizarStatusLoja();
-  return resumo;
+  redesenharGradeAtual();
+}
+
+function redesenhar() {
+  redesenharCatalogo();
+  return desenharCarrinhoEResumo();
 }
 
 // ------------------------------------------------------------ interacoes ---
 function definirCategoria(categoria) {
   estado.categoria = categoria;
   desenharFiltros(estado.produtos, categoria);
-  desenharGrade(estado.produtos, { categoria, busca: estado.busca, lojaAberta: lojaAberta() });
+  redesenharGradeAtual();
 }
 
 function definirModalidade(modo) {
@@ -107,10 +129,10 @@ function definirModalidade(modo) {
   if (faixa) faixa.textContent = modo === "retirada" ? "RETIRADA" : "ENTREGA";
   mostrar($("#place-label"), modo === "entrega");
 
-  if (modo === "entrega") entrega.montarWidget(redesenhar);
+  if (modo === "entrega") entrega.montarWidget(desenharCarrinhoEResumo);
   else entrega.limparWidget();
 
-  redesenhar();
+  desenharCarrinhoEResumo();
 }
 
 function normalizarTroco(valor) {
@@ -174,6 +196,15 @@ function atualizarStatusLoja() {
 
 function telaPequena() {
   return window.matchMedia?.("(max-width: 900px)").matches ?? window.innerWidth <= 900;
+}
+
+let buscaFrame = null;
+function agendarBusca() {
+  if (buscaFrame) cancelAnimationFrame(buscaFrame);
+  buscaFrame = requestAnimationFrame(() => {
+    buscaFrame = null;
+    redesenharGradeAtual();
+  });
 }
 
 function abrirCarrinho({ forcar = false } = {}) {
@@ -303,16 +334,8 @@ function ligarRolagemDoCarrinho() {
 
   cart.addEventListener("wheel", evento => {
     if (!document.body.classList.contains("cart-open")) return;
-    const noTopo = cart.scrollTop <= 0;
-    const noFim = Math.ceil(cart.scrollTop + cart.clientHeight) >= cart.scrollHeight;
-    const tentandoSubir = evento.deltaY < 0;
-    const tentandoDescer = evento.deltaY > 0;
-
-    if ((tentandoSubir && noTopo) || (tentandoDescer && noFim)) {
-      evento.preventDefault();
-      window.scrollBy({ top: evento.deltaY, behavior: "auto" });
-    }
-  }, { passive: false });
+    evento.stopPropagation();
+  }, { passive: true });
 }
 
 // -------------------------------------------------------------- checkout ---
@@ -462,7 +485,7 @@ function ligarEventos() {
   });
   delegar(document.body, "click", "[data-acao='categoria']", (_evento, alvo) => {
     definirCategoria(alvo.dataset.categoria);
-    $("#menu-shell")?.scrollIntoView({ behavior: "smooth" });
+    $("#menu-shell")?.scrollIntoView({ behavior: telaPequena() ? "auto" : "smooth" });
   });
   delegar(document.body, "click", "[data-acao='qtd']", (_evento, alvo) => {
     carrinho.mudarQuantidade(alvo.dataset.chave, Number(alvo.dataset.delta));
@@ -473,13 +496,13 @@ function ligarEventos() {
   delegar(document.body, "click", "[data-acao='escolher-endereco']", (_evento, alvo) => {
     entrega.escolherEndereco({
       texto: alvo.dataset.texto, lng: Number(alvo.dataset.lng), lat: Number(alvo.dataset.lat)
-    }, redesenhar);
+    }, desenharCarrinhoEResumo);
   });
   delegar(document.body, "click", "[data-view]", (_evento, alvo) => mostrarVista(alvo.dataset.view));
 
   $("#search")?.addEventListener("input", evento => {
     estado.busca = evento.target.value;
-    desenharGrade(estado.produtos, { categoria: estado.categoria, busca: estado.busca, lojaAberta: lojaAberta() });
+    agendarBusca();
   });
 
   $("#mode-retirada")?.addEventListener("click", () => definirModalidade("retirada"));
@@ -487,15 +510,15 @@ function ligarEventos() {
   $("#payment-method")?.addEventListener("change", atualizarCampoTroco);
   $("#change-for")?.addEventListener("input", () => atualizarResumoTroco());
 
-  $("#customer-place")?.addEventListener("input", evento => entrega.buscarEndereco(evento.target.value, redesenhar));
+  $("#customer-place")?.addEventListener("input", evento => entrega.buscarEndereco(evento.target.value, desenharCarrinhoEResumo));
   $("#apply-coupon")?.addEventListener("click", async () => {
-    const { subtotal } = redesenhar();
+    const { subtotal } = desenharCarrinhoEResumo();
     await aplicarCupom(subtotal, $("#customer-phone")?.value.trim());
-    redesenhar();
+    desenharCarrinhoEResumo();
   });
   $("#remove-coupon")?.addEventListener("click", () => {
     removerCupom();
-    redesenhar();
+    desenharCarrinhoEResumo();
   });
 
   $("#send-order")?.addEventListener("click", enviarPedido);
@@ -503,7 +526,7 @@ function ligarEventos() {
     carrinho.limpar();
     limparEstadoCupom();
     if ($("#change-for")) $("#change-for").value = "";
-    redesenhar();
+    desenharCarrinhoEResumo();
   });
   $("#open-cart")?.addEventListener("click", () => abrirCarrinho({ forcar: true }));
   $("#close-cart")?.addEventListener("click", () => document.body.classList.remove("cart-open"));
@@ -544,10 +567,10 @@ function ligarEventos() {
   let timerCupom = null;
   window.addEventListener("baixok:carrinho", () => {
     clearTimeout(timerCupom);
-    const { subtotal } = redesenhar();
+    const { subtotal } = desenharCarrinhoEResumo();
     timerCupom = setTimeout(async () => {
       await revalidarCupom(subtotal, $("#customer-phone")?.value.trim());
-      redesenhar();
+      desenharCarrinhoEResumo();
     }, 250);
   });
 }
@@ -563,7 +586,13 @@ async function iniciar() {
   redesenhar();
 
   if (numeroMesa) await atualizarMesa();
-  else definirModalidade("retirada");
+  else {
+    estado.modalidade = "retirada";
+    $("#mode-retirada")?.classList.add("active");
+    $("#mode-entrega")?.classList.remove("active");
+    if ($("#pickup-banner")) $("#pickup-banner").textContent = "RETIRADA";
+    mostrar($("#place-label"), false);
+  }
 
   /* Canal publico: o cliente so e avisado de mudanca no cardapio e nas mesas.
    * Nada da fila da cozinha chega aqui. */

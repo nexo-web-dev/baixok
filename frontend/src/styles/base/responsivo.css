@@ -1,7 +1,9 @@
 ﻿/* Ajustes por largura de tela. Compartilhado de proposito: o bloco original mistura regras de menu e painel, e separa-lo exigiria reescrever seletores - risco de regressao visual sem ganho real. */
 
 @media (max-width: 900px) {
-  body[data-page="menu"] { width: 100%; min-width: 0; margin: 0; overflow-x: hidden; }
+  html:has(body[data-page="menu"]) { width: 100%; max-width: 100%; overflow-x: clip; scroll-behavior: auto; }
+  body[data-page="menu"] { width: 100%; max-width: 100%; min-width: 0; margin: 0; overflow-x: clip; }
+  body[data-page="menu"] * { max-width: 100%; }
   body[data-page="menu"] .topbar { position: sticky; padding: 12px 20px 8px; background: var(--shell); }
   body[data-page="menu"] .brand img { width: 40px; height: 40px; }
   body[data-page="menu"] .brand strong { font-size: 1rem; }
@@ -9,11 +11,14 @@
   body[data-page="menu"] .top-actions .secondary { display: none; }
   body[data-page="menu"] .closed-banner {
     display: grid;
-    margin: 8px 20px 0;
+    gap: 4px;
+    width: calc(100% - 40px);
+    max-width: calc(100% - 40px);
+    margin: 8px auto 0;
     padding: 12px 14px;
   }
   body[data-page="menu"] .closed-banner strong { font-size: .92rem; }
-  body[data-page="menu"] .closed-banner span { font-size: .78rem; }
+  body[data-page="menu"] .closed-banner span { font-size: .78rem; line-height: 1.25; }
   body[data-page="menu"] .hero {
     grid-template-columns: 1fr; min-height: 190px; margin: 10px 20px 10px; padding: 18px; border-radius: var(--radius-lg);
     background: linear-gradient(180deg, rgba(16,14,12,0) 20%, rgba(16,14,12,.94) 100%), url("/images/loja-baixo-k-hero.png") center/cover;
@@ -112,6 +117,7 @@
     width: 100%;
     max-width: 100%;
     border-radius: var(--radius-md);
+    contain: layout paint;
     content-visibility: visible;
     contain-intrinsic-size: auto;
   }
@@ -157,7 +163,8 @@
   body[data-page="menu"] .cart {
     display: flex;
     flex-direction: column;
-    top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100dvh; max-height: none;
+    top: 0; left: 0; right: 0; bottom: 0; width: 100%; max-width: 100vw;
+    height: 100svh; height: 100dvh; max-height: none;
     padding: calc(14px + env(safe-area-inset-top, 0px)) 14px calc(20px + env(safe-area-inset-bottom, 0px));
     border-radius: 0;
     border: 1px solid rgba(217,154,104,.22);
@@ -166,17 +173,19 @@
     transform: translateY(100%);
     overscroll-behavior: contain;
     overflow-y: auto;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
   }
   body[data-page="menu"] .cart-items {
     display: grid;
     grid-auto-rows: max-content;
     align-content: start;
-    flex: 0 0 auto;
+    flex: 0 1 auto;
     gap: 10px;
-    max-height: min(32dvh, 240px);
+    max-height: min(28svh, 210px);
     overflow-y: auto;
     overscroll-behavior: contain;
+    scrollbar-gutter: stable;
     padding: 0 2px 10px 0;
     border-bottom: 1px solid rgba(255,255,255,.08);
   }
@@ -186,7 +195,7 @@
     padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px));
   }
   body[data-page="menu"][data-mode="mesa"] .cart-items {
-    max-height: min(30dvh, 220px);
+    max-height: min(26svh, 190px);
   }
   body[data-page="menu"].cart-open .cart { opacity: 1; pointer-events: auto; transform: translateY(0); }
   body[data-page="menu"].cart-open .shop-layout { padding-right: 20px; }
@@ -221,10 +230,16 @@
   body[data-page="menu"] .pickup-banner { min-height: 44px; font-size: .95rem; }
   body[data-page="menu"] .mobile-cart { display: flex; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
   body[data-page="menu"] .nexo-footer {
+    display: grid;
+    justify-items: center;
+    gap: 3px;
+    width: calc(100% - 40px);
+    max-width: calc(100% - 40px);
     margin-top: 22px;
-    padding: 22px 22px calc(40px + env(safe-area-inset-bottom, 0px));
+    padding: 22px 0 calc(40px + env(safe-area-inset-bottom, 0px));
     line-height: 1.45;
   }
+  body[data-page="menu"] .nexo-footer .footer-dot { display: none; }
   body[data-page="menu"].cart-has-items .nexo-footer {
     padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
   }
@@ -370,4 +385,3 @@
   body[data-page="menu"].cart-open .shop-layout { padding-right: clamp(14px, 4vw, 46px); }
   body[data-page="menu"] .cart { width: min(420px, calc(100vw - 24px)); }
 }
-
