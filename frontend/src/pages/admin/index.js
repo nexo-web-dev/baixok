@@ -69,7 +69,7 @@ const AFETADAS = {
 };
 
 const DEPENDENCIAS_ABA = {
-  pedidos: ["pedidos", "caixa"],
+  pedidos: ["pedidos", "caixa", "ajustes"],
   motoboy: [],
   mesas: ["mesas", "produtos", "ajustes"],
   produtos: ["produtos", "promocoes"],

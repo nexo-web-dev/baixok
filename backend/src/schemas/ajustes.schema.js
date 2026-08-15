@@ -14,7 +14,10 @@ export const ajustesSchema = z.object({
     .or(z.literal(""))
     .optional(),
   /* Guardado como fracao (0.1 = 10%). */
-  taxa_servico_mesa: z.coerce.number().min(0).max(0.5, "Taxa de serviço acima de 50% não faz sentido.").optional()
+  taxa_servico_mesa: z.coerce.number().min(0).max(0.5, "Taxa de serviço acima de 50% não faz sentido.").optional(),
+  /* Impressora da cozinha nem sempre e a mesma bobina do balcao — precisa ser
+   * ajustavel sem depender de codigo novo a cada modelo diferente. */
+  largura_papel_cozinha: z.coerce.number().int().min(40).max(120).optional()
 }).strict();
 
 export const auditoriaQuerySchema = z.object({

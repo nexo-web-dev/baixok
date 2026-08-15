@@ -10,7 +10,11 @@ const PADROES = {
   whatsapp_entrega: "",
   taxa_servico_mesa: "0.1",
   nome_loja: "Baixo K",
-  endereco_loja: ""
+  endereco_loja: "",
+  /* Mesmo valor que o recibo ja usava fixo (68mm de area impressa numa bobina
+   * de 80mm) — quem nunca mexer neste ajuste no continua exatamente como
+   * estava. */
+  largura_papel_cozinha: "68"
 };
 
 export const ajustesRepo = {

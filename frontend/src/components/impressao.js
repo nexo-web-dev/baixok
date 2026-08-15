@@ -9,12 +9,17 @@
 import { el } from "../utils/dom.js";
 import { dinheiro } from "../utils/formato.js";
 import { CANAIS_ROTULO, MODALIDADES_ROTULO } from "../utils/categorias.js";
+import { estado } from "../pages/admin/store.js";
 
-const cssRecibo = cozinha => `
-  @page { size: 80mm auto; margin: 0; }
+const LARGURA_PADRAO_MM = 80;
+const MARGEM_BOBINA_MM = 12;
+
+const cssRecibo = (cozinha, larguraPapelMm = LARGURA_PADRAO_MM) => `
+  @page { size: ${larguraPapelMm}mm auto; margin: 0; }
   * { box-sizing: border-box; }
   body {
-    width: 68mm; max-width: 68mm; margin: 0 auto; padding: 2mm 0;
+    width: ${Math.max(30, larguraPapelMm - MARGEM_BOBINA_MM)}mm; max-width: ${Math.max(30, larguraPapelMm - MARGEM_BOBINA_MM)}mm;
+    margin: 0 auto; padding: 2mm 0;
     color: #000; background: #fff; font-family: Arial, sans-serif;
     font-size: ${cozinha ? "16px" : "12px"}; font-weight: 500; overflow-wrap: anywhere;
   }
@@ -125,12 +130,19 @@ export function imprimir(pedido, tipo = "counter") {
   const doc = frame.contentDocument || frame.contentWindow?.document;
   if (!doc) return;
 
+  /* Balcão sempre 80mm — é a bobina que já funciona perfeita. A cozinha pode
+   * ser uma impressora diferente, com papel mais estreito; o ajuste fica na
+   * aba Pedidos, ao lado do botão "Teste cozinha". */
+  const larguraPapel = cozinha
+    ? Math.max(40, Math.min(120, Number(estado.ajustes?.largura_papel_cozinha) || LARGURA_PADRAO_MM))
+    : LARGURA_PADRAO_MM;
+
   doc.open();
   doc.write("<!doctype html><html><head><meta charset='utf-8'><title>Baixo K</title></head><body></body></html>");
   doc.close();
 
   const estilo = doc.createElement("style");
-  estilo.textContent = cssRecibo(cozinha);
+  estilo.textContent = cssRecibo(cozinha, larguraPapel);
   doc.head.append(estilo);
 
   /* Os nos vem do documento do painel; adotamos para o do iframe. */

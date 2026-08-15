@@ -70,6 +70,12 @@
   margin-bottom: 14px;
   overflow-x: clip;
 }
+.kitchen-paper-field {
+  display: flex; align-items: center; gap: 6px; padding: 0 4px 0 12px;
+  border-radius: var(--radius-pill); border: 1px solid var(--line-soft); background: var(--panel);
+}
+.kitchen-paper-field span { color: var(--muted); font-size: .76rem; font-weight: 700; white-space: nowrap; }
+.kitchen-paper-field input { width: 56px; min-height: 34px; padding: 0 6px; text-align: center; }
 .cash-status {
   display: inline-flex; align-items: center; min-height: 42px; margin-right: auto; padding: 0 14px;
   border-radius: var(--radius-pill); background: var(--panel); border: 1px solid var(--line-soft);

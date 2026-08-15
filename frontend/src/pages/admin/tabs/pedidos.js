@@ -6,7 +6,7 @@
 import { el, render, $, delegar, mostrar } from "../../../utils/dom.js";
 import { reais, minutosDesde, esperaLegivel } from "../../../utils/formato.js";
 import { CANAIS_ROTULO, MODALIDADES_ROTULO, STATUS_ROTULO } from "../../../utils/categorias.js";
-import { apiPedidos } from "../../../services/api.js";
+import { apiPedidos, apiAjustes } from "../../../services/api.js";
 import { estado, carregar } from "../store.js";
 import { toast, toastFalha } from "../../../components/toast.js";
 import { imprimirAmbas, imprimirTeste } from "../../../components/impressao.js";
@@ -290,6 +290,11 @@ export function desenharPedidos() {
   if (!alvo) return;
   ligarRelogioPedidos();
 
+  const campoPapel = $("#kitchen-paper-width");
+  if (campoPapel && document.activeElement !== campoPapel) {
+    campoPapel.value = estado.ajustes?.largura_papel_cozinha || "";
+  }
+
   const papel = estado.usuario?.papel;
   const pedidos = pedidosDoPapel(
     estado.pedidos.filter(pedido => pedido.status !== "cancelado"),
@@ -394,6 +399,16 @@ export function ligarPedidos() {
 
   $("#print-test-kitchen")?.addEventListener("click", () => imprimirTeste("kitchen"));
   $("#print-test-counter")?.addEventListener("click", () => imprimirTeste("counter"));
+  $("#kitchen-paper-save")?.addEventListener("click", async () => {
+    const valor = Math.max(40, Math.min(120, Math.round(Number($("#kitchen-paper-width")?.value) || 80)));
+    try {
+      await apiAjustes.gravar({ largura_papel_cozinha: valor });
+      await carregar("ajustes");
+      toast(`Papel da cozinha ajustado para ${valor}mm. Teste antes de aprovar o próximo pedido.`);
+    } catch (erro) {
+      toastFalha(erro, "Papel da cozinha");
+    }
+  });
 
   $("#order-detail-close")?.addEventListener("click", fecharDetalhePedido);
   $("#order-detail-modal")?.addEventListener("click", evento => {
