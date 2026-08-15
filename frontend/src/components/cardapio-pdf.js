@@ -15,59 +15,91 @@ import { el } from "../utils/dom.js";
 import { reais } from "../utils/formato.js";
 import { rotuloCategoria } from "../utils/categorias.js";
 
+/* Mesma paleta do sistema (tokens.css) — o cardapio impresso usa as mesmas
+ * cores da tela, nao um tema claro a parte so porque e pra imprimir. */
+const BG = "#100e0c";
+const PANEL = "#1e1913";
+const SOFT = "#241d15";
+const INK = "#f3ece3";
+const MUTED = "#a99e8f";
+const FAINT = "#6f665b";
 const COPPER = "#c97443";
-const GOLD = "#a9662f";
-const INK = "#241a10";
-const MUTED = "#6b5c4c";
-const LINE = "#e6dccb";
-const CREAM = "#fbf6ee";
+const GOLD = "#d99a68";
+const GOLD_LIGHT = "#e8b184";
+const ON_ACCENT = "#1a120c";
+const LINE = "rgba(255,255,255,.08)";
 
 const css = `
-  @page { size: A4; margin: 12mm 14mm; }
+  @page { size: A4; margin: 10mm 12mm; }
   * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
   body {
-    margin: 0; background: ${CREAM}; color: ${INK};
+    margin: 0; background: ${BG}; color: ${INK};
     font-family: 'Figtree', Arial, sans-serif; font-size: 12px; line-height: 1.4;
   }
   .cover {
-    display: flex; flex-direction: column; align-items: center; gap: 6px;
-    padding: 14px 0 18px; margin-bottom: 10px; border-bottom: 2px solid ${COPPER};
+    position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px;
+    padding: 22px 0 20px; margin-bottom: 16px; overflow: hidden;
+    background:
+      radial-gradient(circle at 50% 0%, rgba(201,116,67,.35), transparent 60%),
+      linear-gradient(180deg, ${SOFT}, ${BG});
+    border-bottom: 3px solid ${COPPER};
     text-align: center; break-after: avoid;
   }
-  .cover img { width: 76px; height: 76px; border-radius: 50%; object-fit: cover; border: 2px solid ${GOLD}; }
-  .cover h1 {
-    margin: 4px 0 0; font-family: 'Bricolage Grotesque', Georgia, serif; font-weight: 800;
-    font-size: 34px; letter-spacing: .01em; color: ${INK};
+  .cover img {
+    position: relative; width: 88px; height: 88px; border-radius: 50%; object-fit: cover;
+    border: 3px solid ${GOLD}; box-shadow: 0 0 0 6px rgba(217,154,104,.14);
   }
-  .cover p { margin: 0; color: ${MUTED}; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; }
-  .category { margin: 0 0 16px; break-inside: avoid-column; }
+  .cover h1 {
+    position: relative; margin: 8px 0 0; font-family: 'Bricolage Grotesque', Georgia, serif; font-weight: 800;
+    font-size: 42px; letter-spacing: .01em; color: ${INK};
+    text-shadow: 0 2px 18px rgba(201,116,67,.45);
+  }
+  .cover p {
+    position: relative; margin: 2px 0 0; padding: 4px 16px; border-radius: 999px;
+    background: rgba(217,154,104,.14); color: ${GOLD_LIGHT};
+    font-size: 11px; text-transform: uppercase; letter-spacing: .12em; font-weight: 800;
+  }
+  .category { margin: 0 0 18px; break-inside: avoid-column; }
   .category h2 {
     display: flex; align-items: center; gap: 10px;
-    margin: 0 0 8px; font-family: 'Bricolage Grotesque', Georgia, serif;
-    font-size: 17px; font-weight: 800; color: ${GOLD}; text-transform: uppercase; letter-spacing: .04em;
+    margin: 0 0 10px; padding: 6px 12px; border-radius: 8px;
+    background: linear-gradient(90deg, rgba(201,116,67,.22), transparent);
+    border-left: 4px solid ${COPPER};
+    font-family: 'Bricolage Grotesque', Georgia, serif;
+    font-size: 16px; font-weight: 800; color: ${GOLD_LIGHT}; text-transform: uppercase; letter-spacing: .06em;
     break-after: avoid;
   }
-  .category h2::after { content: ""; flex: 1; height: 1px; background: ${LINE}; }
-  .grid { columns: 2; column-gap: 20px; }
+  .grid { columns: 2; column-gap: 14px; }
   .item {
-    display: grid; grid-template-columns: 46px 1fr; gap: 10px; align-items: start;
-    padding: 8px 0; border-bottom: 1px dashed ${LINE}; break-inside: avoid;
+    display: grid; grid-template-columns: 48px 1fr; gap: 10px; align-items: start;
+    margin: 0 0 10px; padding: 9px; border-radius: 10px;
+    background: ${PANEL}; border: 1px solid ${LINE}; break-inside: avoid;
   }
-  .item img, .item .no-photo { width: 46px; height: 46px; border-radius: 8px; object-fit: cover; background: #efe6d6; }
-  .item .no-photo { display: grid; place-items: center; font-size: 8px; color: ${MUTED}; text-align: center; }
+  .item img, .item .no-photo {
+    width: 48px; height: 48px; border-radius: 8px; object-fit: cover;
+    background: ${SOFT}; border: 1px solid rgba(217,154,104,.35);
+  }
+  .item .no-photo { display: grid; place-items: center; font-size: 8px; color: ${FAINT}; text-align: center; }
   .item-body { min-width: 0; }
   .item-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
   .item-top strong { font-size: 12.5px; font-weight: 800; color: ${INK}; }
-  .item-top span { flex: none; font-weight: 800; color: ${GOLD}; font-size: 12.5px; white-space: nowrap; }
-  .item-body p { margin: 2px 0 0; color: ${MUTED}; font-size: 10.5px; line-height: 1.35; }
+  .item-top span {
+    flex: none; padding: 2px 8px; border-radius: 999px; background: ${GOLD};
+    font-weight: 800; color: ${ON_ACCENT}; font-size: 11.5px; white-space: nowrap;
+  }
+  .item-body p { margin: 3px 0 0; color: ${MUTED}; font-size: 10px; line-height: 1.35; }
   .footer {
-    margin-top: 18px; padding-top: 14px; border-top: 2px solid ${COPPER};
+    margin-top: 6px; padding: 16px 18px; border-radius: 14px;
+    background: linear-gradient(90deg, rgba(201,116,67,.22), rgba(217,154,104,.08));
+    border: 1px solid rgba(217,154,104,.3);
     display: flex; align-items: center; justify-content: space-between; gap: 16px;
     break-inside: avoid;
   }
-  .footer-text strong { display: block; font-size: 13px; color: ${INK}; }
-  .footer-text span { display: block; margin-top: 2px; color: ${MUTED}; font-size: 10.5px; }
-  .footer img { width: 66px; height: 66px; }
+  .footer-text strong { display: block; font-size: 14px; color: ${INK}; }
+  .footer-text span { display: block; margin-top: 3px; color: ${GOLD_LIGHT}; font-size: 11px; font-weight: 700; }
+  .footer .qr-card { padding: 8px; border-radius: 10px; background: #ffffff; line-height: 0; }
+  .footer .qr-card img { display: block; width: 62px; height: 62px; }
 `;
 
 function fotoItem(produto) {
@@ -129,7 +161,7 @@ function montarCorpo({ produtos, ajustes, qrDataUrl, menuUrl }) {
       el("strong", {}, "Peça também pelo nosso cardápio digital"),
       rodapeUrl ? el("span", {}, rodapeUrl) : null
     ),
-    qrDataUrl ? el("img", { src: qrDataUrl, alt: "QR do cardápio" }) : null
+    qrDataUrl ? el("div.qr-card", {}, el("img", { src: qrDataUrl, alt: "QR do cardápio" })) : null
   ));
 
   return partes;
@@ -142,7 +174,7 @@ async function gerarQrOpcional(menuUrl) {
   try {
     return await QRCode.toDataURL(menuUrl, {
       errorCorrectionLevel: "M", margin: 1, width: 240,
-      color: { dark: INK, light: "#ffffff" }
+      color: { dark: ON_ACCENT, light: "#ffffff" }
     });
   } catch {
     return null;
