@@ -57,9 +57,12 @@ export function resolverPeriodo({ periodo, desde, ate }) {
 }
 
 export const relatoriosService = {
-  async dashboard({ periodo, desde, ate, canal }) {
+  async dashboard({ periodo, desde, ate, canal, pagamento, categoria }) {
     const intervalo = resolverPeriodo({ periodo, desde, ate });
-    const filtro = { desde: intervalo.desde, ate: intervalo.ate, canal: canal || null };
+    const filtro = {
+      desde: intervalo.desde, ate: intervalo.ate,
+      canal: canal || null, pagamento: pagamento || null, categoria: categoria || null
+    };
 
     /* Agregacoes independentes. Em fila seriam varias idas ao Postgres, uma
      * esperando a outra — o dashboard e a tela mais lenta do painel e nao ha
@@ -115,8 +118,11 @@ export const relatoriosService = {
       porMotoboy,
       maisVendidos,
       menosVendidos,
-      vendas: vendas.filter(pedido => !canal || pedido.channel === canal),
-      cancelados: cancelados.filter(pedido => !canal || pedido.channel === canal),
+      /* A lista bruta (nao os graficos) nao filtra por categoria: o pedido pode
+       * misturar categorias na mesma linha, e aqui e a conferencia do pedido
+       * inteiro — filtrar sumiria com o resto do que a pessoa comprou. */
+      vendas: vendas.filter(pedido => (!canal || pedido.channel === canal) && (!pagamento || pedido.payment === pagamento)),
+      cancelados: cancelados.filter(pedido => (!canal || pedido.channel === canal) && (!pagamento || pedido.payment === pagamento)),
       estoqueBaixo: emFalta
         .filter(produto => controlaEstoqueCategoria(produto.category))
         .map(produto => ({
@@ -127,14 +133,14 @@ export const relatoriosService = {
 
   /* Linhas cruas do periodo para a exportacao. Inclui dados de entrega porque
    * a casa usa a planilha para conferencia operacional e repasse de motoboy. */
-  async exportacao({ periodo, desde, ate, canal }) {
+  async exportacao({ periodo, desde, ate, canal, pagamento }) {
     const intervalo = resolverPeriodo({ periodo, desde, ate });
     const pedidos = await pedidosRepo.listar({ desde: intervalo.desde, ate: intervalo.ate, status: "entregue", limite: 1000 });
 
     return {
       periodo: intervalo,
       linhas: pedidos
-        .filter(pedido => !canal || pedido.channel === canal)
+        .filter(pedido => (!canal || pedido.channel === canal) && (!pagamento || pedido.payment === pagamento))
         .map(pedido => ({
           id: pedido.id,
           data: pedido.createdAt,

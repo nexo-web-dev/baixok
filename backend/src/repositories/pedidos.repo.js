@@ -106,6 +106,35 @@ const SELECT_BASE = `
     LEFT JOIN usuarios u ON u.id = p.criado_por
 `;
 
+/* Fragmento de filtro compartilhado pelos relatorios: periodo (sempre
+ * presente) + canal/pagamento (coluna do proprio pedido) + categoria (dos
+ * itens — um pedido mistura categorias na mesma linha, entao so da pra
+ * filtrar por EXISTS, nao por igualdade direta). `alias` e o prefixo da
+ * tabela pedidos na consulta que usa o fragmento. Builder unico para nao
+ * arriscar um WHERE diferente do outro em cada uma das 7 consultas que
+ * compartilham esse recorte.
+ *
+ * O default e "pedidos", nunca "": sem qualificador, o `id` dentro do EXISTS
+ * resolveria para pedido_itens.id (a subquery tem coluna `id` propria) em vez
+ * do id do pedido de fora — comparacao de tipo errada (texto contra bigint) e
+ * o filtro de categoria quebraria a consulta inteira. */
+function filtroRelatorio({ desde, ate, canal = null, pagamento = null, categoria = null }, alias = "pedidos") {
+  const p = `${alias}.`;
+  return {
+    sql: `
+      ${p}criado_em >= ?::timestamptz AND ${p}criado_em <= ?::timestamptz
+      AND (?::text IS NULL OR ${p}canal = ?::text)
+      AND (?::text IS NULL OR ${p}pagamento = ?::text)
+      AND (?::text IS NULL OR EXISTS (
+        SELECT 1 FROM pedido_itens fi LEFT JOIN produtos fp ON fp.id = fi.produto_id
+         WHERE fi.pedido_id = ${p}id
+           AND COALESCE(fp.categoria, CASE WHEN fi.combo_id IS NOT NULL THEN 'combos' ELSE 'outros' END) = ?::text
+      ))
+    `,
+    params: [desde, ate, canal, canal, pagamento, pagamento, categoria, categoria]
+  };
+}
+
 export const pedidosRepo = {
   /* Os `::tipo` nos filtros opcionais sao obrigatorios: com o parametro nulo, o
    * Postgres nao deduz o tipo e recusa a consulta inteira. */
@@ -253,15 +282,14 @@ export const pedidosRepo = {
     return (await alteradas("DELETE FROM pedidos WHERE id = ?", [id])) > 0;
   },
 
-  async resumoCancelados({ desde, ate, canal = null }) {
+  async resumoCancelados(filtro) {
+    const f = filtroRelatorio(filtro);
     return await um(`
       SELECT COUNT(*)::int AS pedidos,
              COALESCE(SUM(total), 0) AS valor
         FROM pedidos
-       WHERE criado_em >= ?::timestamptz AND criado_em <= ?::timestamptz
-         AND status = 'cancelado'
-         AND (?::text IS NULL OR canal = ?::text)
-    `, [desde, ate, canal, canal]);
+       WHERE ${f.sql} AND status = 'cancelado'
+    `, f.params);
   },
 
   async definirMotoboy(id, motoboy) {
@@ -287,7 +315,8 @@ export const pedidosRepo = {
    *
    * So pedido entregue entra no caixa: novo/preparo/pronto ainda podem mudar,
    * entao nao podem inflar dashboard, fechamento ou exportacao. */
-  async resumoPeriodo({ desde, ate, canal = null }) {
+  async resumoPeriodo(filtro) {
+    const f = filtroRelatorio(filtro);
     return await um(`
       SELECT COUNT(*)::int AS pedidos,
              COALESCE(SUM(total), 0) AS faturamento,
@@ -295,58 +324,56 @@ export const pedidosRepo = {
              COALESCE(SUM(desconto), 0) AS descontos,
              COALESCE(SUM(taxa_entrega), 0) AS taxas_entrega
         FROM pedidos
-       WHERE criado_em >= ?::timestamptz AND criado_em <= ?::timestamptz
-         AND status = 'entregue'
-         AND (?::text IS NULL OR canal = ?::text)
-    `, [desde, ate, canal, canal]);
+       WHERE ${f.sql} AND status = 'entregue'
+    `, f.params);
   },
 
   /* to_char no lugar do strftime, que so existe no SQLite. Roda no fuso da
    * sessao (UTC no Supabase), igual ao que o codigo ja assumia. */
-  async porHora({ desde, ate, canal = null }) {
+  async porHora(filtro) {
+    const f = filtroRelatorio(filtro);
     return await todos(`
       SELECT to_char(criado_em AT TIME ZONE 'America/Sao_Paulo', 'HH24') AS hora,
              COUNT(*)::int AS pedidos,
              COALESCE(SUM(total), 0) AS faturamento
         FROM pedidos
-       WHERE criado_em >= ?::timestamptz AND criado_em <= ?::timestamptz AND status = 'entregue'
-         AND (?::text IS NULL OR canal = ?::text)
+       WHERE ${f.sql} AND status = 'entregue'
        GROUP BY hora ORDER BY hora
-    `, [desde, ate, canal, canal]);
+    `, f.params);
   },
 
-  async porDia({ desde, ate, canal = null }) {
+  async porDia(filtro) {
+    const f = filtroRelatorio(filtro);
     return await todos(`
       SELECT to_char(criado_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM') AS rotulo,
              MIN((criado_em AT TIME ZONE 'America/Sao_Paulo')::date) AS data_ordem,
              COUNT(*)::int AS pedidos,
              COALESCE(SUM(total), 0) AS faturamento
         FROM pedidos
-       WHERE criado_em >= ?::timestamptz AND criado_em <= ?::timestamptz AND status = 'entregue'
-         AND (?::text IS NULL OR canal = ?::text)
+       WHERE ${f.sql} AND status = 'entregue'
        GROUP BY rotulo
        ORDER BY data_ordem
-    `, [desde, ate, canal, canal]);
+    `, f.params);
   },
 
   /* Mesma ideia de porDia, agrupado por mes — e o que o filtro "Tudo" usa: com
    * o historico inteiro da loja, um grafico por dia vira uma lista ilegivel de
    * centenas de barras. */
-  async porMes({ desde, ate, canal = null }) {
+  async porMes(filtro) {
+    const f = filtroRelatorio(filtro);
     return await todos(`
       SELECT to_char(criado_em AT TIME ZONE 'America/Sao_Paulo', 'MM/YYYY') AS rotulo,
              MIN(date_trunc('month', criado_em AT TIME ZONE 'America/Sao_Paulo')) AS mes_ordem,
              COUNT(*)::int AS pedidos,
              COALESCE(SUM(total), 0) AS faturamento
         FROM pedidos
-       WHERE criado_em >= ?::timestamptz AND criado_em <= ?::timestamptz AND status = 'entregue'
-         AND (?::text IS NULL OR canal = ?::text)
+       WHERE ${f.sql} AND status = 'entregue'
        GROUP BY rotulo
        ORDER BY mes_ordem
-    `, [desde, ate, canal, canal]);
+    `, f.params);
   },
 
-  async agruparPor(coluna, { desde, ate, canal = null }) {
+  async agruparPor(coluna, filtro) {
     /* Lista fechada: `coluna` vem do controller e nunca e concatenada sem passar
      * por aqui. Nome de coluna nao pode ser parametro em SQL, entao a unica
      * defesa possivel e a lista branca. */
@@ -354,21 +381,23 @@ export const pedidosRepo = {
     const campo = PERMITIDAS[coluna];
     if (!campo) throw new Error(`agrupamento nao permitido: ${coluna}`);
 
+    const f = filtroRelatorio(filtro);
     return await todos(`
       SELECT ${campo} AS rotulo, COUNT(*)::int AS pedidos, COALESCE(SUM(total), 0) AS faturamento
         FROM pedidos
-       WHERE criado_em >= ?::timestamptz AND criado_em <= ?::timestamptz AND status = 'entregue'
-         AND (?::text IS NULL OR canal = ?::text)
+       WHERE ${f.sql} AND status = 'entregue'
        GROUP BY ${campo} ORDER BY faturamento DESC
-    `, [desde, ate, canal, canal]);
+    `, f.params);
   },
 
   /* Diferente de agruparPor: canal, pagamento etc. sao coluna do PEDIDO, mas
    * categoria e do ITEM — um pedido mistura pizza e drink na mesma linha, entao
    * o agrupamento precisa somar por item (pedido_itens), nao por pedido. Combo
    * nao tem produto_id (e um pacote, nao um produto do catalogo), entao cai
-   * no rotulo "combos" em vez de ficar de fora da soma. */
-  async porCategoria({ desde, ate, canal = null }) {
+   * no rotulo "combos" em vez de ficar de fora da soma. Ja e item-level, entao
+   * canal/pagamento entram pelo join com pedidos e categoria compara direto —
+   * nao precisa do EXISTS que filtroRelatorio() usa pras consultas por pedido. */
+  async porCategoria({ desde, ate, canal = null, pagamento = null, categoria = null }) {
     return await todos(`
       SELECT
         COALESCE(p.categoria, CASE WHEN i.combo_id IS NOT NULL THEN 'combos' ELSE 'outros' END) AS rotulo,
@@ -379,55 +408,63 @@ export const pedidosRepo = {
         LEFT JOIN produtos p ON p.id = i.produto_id
        WHERE ped.criado_em >= ?::timestamptz AND ped.criado_em <= ?::timestamptz AND ped.status = 'entregue'
          AND (?::text IS NULL OR ped.canal = ?::text)
+         AND (?::text IS NULL OR ped.pagamento = ?::text)
+         AND (?::text IS NULL OR COALESCE(p.categoria, CASE WHEN i.combo_id IS NOT NULL THEN 'combos' ELSE 'outros' END) = ?::text)
        GROUP BY rotulo
        ORDER BY faturamento DESC
-    `, [desde, ate, canal, canal]);
+    `, [desde, ate, canal, canal, pagamento, pagamento, categoria, categoria]);
   },
 
-  async porMotoboy({ desde, ate, canal = null }) {
+  async porMotoboy(filtro) {
+    const f = filtroRelatorio(filtro);
     return await todos(`
       SELECT btrim(motoboy) AS rotulo,
              COUNT(*)::int AS pedidos,
              COALESCE(SUM(total), 0) AS faturamento,
              COALESCE(SUM(taxa_entrega), 0) AS taxas_entrega
         FROM pedidos
-       WHERE criado_em >= ?::timestamptz AND criado_em <= ?::timestamptz
+       WHERE ${f.sql}
          AND status = 'entregue'
          AND modalidade = 'entrega'
          AND btrim(COALESCE(motoboy, '')) <> ''
-         AND (?::text IS NULL OR canal = ?::text)
        GROUP BY btrim(motoboy)
        ORDER BY pedidos DESC, faturamento DESC, rotulo ASC
-    `, [desde, ate, canal, canal]);
+    `, f.params);
   },
 
-  async maisVendidos({ desde, ate, canal = null, limite = 10 }) {
+  async maisVendidos({ desde, ate, canal = null, pagamento = null, categoria = null, limite = 10 }) {
     return await todos(`
       SELECT i.nome AS rotulo,
              SUM(i.quantidade)::int AS quantidade,
              SUM(i.quantidade * i.preco_unit) AS faturamento
         FROM pedido_itens i
         JOIN pedidos p ON p.id = i.pedido_id
+        LEFT JOIN produtos pr ON pr.id = i.produto_id
        WHERE p.criado_em >= ?::timestamptz AND p.criado_em <= ?::timestamptz AND p.status = 'entregue'
          AND (?::text IS NULL OR p.canal = ?::text)
+         AND (?::text IS NULL OR p.pagamento = ?::text)
+         AND (?::text IS NULL OR COALESCE(pr.categoria, CASE WHEN i.combo_id IS NOT NULL THEN 'combos' ELSE 'outros' END) = ?::text)
        GROUP BY i.nome
        ORDER BY quantidade DESC
        LIMIT ?
-    `, [desde, ate, canal, canal, limite]);
+    `, [desde, ate, canal, canal, pagamento, pagamento, categoria, categoria, limite]);
   },
 
-  async menosVendidos({ desde, ate, canal = null, limite = 10 }) {
+  async menosVendidos({ desde, ate, canal = null, pagamento = null, categoria = null, limite = 10 }) {
     return await todos(`
       SELECT i.nome AS rotulo,
              SUM(i.quantidade)::int AS quantidade,
              SUM(i.quantidade * i.preco_unit) AS faturamento
         FROM pedido_itens i
         JOIN pedidos p ON p.id = i.pedido_id
+        LEFT JOIN produtos pr ON pr.id = i.produto_id
        WHERE p.criado_em >= ?::timestamptz AND p.criado_em <= ?::timestamptz AND p.status = 'entregue'
          AND (?::text IS NULL OR p.canal = ?::text)
+         AND (?::text IS NULL OR p.pagamento = ?::text)
+         AND (?::text IS NULL OR COALESCE(pr.categoria, CASE WHEN i.combo_id IS NOT NULL THEN 'combos' ELSE 'outros' END) = ?::text)
        GROUP BY i.nome
        ORDER BY quantidade ASC, faturamento ASC, rotulo ASC
        LIMIT ?
-    `, [desde, ate, canal, canal, limite]);
+    `, [desde, ate, canal, canal, pagamento, pagamento, categoria, categoria, limite]);
   }
 };

@@ -99,5 +99,7 @@ export const relatorioSchema = z.object({
   periodo: z.enum(["hoje", "7dias", "30dias", "mes", "tudo", "personalizado"]).default("hoje"),
   desde: dataIso.optional(),
   ate: dataIso.optional(),
-  canal: z.enum(CANAIS).optional()
+  canal: z.enum(CANAIS).optional(),
+  pagamento: texto(60).optional(),
+  categoria: texto(60).optional()
 });

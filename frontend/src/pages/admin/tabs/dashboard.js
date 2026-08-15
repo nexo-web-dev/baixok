@@ -12,7 +12,7 @@ import { toastFalha, toastOk } from "../../../components/toast.js";
 import { imprimirAmbas } from "../../../components/impressao.js";
 import { estado } from "../store.js";
 
-const filtros = { periodo: "hoje", canal: "", desde: "", ate: "" };
+const filtros = { periodo: "hoje", canal: "", pagamento: "", categoria: "", desde: "", ate: "" };
 /* Filtro de busca so mexe na LISTA (o que aparece embaixo) — nunca refaz a
  * agregacao do servidor. Faturamento, ticket medio etc. continuam refletindo
  * so periodo + canal, que sao os que de fato mudam o calculo. */
@@ -117,8 +117,34 @@ function parametrosDashboard() {
     periodo: filtros.periodo,
     desde: filtros.periodo === "personalizado" ? filtros.desde || undefined : undefined,
     ate: filtros.periodo === "personalizado" ? filtros.ate || undefined : undefined,
-    canal: filtros.canal || undefined
+    canal: filtros.canal || undefined,
+    pagamento: filtros.pagamento || undefined,
+    categoria: filtros.categoria || undefined
   };
+}
+
+/* As opcoes NAO vem do resultado filtrado do periodo (porPagamento/
+ * porCategoria): se ja tiver "Pix" selecionado, aquele agrupamento so devolve
+ * "Pix" (o proprio filtro se aplica antes do GROUP BY), e o combo perderia
+ * todas as outras opcoes assim que uma fosse escolhida. Categoria vem do
+ * catalogo cadastrado; pagamento, dos valores que o proprio sistema usa (
+ * checkout, venda manual, mesa) — nenhum dos dois depende do filtro atual.
+ * Preserva a selecao ao redesenhar. */
+const PAGAMENTOS_CONHECIDOS = ["Dinheiro", "Pix", "Cartão", "Online", "Pagar no balcão"];
+
+function categoriasDoCatalogo() {
+  return [...new Set((estado.produtos || []).map(produto => String(produto.category || "").trim()).filter(Boolean))];
+}
+
+function preencherFiltroSelect(id, opcoes, rotuloPadrao, rotular = valor => valor) {
+  const select = $(`#${id}`);
+  if (!select) return;
+  const atual = select.value;
+  render(select,
+    el("option", { value: "" }, rotuloPadrao),
+    ...opcoes.map(valor => el("option", { value: valor }, rotular(valor)))
+  );
+  if (opcoes.includes(atual)) select.value = atual;
 }
 
 function resumoModalidade(porModalidade) {
@@ -245,6 +271,9 @@ export async function desenharDashboard() {
     porCategoria = [], porMotoboy = [], maisVendidos, menosVendidos = [], estoqueBaixo, periodo, vendas = [],
     cancelados = [], taxaServico = { total: 0, contasFechadas: 0, contasSemCobranca: 0 }
   } = ultimoRelatorio;
+  preencherFiltroSelect("filter-payment", PAGAMENTOS_CONHECIDOS, "Pagamento: todos");
+  preencherFiltroSelect("filter-category", categoriasDoCatalogo(), "Categoria: todas", rotuloCategoria);
+
   const pagamentoTop = primeiro(porPagamento);
   const plataformaTop = primeiro(porCanal);
   const modalidades = resumoModalidade(porModalidade);
@@ -439,6 +468,15 @@ export function ligarDashboard() {
       desenharDashboard();
     });
   }
+
+  $("#filter-payment")?.addEventListener("change", evento => {
+    filtros.pagamento = evento.target.value;
+    desenharDashboard();
+  });
+  $("#filter-category")?.addEventListener("change", evento => {
+    filtros.categoria = evento.target.value;
+    desenharDashboard();
+  });
 
   $("#export-dashboard")?.addEventListener("click", exportarPlanilha);
 
