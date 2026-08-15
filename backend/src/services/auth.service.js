@@ -10,7 +10,7 @@ import { usuariosRepo } from "../repositories/usuarios.repo.js";
 import { sessoesRepo } from "../repositories/sessoes.repo.js";
 import { auditoriaRepo } from "../repositories/auditoria.repo.js";
 import { gerarHashSenha, conferirSenha, gastarTempoDeHash } from "../lib/password.js";
-import { ErroApp, naoAutenticado, conflito } from "../lib/errors.js";
+import { ErroApp, naoAutenticado, senhaIncorreta, conflito } from "../lib/errors.js";
 import { PAPEIS } from "../config/constants.js";
 import { logger } from "../lib/logger.js";
 import { supabaseAuth } from "./supabase-auth.js";
@@ -159,7 +159,7 @@ export const authService = {
     const encontrado = await usuariosRepo.buscarPorUsuarioComHash(login);
     if (!encontrado || (encontrado.ativo !== 1 && encontrado.ativo !== true)) {
       await gastarTempoDeHash();
-      throw naoAutenticado("Senha incorreta.");
+      throw senhaIncorreta();
     }
 
     if (supabaseAuth.ativo()) {
@@ -167,12 +167,12 @@ export const authService = {
         await supabaseAuth.autenticarComSenha(login, senha);
         return true;
       } catch {
-        throw naoAutenticado("Senha incorreta.");
+        throw senhaIncorreta();
       }
     }
 
     if (!(await conferirSenha(senha, encontrado.senha_hash))) {
-      throw naoAutenticado("Senha incorreta.");
+      throw senhaIncorreta();
     }
     return true;
   },

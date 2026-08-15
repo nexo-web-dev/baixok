@@ -17,6 +17,11 @@ export class ErroApp extends Error {
 
 export const erroValidacao = (mensagem, detalhes) => new ErroApp(mensagem, 422, "validacao", detalhes);
 export const naoAutenticado = (mensagem = "Faca login para continuar.") => new ErroApp(mensagem, 401, "nao_autenticado");
+/* 403, nao 401: aqui a sessao continua valida, so a reconfirmacao de senha
+ * falhou. O front trata TODO 401 como sessao perdida e derruba pro login —
+ * usar 401 aqui deslogaria quem so errou a senha ao tentar apagar um pedido
+ * ou abrir o caixa. */
+export const senhaIncorreta = (mensagem = "Senha incorreta.") => new ErroApp(mensagem, 403, "senha_incorreta");
 export const semPermissao = (mensagem = "Seu perfil nao tem acesso a esta acao.") => new ErroApp(mensagem, 403, "sem_permissao");
 export const naoEncontrado = (mensagem = "Recurso nao encontrado.") => new ErroApp(mensagem, 404, "nao_encontrado");
 export const conflito = mensagem => new ErroApp(mensagem, 409, "conflito");
