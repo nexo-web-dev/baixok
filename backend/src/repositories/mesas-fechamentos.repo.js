@@ -7,12 +7,12 @@
 import { todos, um } from "../db/postgres.js";
 
 export const mesasFechamentosRepo = {
-  async registrar({ mesaN, subtotal, percentual, servico, servicoCobrado, total, usuario }) {
+  async registrar({ mesaN, subtotal, percentual, servico, servicoCobrado, total, usuario, pagamento }) {
     await um(`
-      INSERT INTO mesas_fechamentos (mesa_n, subtotal, percentual, servico, servico_cobrado, total, usuario)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO mesas_fechamentos (mesa_n, subtotal, percentual, servico, servico_cobrado, total, usuario, pagamento)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       RETURNING *
-    `, [mesaN, subtotal, percentual, servico, servicoCobrado ? 1 : 0, total, usuario || null]);
+    `, [mesaN, subtotal, percentual, servico, servicoCobrado ? 1 : 0, total, usuario || null, pagamento || ""]);
   },
 
   async resumoPeriodo({ desde, ate }) {

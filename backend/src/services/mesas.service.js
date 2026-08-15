@@ -116,7 +116,7 @@ export const mesasService = {
    * taxa do garcom (taxa de servico) as vezes e negociada ou dispensada, e o
    * total fechado precisa refletir isso — nao so a tela, mas o que fica
    * registrado para o dashboard somar depois. */
-  async fecharConta(n, cobrarServico = true, { usuario, ip }) {
+  async fecharConta(n, cobrarServico = true, pagamento, { usuario, ip }) {
     const mesa = await this.buscar(n);
     if (mesa.status === "livre") throw conflito("Esta mesa não tem comanda aberta.");
 
@@ -126,6 +126,7 @@ export const mesasService = {
       ? contaCheia
       : { ...contaCheia, servico: 0, total: contaCheia.subtotal };
     const pedidos = await pedidosRepo.listarDaMesa(n);
+    await pedidosRepo.definirPagamentoEmLote(pedidos.map(pedido => pedido.id), pagamento);
 
     await mesasFechamentosRepo.registrar({
       mesaN: n,
@@ -134,11 +135,12 @@ export const mesasService = {
       servico: conta.servico,
       servicoCobrado: cobrarServico,
       total: conta.total,
-      usuario: usuario.usuario
+      usuario: usuario.usuario,
+      pagamento
     });
     await auditoriaRepo.registrar({
       usuarioId: usuario.id, usuario: usuario.usuario, acao: "mesa_conta_fechada",
-      entidade: "mesa", entidadeId: n, detalhes: { ...conta, servicoCobrado: cobrarServico }, ip
+      entidade: "mesa", entidadeId: n, detalhes: { ...conta, servicoCobrado: cobrarServico, pagamento }, ip
     });
     publicar("mesas", [CANAL.OPERACAO, CANAL.PUBLICO]);
 
@@ -148,6 +150,7 @@ export const mesasService = {
       items: mesa.items,
       pedidos: pedidos.map(pedido => pedido.id),
       servicoCobrado: cobrarServico,
+      pagamento,
       ...conta
     };
   },

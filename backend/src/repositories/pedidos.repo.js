@@ -211,6 +211,24 @@ export const pedidosRepo = {
     return anexarItens(linhas);
   },
 
+  /* Enquanto a comanda esta aberta, todo pedido de mesa nasce com pagamento
+   * "Pagar no balcao" — nunca foi forma de pagamento de verdade, so um
+   * marcador de "ainda nao pago". No fechamento da conta, troca pelo que o
+   * cliente realmente pagou.
+   *
+   * Por id explicito, nao por `mesa_n = ?`: a mesa e reaproveitada por
+   * clientes diferentes ao longo do tempo, e `mesa_n` sozinho pegaria pedidos
+   * de comandas antigas ja fechadas — reescrevendo pagamento de contas que
+   * nao tem nada a ver com o fechamento de agora. */
+  async definirPagamentoEmLote(ids, pagamento) {
+    if (!ids.length) return;
+    const marcadores = ids.map(() => "?").join(",");
+    await alteradas(
+      `UPDATE pedidos SET pagamento = ?, atualizado_em = now() WHERE id IN (${marcadores})`,
+      [pagamento, ...ids]
+    );
+  },
+
   async listarPorTelefone(telefone, limite = 5) {
     const digits = telefoneDigits(telefone);
     if (digits.length < 8) return [];

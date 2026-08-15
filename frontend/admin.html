@@ -624,6 +624,17 @@
         <h2 id="service-fee-title">Fechar conta</h2>
         <p id="service-fee-summary"></p>
       </div>
+      <label>
+        Forma de pagamento
+        <select id="service-fee-payment">
+          <option value="">Selecione</option>
+          <option>Dinheiro</option>
+          <option>Pix</option>
+          <option>Cartão</option>
+          <option>Online</option>
+        </select>
+      </label>
+      <p class="form-error hidden" id="service-fee-payment-error" role="alert"></p>
       <p class="modal-hint">A taxa do garçom foi cobrada do cliente nesta conta?</p>
       <div class="field-row">
         <button class="primary wide" type="button" id="service-fee-yes">Sim, cobrar taxa</button>

@@ -130,7 +130,10 @@ function parametrosDashboard() {
  * catalogo cadastrado; pagamento, dos valores que o proprio sistema usa (
  * checkout, venda manual, mesa) — nenhum dos dois depende do filtro atual.
  * Preserva a selecao ao redesenhar. */
-const PAGAMENTOS_CONHECIDOS = ["Dinheiro", "Pix", "Cartão", "Online", "Pagar no balcão"];
+/* "Pagar no balcao" fica de fora de proposito: nunca foi forma de pagamento
+ * de verdade, so o marcador de "ainda nao pago" enquanto a mesa estava aberta
+ * — o fechamento da conta troca pelo pagamento real (ver mesas.service.js). */
+const PAGAMENTOS_CONHECIDOS = ["Dinheiro", "Pix", "Cartão", "Online"];
 
 function categoriasDoCatalogo() {
   return [...new Set((estado.produtos || []).map(produto => String(produto.category || "").trim()).filter(Boolean))];

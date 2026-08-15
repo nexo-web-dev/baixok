@@ -94,9 +94,9 @@ async function recarregar() {
 /* Fechar a conta imprime a nota com o extrato que o SERVIDOR devolveu, e nao
  * com o que estava na tela. Se outro atendente lancou um item um segundo antes,
  * a nota impressa ja sai com ele. */
-async function fecharConta(n, cobrarServico) {
+async function fecharConta(n, cobrarServico, pagamento) {
   try {
-    const { conta } = await apiMesas.fecharConta(n, cobrarServico);
+    const { conta } = await apiMesas.fecharConta(n, cobrarServico, pagamento);
     imprimir({
       id: `mesa-${n}`,
       codeLabel: `MESA ${n}`,
@@ -105,7 +105,7 @@ async function fecharConta(n, cobrarServico) {
       fulfillment: "mesa",
       customer: `Mesa ${n}`,
       place: `Mesa ${n} - salão`,
-      payment: "Conta fechada",
+      payment: pagamento,
       note: cobrarServico
         ? `Serviço (${Math.round(conta.percentualServico * 100)}%): ${reais(conta.servico)}`
         : "Taxa de serviço não cobrada nesta conta.",
@@ -131,12 +131,28 @@ function abrirFecharConta(n) {
   mesaPendenteFechamento = n;
   const resumo = $("#service-fee-summary");
   if (resumo) resumo.textContent = `Mesa ${n} · taxa de serviço da casa: ${percentual}%.`;
+  if ($("#service-fee-payment")) $("#service-fee-payment").value = "";
+  mostrar($("#service-fee-payment-error"), false);
   mostrar($("#service-fee-modal"), true);
 }
 
 function fecharModalFechamento() {
   mostrar($("#service-fee-modal"), false);
   mesaPendenteFechamento = null;
+}
+
+/* Sem forma de pagamento escolhida, a conta nao fecha: senao o pedido fica
+ * com "Pagar no balcão" pra sempre, que nunca foi pagamento de verdade. */
+function pagamentoDoFechamento() {
+  const pagamento = $("#service-fee-payment")?.value || "";
+  if (!pagamento) {
+    mostrar($("#service-fee-payment-error"), true);
+    const erro = $("#service-fee-payment-error");
+    if (erro) erro.textContent = "Escolha a forma de pagamento antes de fechar a conta.";
+    return null;
+  }
+  mostrar($("#service-fee-payment-error"), false);
+  return pagamento;
 }
 
 export function ligarMesas() {
@@ -196,13 +212,17 @@ export function ligarMesas() {
   ligarModal(modalFechamento, fecharModalFechamento);
   $("#service-fee-cancel")?.addEventListener("click", fecharModalFechamento);
   $("#service-fee-yes")?.addEventListener("click", () => {
+    const pagamento = pagamentoDoFechamento();
+    if (!pagamento) return;
     const n = mesaPendenteFechamento;
     fecharModalFechamento();
-    if (n !== null) fecharConta(n, true);
+    if (n !== null) fecharConta(n, true, pagamento);
   });
   $("#service-fee-no")?.addEventListener("click", () => {
+    const pagamento = pagamentoDoFechamento();
+    if (!pagamento) return;
     const n = mesaPendenteFechamento;
     fecharModalFechamento();
-    if (n !== null) fecharConta(n, false);
+    if (n !== null) fecharConta(n, false, pagamento);
   });
 }

@@ -77,7 +77,7 @@ const DEPENDENCIAS_ABA = {
   promos: ["produtos", "promocoes", "cupons"],
   entrega: ["entrega"],
   estoque: ["produtos", "insumos"],
-  dashboard: [],
+  dashboard: ["produtos"],
   fechamentos: ["fechamentos"],
   plano: ["ajustes"],
   usuarios: []

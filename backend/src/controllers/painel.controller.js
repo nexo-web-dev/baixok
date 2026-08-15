@@ -209,6 +209,7 @@ export const mesasController = {
       conta: await mesasService.fecharConta(
         req.validado.params.n,
         req.validado.body.cobrarServico,
+        req.validado.body.pagamento,
         contexto(req)
       )
     });

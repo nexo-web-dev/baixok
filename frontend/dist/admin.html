@@ -11,9 +11,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/admin-pXmU4yZG.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/api-NdQnvqKl.js">
-  <link rel="modulepreload" crossorigin href="/assets/estoque-CFTHsUTm.js">
+  <script type="module" crossorigin src="/assets/admin-mw35IEtv.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/api-Ps-r1c0W.js">
+  <link rel="modulepreload" crossorigin href="/assets/estoque-b9VKBLqe.js">
   <link rel="modulepreload" crossorigin href="/assets/categorias-CaaVB_Yc.js">
   <link rel="stylesheet" crossorigin href="/assets/admin-BNcK3joJ.css">
 </head>
@@ -629,6 +629,17 @@
         <h2 id="service-fee-title">Fechar conta</h2>
         <p id="service-fee-summary"></p>
       </div>
+      <label>
+        Forma de pagamento
+        <select id="service-fee-payment">
+          <option value="">Selecione</option>
+          <option>Dinheiro</option>
+          <option>Pix</option>
+          <option>Cartão</option>
+          <option>Online</option>
+        </select>
+      </label>
+      <p class="form-error hidden" id="service-fee-payment-error" role="alert"></p>
       <p class="modal-hint">A taxa do garçom foi cobrada do cliente nesta conta?</p>
       <div class="field-row">
         <button class="primary wide" type="button" id="service-fee-yes">Sim, cobrar taxa</button>
