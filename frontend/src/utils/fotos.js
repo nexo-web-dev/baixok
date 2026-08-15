@@ -66,6 +66,78 @@ function corEhFundoClaro(dados, indice, cor) {
   return brilho > 176 && variacao < 54 && distanciaCor(r, g, b, cor) < 92;
 }
 
+function bordaTemTransparencia(dados, largura, altura) {
+  const verificar = (x, y) => dados[(y * largura + x) * 4 + 3] < 245;
+
+  for (let x = 0; x < largura; x += 1) {
+    if (verificar(x, 0) || verificar(x, altura - 1)) return true;
+  }
+  for (let y = 1; y < altura - 1; y += 1) {
+    if (verificar(0, y) || verificar(largura - 1, y)) return true;
+  }
+  return false;
+}
+
+function recortarConteudo(canvas, ctx, imagemDados, largura, altura) {
+  const dados = imagemDados.data;
+  let minX = largura;
+  let minY = altura;
+  let maxX = -1;
+  let maxY = -1;
+
+  for (let y = 0; y < altura; y += 1) {
+    for (let x = 0; x < largura; x += 1) {
+      const alpha = dados[(y * largura + x) * 4 + 3];
+      if (alpha <= 24) continue;
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    }
+  }
+
+  if (maxX < minX || maxY < minY) return null;
+
+  const larguraConteudo = maxX - minX + 1;
+  const alturaConteudo = maxY - minY + 1;
+  const margem = Math.max(10, Math.round(Math.max(larguraConteudo, alturaConteudo) * 0.08));
+  const origemX = Math.max(0, minX - margem);
+  const origemY = Math.max(0, minY - margem);
+  const fimX = Math.min(largura - 1, maxX + margem);
+  const fimY = Math.min(altura - 1, maxY + margem);
+  const larguraSaida = fimX - origemX + 1;
+  const alturaSaida = fimY - origemY + 1;
+
+  ctx.putImageData(imagemDados, 0, 0);
+
+  if (
+    origemX === 0 &&
+    origemY === 0 &&
+    fimX === largura - 1 &&
+    fimY === altura - 1
+  ) {
+    return canvas.toDataURL("image/png");
+  }
+
+  const saida = document.createElement("canvas");
+  saida.width = larguraSaida;
+  saida.height = alturaSaida;
+  const saidaCtx = saida.getContext("2d");
+  if (!saidaCtx) return canvas.toDataURL("image/png");
+  saidaCtx.drawImage(
+    canvas,
+    origemX,
+    origemY,
+    larguraSaida,
+    alturaSaida,
+    0,
+    0,
+    larguraSaida,
+    alturaSaida
+  );
+  return saida.toDataURL("image/png");
+}
+
 function removerFundoClaro(imagem) {
   const larguraOriginal = imagem.naturalWidth;
   const alturaOriginal = imagem.naturalHeight;
@@ -86,12 +158,19 @@ function removerFundoClaro(imagem) {
 
   const imagemDados = ctx.getImageData(0, 0, largura, altura);
   const dados = imagemDados.data;
+  const podeRecortarTransparente = bordaTemTransparencia(dados, largura, altura);
   const cor = mediaBorda(dados, largura, altura);
-  if (!cor) return null;
+  if (!cor) return podeRecortarTransparente
+    ? recortarConteudo(canvas, ctx, imagemDados, largura, altura)
+    : null;
 
   const brilhoBorda = (cor.r + cor.g + cor.b) / 3;
   const variacaoBorda = Math.max(cor.r, cor.g, cor.b) - Math.min(cor.r, cor.g, cor.b);
-  if (brilhoBorda < 205 || variacaoBorda > 58) return null;
+  if (brilhoBorda < 205 || variacaoBorda > 58) {
+    return podeRecortarTransparente
+      ? recortarConteudo(canvas, ctx, imagemDados, largura, altura)
+      : null;
+  }
 
   const visitado = new Uint8Array(largura * altura);
   const fila = [];
@@ -128,8 +207,7 @@ function removerFundoClaro(imagem) {
   }
 
   if (removidos / (largura * altura) < 0.08) return null;
-  ctx.putImageData(imagemDados, 0, 0);
-  return canvas.toDataURL("image/png");
+  return recortarConteudo(canvas, ctx, imagemDados, largura, altura);
 }
 
 function normalizarFundoClaro(imagem, frame) {
