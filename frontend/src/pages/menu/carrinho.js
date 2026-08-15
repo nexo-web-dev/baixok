@@ -68,6 +68,41 @@ function linhaItem(item) {
   );
 }
 
+/* Previa do que o servidor vai conceder de brinde ao fechar o pedido — a
+ * mesma soma que `aplicarBrindes()` faz no backend, so que aqui e so exibicao:
+ * quem decide de verdade e o servidor, na hora de gravar o pedido. Combo e
+ * pizza de 2 sabores nao entram na regra, igual do lado de la. */
+function brindesGanhos(linhas, produtosPorId) {
+  const qtyPorProduto = new Map();
+  for (const item of linhas) {
+    if (item.comboId || item.id2 || !item.id) continue;
+    qtyPorProduto.set(item.id, (qtyPorProduto.get(item.id) || 0) + item.qty);
+  }
+  if (!qtyPorProduto.size) return [];
+
+  const ganhos = [];
+  for (const [produtoId, qty] of qtyPorProduto) {
+    for (const brinde of produtosPorId?.get(produtoId)?.brindesPromocionais || []) {
+      const vezes = Math.floor(qty / brinde.buyQty);
+      if (vezes < 1) continue;
+      ganhos.push({ ...brinde, qty: vezes * brinde.giftQty });
+    }
+  }
+  return ganhos;
+}
+
+function linhaBrindeGanho(brinde) {
+  return el("div.cart-gift-row", {},
+    brinde.giftImage
+      ? el("img.cart-gift-photo", {
+          src: brinde.giftImage, alt: "", loading: "lazy", decoding: "async",
+          onerror: evento => evento.target.remove()
+        })
+      : null,
+    el("span", {}, `Você vai ganhar: ${brinde.qty}x ${brinde.giftName} de brinde`)
+  );
+}
+
 export function desenharCarrinho({ produtosPorId, combosPorId, combinacoesMap, modalidade, cotacao, modoMesa }) {
   const alvo = $("#cart-items");
   if (!alvo) return { subtotal: 0, total: 0 };
@@ -78,6 +113,9 @@ export function desenharCarrinho({ produtosPorId, combosPorId, combinacoesMap, m
   render(alvo, linhas.length
     ? linhas.map(linhaItem)
     : el("p.faint", {}, "Nenhum item no pedido."));
+
+  const ganhos = brindesGanhos(linhas, produtosPorId);
+  render($("#cart-gifts"), ...ganhos.map(linhaBrindeGanho));
 
   const subtotal = linhas.reduce((soma, item) => soma + item.price * item.qty, 0);
   const desconto = Math.min(subtotal, descontoAtual());
