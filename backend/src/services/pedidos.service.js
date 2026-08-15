@@ -72,7 +72,7 @@ async function precificar(itens) {
       precificados.push({
         id: null, id2: null, comboId: combo.id,
         name: combo.name, qty: item.qty, price: Number(combo.price),
-        componentes
+        gift: false, componentes
       });
       continue;
     }
@@ -97,7 +97,7 @@ async function precificar(itens) {
       precificados.push({
         id: produto.id, id2: produto2.id, comboId: null,
         name: `Pizza 1/2 ${produto.name} + 1/2 ${produto2.name}`,
-        qty: item.qty, price: Number(combinacao.preco),
+        qty: item.qty, price: Number(combinacao.preco), gift: false,
         componentes: [
           { id: produto.id, name: produto.name, qty: item.qty, stockControl: controlaEstoqueCategoria(produto.category) },
           { id: produto2.id, name: produto2.name, qty: item.qty, stockControl: controlaEstoqueCategoria(produto2.category) }
@@ -110,11 +110,56 @@ async function precificar(itens) {
     const preco = promocional != null ? Number(promocional) : Number(produto.price);
     precificados.push({
       id: produto.id, id2: null, comboId: null,
-      name: produto.name, qty: item.qty, price: preco,
+      name: produto.name, qty: item.qty, price: preco, gift: false,
       componentes: [{ id: produto.id, name: produto.name, qty: item.qty, stockControl: controlaEstoqueCategoria(produto.category) }]
     });
   }
+
+  await aplicarBrindes(precificados);
   return precificados;
+}
+
+/* "Leve e ganhe": se o pedido comprou o suficiente de um produto com regra
+ * ativa, o produto de brinde entra sozinho, como linha propria a R$ 0 — o
+ * cliente nao pede o brinde, o servidor concede. Roda depois de precificar
+ * tudo o mais, porque precisa somar a quantidade JA comprada de cada produto
+ * simples (produto com sabor ou dentro de combo nao participa da regra).
+ *
+ * Multiplo de buyQty multiplica o brinde: levar 4 de um "leve 2 ganhe 1" da
+ * 2 brindes, nao 1. Estoque do brinde e respeitado — sem unidade sobrando,
+ * a promocao nao derruba o pedido, so concede o que da pra entregar. */
+async function aplicarBrindes(precificados) {
+  const brindes = await promocoesRepo.listarBrindesPublico();
+  if (!brindes.length) return;
+
+  const qtyPorProduto = new Map();
+  for (const item of precificados) {
+    if (item.comboId || item.id2 || !item.id) continue;
+    qtyPorProduto.set(item.id, (qtyPorProduto.get(item.id) || 0) + item.qty);
+  }
+  if (!qtyPorProduto.size) return;
+
+  for (const brinde of brindes) {
+    const qtyComprada = qtyPorProduto.get(brinde.buyProductId);
+    if (!qtyComprada) continue;
+
+    const vezes = Math.floor(qtyComprada / brinde.buyQty);
+    if (vezes < 1) continue;
+
+    const produtoBrinde = await produtosRepo.buscar(brinde.giftProductId);
+    if (!produtoBrinde || !produtoBrinde.active) continue;
+
+    const controlaEstoque = controlaEstoqueCategoria(produtoBrinde.category);
+    let qtyBrinde = vezes * brinde.giftQty;
+    if (controlaEstoque) qtyBrinde = Math.min(qtyBrinde, produtoBrinde.stock);
+    if (qtyBrinde < 1) continue;
+
+    precificados.push({
+      id: produtoBrinde.id, id2: null, comboId: null,
+      name: produtoBrinde.name, qty: qtyBrinde, price: 0, gift: true,
+      componentes: [{ id: produtoBrinde.id, name: produtoBrinde.name, qty: qtyBrinde, stockControl: controlaEstoque }]
+    });
+  }
 }
 
 /* Cotacao de entrega, compartilhada entre o pedido do cardapio e o lancamento
@@ -179,7 +224,8 @@ export const pedidosService = {
       items: pedido.items.map(item => ({
         name: item.name,
         qty: item.qty,
-        price: item.price
+        price: item.price,
+        gift: Boolean(item.gift)
       }))
     }));
   },

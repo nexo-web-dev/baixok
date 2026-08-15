@@ -257,6 +257,9 @@
 .order-detail-item div strong { color: var(--ink); overflow-wrap: anywhere; }
 .order-detail-item div span { color: var(--muted); font-size: .78rem; }
 .order-detail-item > strong { color: var(--gold-light); white-space: nowrap; }
+.order-detail-item.gift { border-color: rgba(217,154,104,.5); background: rgba(214,118,62,.1); }
+.order-detail-item.gift > strong { color: var(--gold); }
+.gift-tag { color: var(--gold) !important; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; }
 .order-detail-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; padding-top: 4px; }
 
 /* â€” cozinha (KDS) â€” */

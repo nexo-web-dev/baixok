@@ -157,9 +157,9 @@ function desenharComanda(comanda) {
         : el("div.comanda-thumb.no-photo", {}, "Sem foto"),
       el("div", {},
         el("strong", {}, `${item.qty}x ${item.name}`),
-        el("span", {}, `${reais(item.price)} cada`)
+        item.gift ? el("span.gift-tag", {}, "Brinde · Leve e ganhe") : el("span", {}, `${reais(item.price)} cada`)
       ),
-      el("strong", {}, reais(item.price * item.qty))
+      el("strong", {}, item.gift ? "Grátis" : reais(item.price * item.qty))
     )
   ));
 

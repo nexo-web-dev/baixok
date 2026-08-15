@@ -213,7 +213,7 @@ function cartao(pedido, papel) {
       el("span.flag", { class: /pix/i.test(pedido.payment || "") ? "paid" : "" }, pedido.payment || "-"),
       el("span.flag.time", {}, esperaLegivel(espera))
     ),
-    el("p.order-items-line", {}, pedido.items.map(item => `${item.qty}x ${item.name}`).join("  ·  ")),
+    el("p.order-items-line", {}, pedido.items.map(item => `${item.qty}x ${item.name}${item.gift ? " (Brinde)" : ""}`).join("  ·  ")),
     pedido.note ? el("p.order-note", {}, el("strong", {}, "Obs: "), pedido.note) : null,
     troco ? el("p.order-note.money", {}, el("strong", {}, "Troco: "), troco) : null,
     pedido.motoboy ? el("p.order-note", {}, el("strong", {}, "Motoboy: "), pedido.motoboy) : null,
@@ -235,13 +235,15 @@ function fecharDetalhePedido() {
 }
 
 function linhaDetalheItem(item) {
-  return el("div.order-detail-item", {},
+  return el("div.order-detail-item", { class: item.gift ? "gift" : "" },
     miniFotoItem(item),
     el("div", {},
       el("strong", {}, `${item.qty}x ${item.name}`),
-      el("span", {}, `${reais(item.price)} cada`)
+      item.gift
+        ? el("span.gift-tag", {}, "Brinde · Leve e ganhe")
+        : el("span", {}, `${reais(item.price)} cada`)
     ),
-    el("strong", {}, reais(Number(item.price || 0) * Number(item.qty || 0)))
+    el("strong", {}, item.gift ? "Grátis" : reais(Number(item.price || 0) * Number(item.qty || 0)))
   );
 }
 

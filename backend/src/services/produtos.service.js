@@ -82,6 +82,7 @@ export const produtosService = {
               giftQty: brinde.giftQty,
               giftProductId: brinde.giftProductId,
               giftName: produtoBrinde.name,
+              giftImage: produtoBrinde.image || "",
               until: brinde.until
             } : null;
           })

@@ -72,6 +72,7 @@ const itemParaApi = linha => ({
   name: linha.nome,
   qty: linha.quantidade,
   price: linha.preco_unit,
+  gift: doBanco(linha.brinde),
   image: linha.combo_id ? imagemCombo(linha) : imagemProduto(linha)
 });
 
@@ -217,12 +218,15 @@ export const pedidosRepo = {
     if (pedido.items.length) {
       const valores = [];
       const marcadores = pedido.items.map(item => {
-        valores.push(pedido.id, item.id ?? null, item.id2 ?? null, item.comboId ?? null, item.name, item.qty, item.price);
-        return "(?, ?, ?, ?, ?, ?, ?)";
+        valores.push(
+          pedido.id, item.id ?? null, item.id2 ?? null, item.comboId ?? null, item.name, item.qty, item.price,
+          paraBanco(Boolean(item.gift))
+        );
+        return "(?, ?, ?, ?, ?, ?, ?, ?)";
       }).join(", ");
 
       await alteradas(`
-        INSERT INTO pedido_itens (pedido_id, produto_id, produto_id_2, combo_id, nome, quantidade, preco_unit)
+        INSERT INTO pedido_itens (pedido_id, produto_id, produto_id_2, combo_id, nome, quantidade, preco_unit, brinde)
         VALUES ${marcadores}
       `, valores);
     }

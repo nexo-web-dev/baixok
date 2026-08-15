@@ -371,7 +371,7 @@ function montarWhatsapp(pedido) {
     "Novo pedido de ENTREGA - Baixo K",
     `Pedido: #${String(pedido.id).slice(-5)}`,
     `Cliente: ${pedido.customer}`,
-    ...pedido.items.map(item => `- ${item.qty}x ${item.name}`),
+    ...pedido.items.map(item => `- ${item.qty}x ${item.name}${item.gift ? " (brinde - leve e ganhe)" : ""}`),
     `Total: R$ ${Number(pedido.total).toFixed(2)}`
   ];
   window.open(`https://wa.me/${numero}?text=${encodeURIComponent(linhas.join("\n"))}`, "_blank", "noopener");
@@ -435,13 +435,18 @@ async function enviarPedido() {
     atualizarCampoTroco();
     entrega.limparWidget();
 
+    const brindes = (pedido.items || []).filter(item => item.gift);
+    const avisoBrinde = brindes.length
+      ? ` Você ganhou de brinde: ${brindes.map(item => `${item.qty}x ${item.name}`).join(", ")}!`
+      : "";
+
     if (modoMesa) {
       await atualizarMesa();
       mostrarVista("comanda");
-      toast("Pedido enviado para a cozinha. Chame o garçom para fechar a conta.");
+      toast(`Pedido enviado para a cozinha. Chame o garçom para fechar a conta.${avisoBrinde}`);
     } else {
       if (estado.modalidade === "entrega") montarWhatsapp(pedido);
-      toast(`Pedido ${String(pedido.id).slice(-5)} enviado para a cozinha.`);
+      toast(`Pedido ${String(pedido.id).slice(-5)} enviado para a cozinha.${avisoBrinde}`);
     }
     redesenhar();
   } catch (erro) {
@@ -458,7 +463,7 @@ async function enviarPedido() {
 
 // -------------------------------------------------------------- historico ---
 function pedidoHistorico(pedido) {
-  const itens = pedido.items.map(item => `${item.qty}x ${item.name}`).join(" | ");
+  const itens = pedido.items.map(item => `${item.qty}x ${item.name}${item.gift ? " (brinde)" : ""}`).join(" | ");
   return el("article.history-order", {},
     el("div", {},
       el("strong", {}, `Pedido ${String(pedido.id).slice(-3).toUpperCase()}`),

@@ -33,6 +33,7 @@ const cssRecibo = cozinha => `
   .item { display: grid; grid-template-columns: ${cozinha ? "1fr" : "minmax(0, 1fr) 18mm"}; gap: 3mm; padding: ${cozinha ? "8px 0" : "4px 0"}; border-top: 1px solid #000; }
   .item strong { display: block; font-size: ${cozinha ? "19px" : "13px"}; line-height: 1.16; overflow-wrap: anywhere; }
   .item span { text-align: right; font-weight: 800; }
+  .gift-tag { display: block; margin-top: 2px; font-size: ${cozinha ? "14px" : "10px"}; font-weight: 900; text-transform: uppercase; }
   .obs { border: 1px solid #000; margin-top: 6px; padding: 5px; }
   .obs strong { display: block; margin-bottom: 4px; font-size: ${cozinha ? "20px" : "13px"}; }
   .obs p { font-size: ${cozinha ? "19px" : "13px"}; font-weight: 900; }
@@ -75,8 +76,11 @@ function corpoDoRecibo(pedido, cozinha) {
 
   for (const item of pedido.items || []) {
     partes.push(el("div.item", {},
-      el("div", {}, el("strong", {}, `${item.qty}x ${item.name}`)),
-      cozinha ? null : el("span", {}, `R$ ${dinheiro(item.price * item.qty)}`)
+      el("div", {},
+        el("strong", {}, `${item.qty}x ${item.name}`),
+        item.gift ? el("span.gift-tag", {}, "BRINDE - LEVE E GANHE") : null
+      ),
+      cozinha ? null : el("span", {}, item.gift ? "Grátis" : `R$ ${dinheiro(item.price * item.qty)}`)
     ));
   }
 

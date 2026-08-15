@@ -236,8 +236,12 @@
   }
   body[data-page="menu"].cart-open .cart { opacity: 1; pointer-events: auto; transform: translateY(0); }
   body[data-page="menu"].cart-open .shop-layout { padding-right: 20px; }
-  body[data-page="menu"] .cart-head { border-radius: var(--radius-md) var(--radius-md) 0 0; }
-  body[data-page="menu"][data-mode="mesa"] .cart-head { top: -14px; }
+  body[data-page="menu"] .cart-head {
+    top: calc(-14px - env(safe-area-inset-top, 0px));
+    margin: calc(-14px - env(safe-area-inset-top, 0px)) -14px 0;
+    padding: calc(14px + env(safe-area-inset-top, 0px)) 14px 14px;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+  }
   body[data-page="menu"] .cart-row {
     display: grid;
     flex: 0 0 auto;

@@ -1,5 +1,5 @@
 /* Acesso a `mesas` e `mesa_itens`. */
-import { todos, um, alteradas } from "../db/postgres.js";
+import { todos, um, alteradas, doBanco, paraBanco } from "../db/postgres.js";
 
 const DATA_IMAGE_RE = /^data:image\/[a-z0-9.+-]+;base64,/i;
 
@@ -26,6 +26,7 @@ const itemParaApi = linha => ({
   name: linha.nome,
   qty: linha.quantidade,
   price: linha.preco_unit,
+  gift: doBanco(linha.brinde),
   image: imagemProduto(linha),
   orderId: linha.pedido_id
 });
@@ -121,12 +122,12 @@ export const mesasRepo = {
 
     const valores = [];
     const marcadores = itens.map(item => {
-      valores.push(mesaN, pedidoId, item.id, item.name, item.qty, item.price);
-      return "(?, ?, ?, ?, ?, ?)";
+      valores.push(mesaN, pedidoId, item.id, item.name, item.qty, item.price, paraBanco(Boolean(item.gift)));
+      return "(?, ?, ?, ?, ?, ?, ?)";
     }).join(", ");
 
     await alteradas(`
-      INSERT INTO mesa_itens (mesa_n, pedido_id, produto_id, nome, quantidade, preco_unit)
+      INSERT INTO mesa_itens (mesa_n, pedido_id, produto_id, nome, quantidade, preco_unit, brinde)
       VALUES ${marcadores}
     `, valores);
   },
