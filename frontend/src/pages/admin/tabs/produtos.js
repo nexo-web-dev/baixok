@@ -41,6 +41,43 @@ function categoriasDosProdutos() {
 
 const categoriasFiltro = () => new Map([["todos", "Todos"], ...categoriasDosProdutos()]);
 const normalizarImagem = valor => String(valor || "").trim().replace(/^\/images\//, "images/");
+const EXTENSAO_IMAGEM = /\.(png|jpe?g|webp)(?:$|[?#])/i;
+const CATEGORIA_SEGURA = /^[\p{L}\p{N}\s&+.,()/-]{2,42}$/u;
+
+function validarImagemProduto(valor) {
+  const foto = normalizarImagem(valor);
+  if (!foto) return "";
+  if (/[\r\n<>"']/.test(foto)) return "Foto invalida. Use o botao Enviar foto, um link direto ou um arquivo em images/.";
+  if (foto.startsWith("data:image/")) {
+    if (!/^data:image\/(png|jpe?g|webp);base64,/i.test(foto)) return "Foto invalida. Use PNG, JPG ou WEBP.";
+    if (foto.length > LIMITE_IMAGEM + 2_000) return "Foto pesada demais. Envie uma imagem menor.";
+    return "";
+  }
+  if (/^https?:\/\//i.test(foto)) {
+    try {
+      new URL(foto);
+    } catch {
+      return "Link da foto invalido.";
+    }
+    return EXTENSAO_IMAGEM.test(foto)
+      ? ""
+      : "Use um link direto da imagem terminando em .jpg, .png ou .webp.";
+  }
+  if (!foto.includes("..") && /^(images|uploads)\//i.test(foto) && EXTENSAO_IMAGEM.test(foto)) return "";
+  return "Foto invalida. Use Enviar foto, URL direta .jpg/.png/.webp ou caminho images/arquivo.png.";
+}
+
+function validarProduto(corpo, { controlaEstoque }) {
+  if (!corpo.name || corpo.name.length < 2) return "Informe o nome do produto.";
+  if (corpo.name.length > 80) return "Nome do produto muito longo.";
+  if (!corpo.category || !CATEGORIA_SEGURA.test(corpo.category)) {
+    return "Informe uma categoria valida, como Pizzas, Burguer, Bebidas ou Porcoes.";
+  }
+  if (!(corpo.price > 0)) return "Informe um preco maior que zero.";
+  if (controlaEstoque && (!Number.isFinite(corpo.stock) || corpo.stock < 0)) return "Informe um estoque valido para bebida.";
+  if (corpo.description.length > 420) return "Descricao muito longa. Use um texto mais curto.";
+  return validarImagemProduto(corpo.image);
+}
 
 function atualizarCampoEstoqueProduto() {
   const campo = $("#product-stock");
@@ -300,6 +337,12 @@ async function salvar(evento) {
     saborPizza: $("#product-sabor-pizza").checked,
     image: normalizarImagem($("#product-image").value)
   };
+
+  const erroValidacao = validarProduto(corpo, { controlaEstoque });
+  if (erroValidacao) {
+    toastFalha(new Error(erroValidacao));
+    return;
+  }
 
   try {
     if (id) await apiProdutos.atualizar(id, corpo);

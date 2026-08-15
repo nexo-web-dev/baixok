@@ -17,6 +17,28 @@ const LADO_MAXIMO = 720;
 const QUALIDADE = 0.72;
 const LIMITE_IMAGEM = 260_000;
 const normalizarImagem = valor => String(valor || "").trim().replace(/^\/images\//, "images/");
+const EXTENSAO_IMAGEM = /\.(png|jpe?g|webp)(?:$|[?#])/i;
+
+function validarImagemCombo(valor) {
+  const foto = normalizarImagem(valor);
+  if (!foto) return "";
+  if (/[\r\n<>"']/.test(foto)) return "Foto invalida. Use o botao Enviar foto, um link direto ou um arquivo em images/.";
+  if (foto.startsWith("data:image/")) {
+    if (!/^data:image\/(png|jpe?g|webp);base64,/i.test(foto)) return "Foto invalida. Use PNG, JPG ou WEBP.";
+    if (foto.length > LIMITE_IMAGEM + 2_000) return "Foto pesada demais. Envie uma imagem menor.";
+    return "";
+  }
+  if (/^https?:\/\//i.test(foto)) {
+    try {
+      new URL(foto);
+    } catch {
+      return "Link da foto invalido.";
+    }
+    return EXTENSAO_IMAGEM.test(foto) ? "" : "Use um link direto da imagem terminando em .jpg, .png ou .webp.";
+  }
+  if (!foto.includes("..") && /^(images|uploads)\//i.test(foto) && EXTENSAO_IMAGEM.test(foto)) return "";
+  return "Foto invalida. Use Enviar foto, URL direta .jpg/.png/.webp ou caminho images/arquivo.png.";
+}
 
 function prepararFoto(arquivo) {
   return new Promise((resolve, reject) => {
@@ -363,6 +385,8 @@ export function ligarCombos() {
       active: $("#combo-active").checked,
       items: rascunhoCombo.itens.map(item => ({ productId: item.productId, quantity: item.quantity }))
     };
+    const erroImagem = validarImagemCombo(corpo.image);
+    if (erroImagem) return erroDoFormulario("combo-error", erroImagem);
     if (!corpo.name) return erroDoFormulario("combo-error", "Dê um nome ao combo.");
     if (corpo.price <= 0) return erroDoFormulario("combo-error", "Informe o preço do combo.");
     if (!corpo.items.length) return erroDoFormulario("combo-error", "Adicione ao menos um produto ao combo.");
