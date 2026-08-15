@@ -38,6 +38,12 @@ export function resolverPeriodo({ periodo, desde, ate }) {
     };
   }
 
+  /* "Tudo" nao tem inicio calculado: pega o historico inteiro da loja, desde
+   * antes de qualquer pedido possivel existir. */
+  if (periodo === "tudo") {
+    return { desde: "2000-01-01 00:00:00", ate: paraSql(agora), rotulo: "Tudo" };
+  }
+
   const inicio = inicioDoDiaOperacional(agora);
   if (periodo === "7dias") inicio.setDate(inicio.getDate() - 6);
   if (periodo === "30dias") inicio.setDate(inicio.getDate() - 29);

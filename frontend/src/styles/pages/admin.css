@@ -316,8 +316,9 @@
 /* â€” produtos â€” */
 .products-layout { display: grid; grid-template-columns: minmax(520px, 1fr) minmax(300px, 360px); gap: 16px; align-items: start; }
 .data-table { border-radius: var(--radius-md); background: var(--sidebar); border: 1px solid var(--line-soft); overflow: hidden; }
-.product-tools { padding: 14px; border-bottom: 1px solid var(--line-soft); background: rgba(22,18,16,.96); }
-.product-tools input { width: 100%; min-height: 42px; border-radius: var(--radius-pill); }
+.product-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 14px; border-bottom: 1px solid var(--line-soft); background: rgba(22,18,16,.96); }
+.product-tools input { flex: 1 1 220px; min-width: 0; min-height: 42px; border-radius: var(--radius-pill); }
+.product-tools button { flex: none; white-space: nowrap; }
 .product-category-filters { position: sticky; top: 0; z-index: 2; margin: 0; padding: 12px 14px; background: rgba(22,18,16,.96); border-bottom: 1px solid var(--line-soft); }
 #product-table .data-head { display: none; }
 #product-admin-list { display: grid; gap: 12px; padding: 14px; }
