@@ -11,11 +11,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/admin-EgTb7kxn.js"></script>
+  <script type="module" crossorigin src="/assets/admin-BwR_YaCu.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/api-Bto_1JnK.js">
   <link rel="modulepreload" crossorigin href="/assets/estoque-CQEPAuI7.js">
-  <link rel="modulepreload" crossorigin href="/assets/categorias-HQM12cpL.js">
-  <link rel="stylesheet" crossorigin href="/assets/admin-DCJXjX7V.css">
+  <link rel="modulepreload" crossorigin href="/assets/categorias-BIB0YuRl.js">
+  <link rel="stylesheet" crossorigin href="/assets/admin-C3KRWpaw.css">
 </head>
 <body data-page="admin">
   <div class="aviso-offline" role="alert">Sem conexão com o servidor. As alterações não estão sendo salvas.</div>
@@ -136,6 +136,7 @@
         <div class="data-table" id="product-table">
           <div class="product-tools">
             <input id="product-search" type="search" placeholder="Filtrar por nome, categoria ou descrição">
+            <button class="secondary" type="button" id="export-menu-pdf">⇩ Exportar cardápio (PDF)</button>
           </div>
           <div class="filters product-category-filters" id="product-category-filters" aria-label="Filtrar produtos por categoria"></div>
           <div class="data-head product-row">
@@ -368,6 +369,7 @@
           <button class="period-btn" type="button" data-period="7dias">7 dias</button>
           <button class="period-btn" type="button" data-period="30dias">30 dias</button>
           <button class="period-btn" type="button" data-period="mes">Este mês</button>
+          <button class="period-btn" type="button" data-period="tudo">Tudo</button>
         </div>
         <div class="custom-period" id="custom-period">
           <label><span>De</span><input id="filter-from" type="date"></label>

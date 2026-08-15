@@ -364,6 +364,7 @@
           <button class="period-btn" type="button" data-period="7dias">7 dias</button>
           <button class="period-btn" type="button" data-period="30dias">30 dias</button>
           <button class="period-btn" type="button" data-period="mes">Este mês</button>
+          <button class="period-btn" type="button" data-period="tudo">Tudo</button>
         </div>
         <div class="custom-period" id="custom-period">
           <label><span>De</span><input id="filter-from" type="date"></label>
@@ -378,7 +379,7 @@
 
       <div class="dashboard-columns">
         <div class="chart-card">
-          <h2>Vendas por dia</h2>
+          <h2 id="day-chart-title">Vendas por dia</h2>
           <div id="day-chart"></div>
         </div>
         <div class="chart-card">

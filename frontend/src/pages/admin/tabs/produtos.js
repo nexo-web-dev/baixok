@@ -11,6 +11,7 @@ import { controlaEstoqueCategoria } from "../../../utils/estoque.js";
 import { apiProdutos } from "../../../services/api.js";
 import { estado, carregar, promocaoDoProduto } from "../store.js";
 import { toast, toastFalha } from "../../../components/toast.js";
+import { exportarCardapioPdf } from "../../../components/cardapio-pdf.js";
 
 const PRESETS = [
   { label: "Pizza", src: "images/produto-pizza.png" },
@@ -575,6 +576,18 @@ export function ligarProdutos() {
   $("#product-search")?.addEventListener("input", evento => {
     filtroBusca = evento.target.value;
     desenharProdutos();
+  });
+  $("#export-menu-pdf")?.addEventListener("click", async botao => {
+    const alvo = botao.currentTarget;
+    alvo.disabled = true;
+    try {
+      if (!Object.keys(estado.ajustes || {}).length) await carregar("ajustes");
+      await exportarCardapioPdf(estado.produtos, estado.ajustes);
+    } catch (erro) {
+      toastFalha(erro, "Exportar cardápio");
+    } finally {
+      alvo.disabled = false;
+    }
   });
   $("#product-image")?.addEventListener("input", evento => atualizarPreview(evento.target.value));
   $("#product-category")?.addEventListener("input", () => { atualizarCampoEstoqueProduto(); atualizarCampoSaborPizza(); });

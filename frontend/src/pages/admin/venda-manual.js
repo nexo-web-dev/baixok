@@ -6,7 +6,7 @@
  * mais facil para lancar venda com valor errado sem deixar rastro. */
 import { el, render, $, delegar, mostrar, ligarModal } from "../../utils/dom.js";
 import { reais } from "../../utils/formato.js";
-import { CANAIS_ROTULO, MODALIDADES_ROTULO } from "../../utils/categorias.js";
+import { CANAIS_ROTULO, MODALIDADES_ROTULO, rotuloCategoria } from "../../utils/categorias.js";
 import { controlaEstoqueCategoria } from "../../utils/estoque.js";
 import { apiPedidos, apiPublica } from "../../services/api.js";
 import { estado, carregar, precoEfetivo } from "./store.js";
@@ -177,9 +177,11 @@ function desenharProdutos() {
             : el("span.manual-thumb.no-photo", {}, "Sem foto"),
           el("span.manual-name", {}, produto.name),
           el("span.manual-price", {}, reais(precoEfetivo(produto))),
-          el("small", {}, controlaEstoqueCategoria(produto.category)
-            ? `${produto.stock} em estoque`
-            : "sem controle de estoque")
+          el("small", {},
+            `${rotuloCategoria(produto.category)} · ${controlaEstoqueCategoria(produto.category)
+              ? `${produto.stock} em estoque`
+              : "sem controle de estoque"}`
+          )
         ))
     : [el("p.faint", {}, "Nenhum produto encontrado.")]));
 }

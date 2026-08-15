@@ -10,6 +10,7 @@
  * Os nos vem de `el()` (texto por textContent, nunca HTML) e sao adotados na
  * janela nova com importNode — nome ou descricao de produto nunca vira marcacao
  * interpretada, nem aqui nem em document.write. */
+import QRCode from "qrcode";
 import { el } from "../utils/dom.js";
 import { reais } from "../utils/formato.js";
 import { rotuloCategoria } from "../utils/categorias.js";
@@ -134,12 +135,11 @@ function montarCorpo({ produtos, ajustes, qrDataUrl, menuUrl }) {
   return partes;
 }
 
-/* QR e opcional: sem a lib, ou sem endereco configurado, o cardapio sai sem
- * ele — nunca trava a exportacao por causa disso. */
+/* QR e opcional: sem endereco configurado, ou se a geracao falhar por
+ * qualquer motivo, o cardapio sai sem ele — nunca trava a exportacao. */
 async function gerarQrOpcional(menuUrl) {
   if (!menuUrl) return null;
   try {
-    const { default: QRCode } = await import("qrcode");
     return await QRCode.toDataURL(menuUrl, {
       errorCorrectionLevel: "M", margin: 1, width: 240,
       color: { dark: INK, light: "#ffffff" }

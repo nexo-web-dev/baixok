@@ -240,7 +240,7 @@ export async function desenharDashboard() {
   }
 
   const {
-    resumo, porHora, porDia = [], porCanal, porPagamento, porModalidade = [],
+    resumo, porHora, porDia = [], agrupadoPorMes = false, porCanal, porPagamento, porModalidade = [],
     porMotoboy = [], maisVendidos, menosVendidos = [], estoqueBaixo, periodo, vendas = [], cancelados = [],
     taxaServico = { total: 0, contasFechadas: 0, contasSemCobranca: 0 }
   } = ultimoRelatorio;

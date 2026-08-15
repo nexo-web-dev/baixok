@@ -329,6 +329,23 @@ export const pedidosRepo = {
     `, [desde, ate, canal, canal]);
   },
 
+  /* Mesma ideia de porDia, agrupado por mes — e o que o filtro "Tudo" usa: com
+   * o historico inteiro da loja, um grafico por dia vira uma lista ilegivel de
+   * centenas de barras. */
+  async porMes({ desde, ate, canal = null }) {
+    return await todos(`
+      SELECT to_char(criado_em AT TIME ZONE 'America/Sao_Paulo', 'MM/YYYY') AS rotulo,
+             MIN(date_trunc('month', criado_em AT TIME ZONE 'America/Sao_Paulo')) AS mes_ordem,
+             COUNT(*)::int AS pedidos,
+             COALESCE(SUM(total), 0) AS faturamento
+        FROM pedidos
+       WHERE criado_em >= ?::timestamptz AND criado_em <= ?::timestamptz AND status = 'entregue'
+         AND (?::text IS NULL OR canal = ?::text)
+       GROUP BY rotulo
+       ORDER BY mes_ordem
+    `, [desde, ate, canal, canal]);
+  },
+
   async agruparPor(coluna, { desde, ate, canal = null }) {
     /* Lista fechada: `coluna` vem do controller e nunca e concatenada sem passar
      * por aqui. Nome de coluna nao pode ser parametro em SQL, entao a unica

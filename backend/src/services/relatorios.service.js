@@ -64,6 +64,10 @@ export const relatoriosService = {
     /* Agregacoes independentes. Em fila seriam varias idas ao Postgres, uma
      * esperando a outra — o dashboard e a tela mais lenta do painel e nao ha
      * ordem entre elas. */
+    /* "Tudo" agrupa por mes: com o historico inteiro, um grafico por dia vira
+     * uma lista ilegivel de centenas de barras. */
+    const agrupadoPorMes = periodo === "tudo";
+
     const [
       resumo, canceladosResumo, emFalta, porHora, porDia, porCanal, porPagamento, porModalidade, porMotoboy,
       maisVendidos, menosVendidos, vendas, cancelados, taxaServico
@@ -72,7 +76,7 @@ export const relatoriosService = {
       pedidosRepo.resumoCancelados(filtro),
       produtosRepo.emFalta(),
       pedidosRepo.porHora(filtro),
-      pedidosRepo.porDia(filtro),
+      agrupadoPorMes ? pedidosRepo.porMes(filtro) : pedidosRepo.porDia(filtro),
       pedidosRepo.agruparPor("canal", filtro),
       pedidosRepo.agruparPor("pagamento", filtro),
       pedidosRepo.agruparPor("modalidade", filtro),
@@ -102,6 +106,7 @@ export const relatoriosService = {
       },
       porHora,
       porDia,
+      agrupadoPorMes,
       porCanal,
       porPagamento,
       porModalidade,
