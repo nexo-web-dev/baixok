@@ -146,6 +146,26 @@ export const produtosService = {
     return produto;
   },
 
+  async reordenarLista(ids, { usuario, ip }) {
+    const produtos = await produtosRepo.listar();
+    const existentes = new Set(produtos.map(produto => produto.id));
+    const ordenados = ids.filter(id => existentes.has(id));
+    if (!ordenados.length) throw naoEncontrado("Produto nao encontrado.");
+
+    const usados = new Set(ordenados);
+    const fila = [...ordenados];
+    const ordemFinal = produtos.map(produto => usados.has(produto.id) ? fila.shift() : produto.id);
+
+    await emTransacao(() => produtosRepo.reordenarIds(ordemFinal));
+    await auditoriaRepo.registrar({
+      usuarioId: usuario.id, usuario: usuario.usuario, acao: "produto_ordem",
+      entidade: "produto", entidadeId: ordenados[0],
+      detalhes: { quantidade: ordenados.length, modo: "arrastar" }, ip
+    });
+    publicar("produtos", [CANAL.PUBLICO, CANAL.OPERACAO]);
+    return produtosRepo.listar();
+  },
+
   async remover(id, { usuario, ip }) {
     const produto = await this.buscar(id);
     /* Nao apagamos produto que ja apareceu em pedido: a exclusao levaria junto o

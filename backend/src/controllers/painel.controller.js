@@ -106,6 +106,9 @@ export const produtosController = {
   async moverOrdem(req, res) {
     res.json({ produto: await produtosService.moverOrdem(req.validado.params.id, req.validado.body.direction, contexto(req)) });
   },
+  async reordenar(req, res) {
+    res.json({ produtos: await produtosService.reordenarLista(req.validado.body.ids, contexto(req)) });
+  },
   async emFalta(_req, res) {
     res.json({ produtos: await produtosService.emFalta() });
   }

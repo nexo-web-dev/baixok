@@ -19,7 +19,7 @@ import {
 } from "../schemas/pedido.schema.js";
 import { abrirCaixaSchema, fecharCaixaSchema, listarFechamentosSchema } from "../schemas/caixa.schema.js";
 import {
-  produtoSchema, ajusteEstoqueSchema, reordenarProdutoSchema, promocaoSchema, cupomSchema,
+  produtoSchema, ajusteEstoqueSchema, reordenarProdutoSchema, reordenarProdutosSchema, promocaoSchema, cupomSchema,
   comboSchema, combinacaoSaborSchema
 } from "../schemas/catalogo.schema.js";
 import { insumoSchema, ajusteInsumoSchema } from "../schemas/insumo.schema.js";
@@ -69,6 +69,7 @@ rotasPainel.get("/caixa/fechamentos/:id/pdf", VER_FECHAMENTOS, validarParams(par
 rotasPainel.get("/produtos", produtosController.listar);
 rotasPainel.get("/produtos/em-falta", ADMIN, produtosController.emFalta);
 rotasPainel.post("/produtos", ADMIN, validarCorpo(produtoSchema), produtosController.criar);
+rotasPainel.patch("/produtos/ordem", ADMIN, validarCorpo(reordenarProdutosSchema), produtosController.reordenar);
 rotasPainel.put("/produtos/:id", ADMIN, validarParams(paramsId), validarCorpo(produtoSchema), produtosController.atualizar);
 rotasPainel.delete("/produtos/:id", ADMIN, validarParams(paramsId), produtosController.remover);
 rotasPainel.post("/produtos/:id/alternar", ADMIN, validarParams(paramsId), produtosController.alternarAtivo);

@@ -326,7 +326,20 @@
 .admin-product-card {
   display: grid; grid-template-columns: 74px minmax(0, 1fr) auto; gap: 12px; align-items: center;
   padding: 10px; border-radius: var(--radius-sm); background: var(--panel); border: 1px solid var(--line-soft);
+  transition: border-color .16s ease, background .16s ease, transform .16s ease, opacity .16s ease;
 }
+.admin-product-card.is-dragging {
+  opacity: .76;
+  border-color: var(--gold);
+  background: rgba(217,154,104,.12);
+  transform: scale(.995);
+}
+.drag-handle {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.drag-handle:active { cursor: grabbing; }
 .admin-product-thumb { width: 74px; height: 74px; overflow: hidden; border-radius: 14px; background: var(--soft); }
 .admin-product-thumb .fit-media,
 .admin-product-thumb img,

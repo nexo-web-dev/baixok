@@ -69,6 +69,10 @@ export const reordenarProdutoSchema = z.object({
   direction: z.enum(["up", "down"], { message: "Direcao invalida." })
 }).strict();
 
+export const reordenarProdutosSchema = z.object({
+  ids: z.array(idTexto).min(1, "Envie ao menos um produto.").max(1000, "Envie no maximo 1000 produtos.")
+}).strict();
+
 export const ajusteEstoqueSchema = z.object({
   delta: z.coerce.number().int().min(-9999).max(9999).optional(),
   valor: z.coerce.number().int().min(0).max(99999).optional()

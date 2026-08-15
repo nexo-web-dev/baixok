@@ -198,7 +198,7 @@ function cardProduto(produto) {
   const controlaEstoque = controlaEstoqueCategoria(produto.category);
   const semEstoque = controlaEstoque && produto.stock <= 0;
 
-  return el("article.admin-product-card", { dataset: { id: produto.id } },
+  return el("article.admin-product-card", { draggable: true, dataset: { id: produto.id } },
     el("div.admin-product-thumb", {}, fotoProdutoAdmin(produto)),
     el("div.admin-product-main", {},
       el("div.admin-product-title", {},
@@ -223,6 +223,11 @@ function cardProduto(produto) {
       )
     ),
     el("div.row-actions", { class: "right" },
+      el("button.ghost.small.drag-handle", {
+        type: "button",
+        title: "Arraste para mudar a ordem",
+        dataset: { acao: "arrastar-ordem", id: produto.id }
+      }, "Arrastar"),
       el("button.ghost.small", { type: "button", title: "Subir no cardápio", dataset: { acao: "mover-ordem", id: produto.id, direction: "up" } }, "Subir"),
       el("button.ghost.small", { type: "button", title: "Descer no cardápio", dataset: { acao: "mover-ordem", id: produto.id, direction: "down" } }, "Descer"),
       el("button.ghost.small", { type: "button", dataset: { acao: "editar", id: produto.id } }, "Editar"),
@@ -274,6 +279,107 @@ function grupoCategoria(categoria, produtos) {
     ),
     el("div.product-category-list", {}, ...produtos.map(cardProduto))
   );
+}
+
+async function salvarOrdemVisivel(grupo) {
+  const ids = [...grupo.querySelectorAll(".admin-product-card")]
+    .map(card => card.dataset.id)
+    .filter(Boolean);
+  if (ids.length < 2) return;
+
+  try {
+    await apiProdutos.reordenar(ids);
+    await carregar("produtos");
+    desenharProdutos();
+    toast("Ordem do cardapio atualizada.");
+  } catch (erro) {
+    toastFalha(erro);
+    await carregar("produtos");
+    desenharProdutos();
+  }
+}
+
+function ligarArrastarProdutos(lista) {
+  if (!lista || lista.dataset.dragProdutosLigado) return;
+  lista.dataset.dragProdutosLigado = "1";
+
+  let arrastando = null;
+  let grupoAtual = null;
+
+  const cardMaisProximo = (grupo, y) => {
+    const cards = [...grupo.querySelectorAll(".admin-product-card:not(.is-dragging)")];
+    return cards.reduce((melhor, card) => {
+      const box = card.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+      return offset < 0 && offset > melhor.offset ? { offset, card } : melhor;
+    }, { offset: Number.NEGATIVE_INFINITY, card: null }).card;
+  };
+
+  const moverNoGrupo = y => {
+    if (!arrastando || !grupoAtual) return;
+    const antes = cardMaisProximo(grupoAtual, y);
+    if (antes) grupoAtual.insertBefore(arrastando, antes);
+    else grupoAtual.appendChild(arrastando);
+  };
+
+  lista.addEventListener("dragstart", evento => {
+    const card = evento.target.closest(".admin-product-card");
+    const handle = evento.target.closest(".drag-handle");
+    if (!card || !handle) {
+      evento.preventDefault();
+      return;
+    }
+    arrastando = card;
+    grupoAtual = card.closest(".product-category-list");
+    card.classList.add("is-dragging");
+    evento.dataTransfer.effectAllowed = "move";
+    evento.dataTransfer.setData("text/plain", card.dataset.id || "");
+  });
+
+  lista.addEventListener("dragover", evento => {
+    if (!arrastando || !grupoAtual || evento.target.closest(".product-category-list") !== grupoAtual) return;
+    evento.preventDefault();
+    moverNoGrupo(evento.clientY);
+  });
+
+  lista.addEventListener("dragend", async () => {
+    if (!arrastando) return;
+    const grupo = grupoAtual;
+    arrastando.classList.remove("is-dragging");
+    arrastando = null;
+    grupoAtual = null;
+    if (grupo) await salvarOrdemVisivel(grupo);
+  });
+
+  lista.addEventListener("pointerdown", evento => {
+    const card = evento.target.closest(".admin-product-card");
+    const handle = evento.target.closest(".drag-handle");
+    if (!card || !handle || evento.pointerType === "mouse") return;
+    arrastando = card;
+    grupoAtual = card.closest(".product-category-list");
+    card.classList.add("is-dragging");
+    card.setPointerCapture?.(evento.pointerId);
+    evento.preventDefault();
+  }, { passive: false });
+
+  lista.addEventListener("pointermove", evento => {
+    if (!arrastando || !grupoAtual || evento.pointerType === "mouse") return;
+    moverNoGrupo(evento.clientY);
+    evento.preventDefault();
+  }, { passive: false });
+
+  const finalizarPonteiro = async evento => {
+    if (!arrastando || !grupoAtual || evento.pointerType === "mouse") return;
+    const grupo = grupoAtual;
+    arrastando.classList.remove("is-dragging");
+    arrastando.releasePointerCapture?.(evento.pointerId);
+    arrastando = null;
+    grupoAtual = null;
+    await salvarOrdemVisivel(grupo);
+  };
+
+  lista.addEventListener("pointerup", finalizarPonteiro);
+  lista.addEventListener("pointercancel", finalizarPonteiro);
 }
 
 export function desenharProdutos() {
@@ -393,6 +499,8 @@ export function ligarProdutos() {
   const lista = $("#product-admin-list");
   const presets = $("#photo-presets");
   const tabela = $("#product-table");
+
+  ligarArrastarProdutos(lista);
 
   delegar(lista, "click", "[data-acao='editar']", (_e, botao) => editar(botao.dataset.id));
 
