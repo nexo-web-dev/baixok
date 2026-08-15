@@ -41,14 +41,6 @@ export function foto(produto, alt = "") {
     return semFoto();
   }
   return el("span.photo-frame.fit-media", { class: classeFoto(produto) },
-    el("img.photo-bg.fit-media-bg", {
-      src: produto.image,
-      alt: "",
-      loading: "eager",
-      fetchpriority: "low",
-      decoding: "async",
-      "aria-hidden": "true"
-    }),
     el("img.photo-main.fit-media-main", {
       onload: marcarProporcaoImagem,
       src: produto.image,

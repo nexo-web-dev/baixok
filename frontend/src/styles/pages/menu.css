@@ -64,11 +64,11 @@ body.store-closed .live-badge::before { background: var(--danger); box-shadow: 0
 }
 .photo-frame {
   --photo-bg: #16100d;
-  --photo-pad: 0px;
+  --photo-pad: 6px;
   position: relative; display: block; overflow: hidden; isolation: isolate;
   background:
-    radial-gradient(circle at 50% 45%, rgba(217,154,104,.1), transparent 54%),
-    linear-gradient(135deg, rgba(217,154,104,.08), rgba(255,255,255,.025) 46%, rgba(0,0,0,.12)),
+    radial-gradient(circle at 50% 45%, rgba(217,154,104,.12), transparent 62%),
+    linear-gradient(135deg, rgba(45,32,23,.84), rgba(18,15,13,.98)),
     var(--photo-bg);
 }
 .photo-frame > img { display: block; width: 100%; height: 100%; object-position: center; }
@@ -81,25 +81,15 @@ body.store-closed .live-badge::before { background: var(--danger); box-shadow: 0
   width: 100%; height: 100%;
   object-fit: contain !important; object-position: center center; filter: none;
 }
-.photo-frame.photo-light-bg {
-  background:
-    radial-gradient(circle at 50% 45%, rgba(217,154,104,.14), transparent 58%),
-    linear-gradient(135deg, rgba(45,32,23,.96), rgba(18,15,13,.98));
-}
-.photo-frame.photo-bg-removed > .photo-main {
-  --photo-pad: 0px;
-  object-fit: cover !important;
-  filter: none;
-}
 .photo-frame.photo-wide,
 .photo-frame.photo-balanced,
-.photo-frame.photo-tall { --photo-pad: 8px; }
+.photo-frame.photo-tall { --photo-pad: 6px; }
 .photo-frame.is-beverage,
 .product > .photo-frame.is-beverage,
 .product-detail-media .photo-frame.is-beverage,
 .signature-strip article > .photo-frame.is-beverage {
   --photo-bg: #16100d;
-  --photo-pad: 0px;
+  --photo-pad: 6px;
 }
 .signature-strip article > .photo-frame {
   background:
@@ -111,17 +101,13 @@ body.store-closed .live-badge::before { background: var(--danger); box-shadow: 0
   inset: 0;
   width: 100%;
   height: 100%;
-  padding: 0 !important;
+  padding: 6px !important;
   border-radius: inherit;
-  object-fit: cover !important;
+  object-fit: contain !important;
   filter: none;
 }
 .product > .photo-frame.is-beverage > .photo-main,
 .product-detail-media .photo-frame.is-beverage > .photo-main {
-  object-fit: contain !important;
-}
-.signature-strip article > .photo-frame.photo-light-bg > .photo-main,
-.signature-strip article > .photo-frame.photo-bg-removed > .photo-main {
   object-fit: contain !important;
 }
 .signature-strip article > .no-photo { display: grid; }
@@ -177,7 +163,7 @@ body.cart-open .shop-layout { padding-right: calc(var(--cart-width) + 18px); }
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.02), inset 0 -18px 28px rgba(0,0,0,.2);
 }
 .product > .no-photo { display: grid; }
-.product > .photo-frame { --photo-pad: 0px; border-radius: var(--radius-sm); }
+.product > .photo-frame { --photo-pad: 6px; border-radius: var(--radius-sm); }
 .product img { background: transparent; }
 .product > .photo-frame > .photo-bg { display: none; }
 .product > .photo-frame > .photo-main {
@@ -185,39 +171,13 @@ body.cart-open .shop-layout { padding-right: calc(var(--cart-width) + 18px); }
   inset: 0;
   width: 100%;
   height: 100%;
-  padding: 0 !important;
+  padding: 6px !important;
   border-radius: inherit;
-  object-fit: cover !important;
+  object-fit: contain !important;
   filter: none;
 }
 .product > .photo-frame > .photo-main,
 .cart-thumb .fit-media > .fit-media-main { filter: none; }
-.product > .photo-frame.photo-light-bg,
-.signature-strip article > .photo-frame.photo-light-bg {
-  background:
-    radial-gradient(circle at 50% 50%, rgba(217,154,104,.15), transparent 60%),
-    linear-gradient(135deg, #261b14, #120e0c);
-}
-.product > .photo-frame.photo-bg-removed > .photo-main,
-.signature-strip article > .photo-frame.photo-bg-removed > .photo-main {
-  padding: 0 !important;
-  filter: none;
-}
-.product > .photo-frame.photo-light-bg > .photo-main {
-  inset: 6px;
-  width: calc(100% - 12px);
-  height: calc(100% - 12px);
-  border-radius: calc(var(--radius-sm) - 5px);
-  object-fit: contain !important;
-  filter: drop-shadow(0 10px 14px rgba(0,0,0,.28));
-}
-.product > .photo-frame.photo-bg-removed > .photo-main {
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
-  object-fit: cover !important;
-}
 .no-photo { display: grid; place-items: center; padding: 12px; color: var(--gold); background: repeating-linear-gradient(135deg, rgba(217,154,104,.08) 0 10px, rgba(255,255,255,.03) 10px 20px), var(--shell); text-align: center; font-weight: 800; font-size: .8rem; }
 .no-photo small { display: block; margin-top: 4px; color: var(--muted); font-size: .7rem; font-weight: 700; }
 .product-body { position: relative; z-index: 1; display: grid; gap: 8px; align-content: center; min-width: 0; overflow: hidden; padding: 14px 15px; }
