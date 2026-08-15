@@ -118,16 +118,20 @@
     --product-photo-size: clamp(104px, 29vw, 118px);
     --product-photo-width: var(--product-photo-size);
     grid-template-columns: calc(var(--product-photo-size) + 12px) minmax(0, 1fr);
-    height: 142px;
-    min-height: 138px;
+    height: auto;
+    min-height: 142px;
     width: 100%;
     max-width: 100%;
     border-radius: var(--radius-md);
     align-items: center;
-    contain: layout paint;
+    contain: layout;
     content-visibility: visible;
     contain-intrinsic-size: auto;
   }
+  /* Card com selo "leve e ganhe" cresce em vez de cortar o conteudo — a
+   * altura fixa acima existia so porque, sem brinde, foto + nome + descricao
+   * de 2 linhas + preco sempre fecham nesse tamanho. */
+  body[data-page="menu"] .product-body { overflow: visible; }
   body[data-page="menu"] .product.photo-wide,
   body[data-page="menu"] .product.photo-balanced,
   body[data-page="menu"] .product.photo-tall {
@@ -144,12 +148,27 @@
     object-position: center;
     border-radius: var(--radius-sm);
   }
-  body[data-page="menu"] .product img {
+  body[data-page="menu"] .product img:not(.product-gift-photo) {
     width: 100%;
     height: 100%;
     min-height: 0;
     object-position: center;
     border-radius: inherit;
+  }
+  body[data-page="menu"] .product .product-gift-photo {
+    width: 20px !important;
+    height: 20px !important;
+    min-height: 0 !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+  }
+  body[data-page="menu"] .product .product-gift {
+    max-width: 100%;
+    padding: 4px 8px 4px 4px;
+    font-size: .68rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   body[data-page="menu"] .product .photo-frame > .photo-bg {
     display: none;
