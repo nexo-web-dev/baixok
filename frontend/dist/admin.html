@@ -11,11 +11,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/admin-DYcHXF9I.js"></script>
+  <script type="module" crossorigin src="/assets/admin-EgTb7kxn.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/api-Bto_1JnK.js">
   <link rel="modulepreload" crossorigin href="/assets/estoque-CQEPAuI7.js">
   <link rel="modulepreload" crossorigin href="/assets/categorias-HQM12cpL.js">
-  <link rel="stylesheet" crossorigin href="/assets/admin-CoL-yKee.css">
+  <link rel="stylesheet" crossorigin href="/assets/admin-DCJXjX7V.css">
 </head>
 <body data-page="admin">
   <div class="aviso-offline" role="alert">Sem conexão com o servidor. As alterações não estão sendo salvas.</div>
@@ -420,7 +420,20 @@
             <p class="small faint">Confira pedidos do período e cancele lançamentos errados.</p>
           </div>
         </div>
+        <div class="sales-filter-bar">
+          <input id="sales-search" type="search" placeholder="Buscar por cliente, telefone, nº do pedido ou item...">
+          <select id="sales-filter-fulfillment" aria-label="Filtrar por modalidade">
+            <option value="">Todas as modalidades</option>
+            <option value="retirada">Retirada</option>
+            <option value="entrega">Entrega</option>
+            <option value="mesa">Mesa</option>
+          </select>
+          <select id="sales-filter-payment" aria-label="Filtrar por pagamento">
+            <option value="">Todos os pagamentos</option>
+          </select>
+        </div>
         <div class="sales-list" id="dashboard-sales"></div>
+        <p class="faint pad hidden" id="dashboard-sales-empty">Nenhuma venda encontrada com esse filtro.</p>
       </div>
 
       <div class="panel all-sales-card">
@@ -431,6 +444,7 @@
           </div>
         </div>
         <div class="sales-list" id="dashboard-canceled"></div>
+        <p class="faint pad hidden" id="dashboard-canceled-empty">Nenhum pedido cancelado encontrado com esse filtro.</p>
       </div>
     </section>
 

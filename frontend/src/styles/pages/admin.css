@@ -728,6 +728,9 @@
 .order-row .order-num { color: var(--gold); font-weight: 800; }
 .all-sales-card { margin-top: 14px; }
 .sales-head { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 12px; }
+.sales-filter-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.sales-filter-bar input { flex: 1 1 260px; min-height: 40px; }
+.sales-filter-bar select { width: auto; min-height: 40px; padding: 8px 14px; border-radius: var(--radius-pill); background: var(--panel); color: var(--muted-2); font-size: .78rem; font-weight: 600; }
 .sales-list { display: grid; gap: 8px; }
 .sale-row {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: center;

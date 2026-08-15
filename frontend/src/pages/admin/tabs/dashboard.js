@@ -4,7 +4,7 @@
  * inteira de pedidos - com nome, telefone e endereco de cada cliente - para
  * somar faturamento no navegador. Alem de pesado, colocava a base de clientes
  * dentro de um tablet que fica no balcao. */
-import { el, render, $, delegar } from "../../../utils/dom.js";
+import { el, render, $, delegar, mostrar } from "../../../utils/dom.js";
 import { reais, dinheiro } from "../../../utils/formato.js";
 import { CANAIS_ROTULO, MODALIDADES_ROTULO } from "../../../utils/categorias.js";
 import { apiPedidos, apiRelatorios } from "../../../services/api.js";
@@ -13,8 +13,66 @@ import { imprimirAmbas } from "../../../components/impressao.js";
 import { estado } from "../store.js";
 
 const filtros = { periodo: "hoje", canal: "", desde: "", ate: "" };
+/* Filtro de busca so mexe na LISTA (o que aparece embaixo) — nunca refaz a
+ * agregacao do servidor. Faturamento, ticket medio etc. continuam refletindo
+ * so periodo + canal, que sao os que de fato mudam o calculo. */
+const buscaVendas = { termo: "", fulfillment: "", payment: "" };
 let ultimoRelatorio = null;
 let pedidoParaExcluir = null;
+
+const normalizarBusca = valor => String(valor || "")
+  .normalize("NFD")
+  .replace(/\p{Diacritic}/gu, "")
+  .toLowerCase();
+
+function pedidoCombinaBusca(pedido) {
+  if (buscaVendas.fulfillment && pedido.fulfillment !== buscaVendas.fulfillment) return false;
+  if (buscaVendas.payment && pedido.payment !== buscaVendas.payment) return false;
+
+  const termo = normalizarBusca(buscaVendas.termo).trim();
+  if (!termo) return true;
+
+  const senha = String(pedido.id || "").slice(-3).toUpperCase();
+  const alvo = normalizarBusca([
+    pedido.customer, pedido.phone, pedido.id, senha,
+    ...(pedido.items || []).map(item => item.name)
+  ].join(" "));
+  return alvo.includes(termo);
+}
+
+function preencherFiltroPagamento(vendas, cancelados) {
+  const select = $("#sales-filter-payment");
+  if (!select) return;
+  const atual = select.value;
+  const pagamentos = [...new Set([...vendas, ...cancelados].map(p => p.payment).filter(Boolean))].sort();
+
+  render(select,
+    el("option", { value: "" }, "Todos os pagamentos"),
+    ...pagamentos.map(pagamento => el("option", { value: pagamento }, pagamento))
+  );
+  if (pagamentos.includes(atual)) select.value = atual;
+}
+
+function renderizarLista(alvoId, vazioId, todos, renderLinha, mensagemVazio) {
+  const alvo = $(`#${alvoId}`);
+  if (!alvo) return;
+
+  if (!todos.length) {
+    render(alvo, el("p.faint.pad", {}, mensagemVazio));
+    mostrar($(`#${vazioId}`), false);
+    return;
+  }
+
+  const filtrados = todos.filter(pedidoCombinaBusca);
+  render(alvo, filtrados.map(renderLinha));
+  mostrar($(`#${vazioId}`), filtrados.length === 0);
+}
+
+function renderizarListasVendas() {
+  const { vendas = [], cancelados = [] } = ultimoRelatorio || {};
+  renderizarLista("dashboard-sales", "dashboard-sales-empty", vendas, vendaLinha, "Nenhuma venda neste período.");
+  renderizarLista("dashboard-canceled", "dashboard-canceled-empty", cancelados, canceladoLinha, "Nenhum pedido cancelado neste período.");
+}
 
 function metrica(rotulo, valor, nota, tom = "") {
   return el("article.metric-card", { class: tom },
@@ -295,13 +353,8 @@ export async function desenharDashboard() {
         "Quando algo baixar, este bloco vira alerta visual."
       ));
 
-  render($("#dashboard-sales"), vendas.length
-    ? vendas.map(vendaLinha)
-    : el("p.faint.pad", {}, "Nenhuma venda neste período."));
-
-  render($("#dashboard-canceled"), cancelados.length
-    ? cancelados.map(canceladoLinha)
-    : el("p.faint.pad", {}, "Nenhum pedido cancelado neste período."));
+  preencherFiltroPagamento(vendas, cancelados);
+  renderizarListasVendas();
 }
 
 /* Exportacao em CSV com separador ponto-e-virgula e BOM: e o que o Excel em
@@ -334,6 +387,19 @@ function exportarPlanilha() {
 }
 
 export function ligarDashboard() {
+  $("#sales-search")?.addEventListener("input", evento => {
+    buscaVendas.termo = evento.target.value;
+    renderizarListasVendas();
+  });
+  $("#sales-filter-fulfillment")?.addEventListener("change", evento => {
+    buscaVendas.fulfillment = evento.target.value;
+    renderizarListasVendas();
+  });
+  $("#sales-filter-payment")?.addEventListener("change", evento => {
+    buscaVendas.payment = evento.target.value;
+    renderizarListasVendas();
+  });
+
   const grupo = $("#period-group");
   delegar(grupo, "click", "[data-period]", (_e, botao) => {
     filtros.periodo = botao.dataset.period;
