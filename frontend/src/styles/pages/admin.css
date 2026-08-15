@@ -145,6 +145,7 @@
   background: var(--amber-bg); color: var(--gold-light); font-size: .7rem; font-weight: 800;
   letter-spacing: .04em; text-transform: uppercase;
 }
+.plan-badge-alert { background: var(--danger-bg); color: var(--danger); }
 .plan-card h2 { font-size: 1.45rem; }
 .plan-card p { color: var(--muted-2); line-height: 1.55; }
 .plan-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }

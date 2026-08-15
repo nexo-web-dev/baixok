@@ -8,6 +8,12 @@ const VALOR_MENSALIDADE = 300;
 const DIA_VENCIMENTO = 15;
 const PRIMEIRO_VENCIMENTO = new Date(2026, 8, 15);
 
+/* Valor fechado do desenvolvimento do sistema — separado da mensalidade
+ * acima, que e a manutencao mensal. Ajuste os dois numeros aqui conforme os
+ * pagamentos forem acontecendo. */
+const VALOR_PROJETO_TOTAL = 2500;
+const VALOR_PROJETO_PAGO = 1000;
+
 function calcularProximoVencimento(agora = new Date()) {
   const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
   if (hoje < PRIMEIRO_VENCIMENTO) {
@@ -35,6 +41,9 @@ export function desenharPlano() {
   const alvo = $("#plano-sistema");
   if (!alvo) return;
 
+  const restante = Math.max(0, VALOR_PROJETO_TOTAL - VALOR_PROJETO_PAGO);
+  const quitado = restante <= 0;
+
   render(alvo,
     el("div.plan-card", {},
       el("div.plan-badge", {}, "Plano ativo"),
@@ -59,6 +68,27 @@ export function desenharPlano() {
       el("div.plan-foot", {},
         el("span.small.faint", {}, `Próximo vencimento: ${formatarData(vencimento)}`),
         el("span.small.faint", {}, isento ? "A contagem mensal normal começa depois desta data." : "Se o dia 15 cair hoje, o plano vence hoje.")
+      )
+    ),
+    el("div.plan-card", {},
+      el("div.plan-badge", { class: quitado ? "" : "plan-badge-alert" }, quitado ? "Projeto quitado" : "Pagamento pendente"),
+      el("h2", {}, "Desenvolvimento do sistema"),
+      el("p", {}, quitado
+        ? "O valor fechado do projeto já foi pago integralmente."
+        : `Falta pagar ${formatarMoeda(restante)} do valor combinado pelo desenvolvimento do sistema.`),
+      el("div.plan-grid", {},
+        el("div.plan-metric", {},
+          el("span", {}, "Valor total"),
+          el("strong", {}, formatarMoeda(VALOR_PROJETO_TOTAL))
+        ),
+        el("div.plan-metric", {},
+          el("span", {}, "Já pago"),
+          el("strong", {}, formatarMoeda(VALOR_PROJETO_PAGO))
+        ),
+        el("div.plan-metric", {},
+          el("span", {}, "Falta pagar"),
+          el("strong", { class: quitado ? "" : "danger-text" }, formatarMoeda(restante))
+        )
       )
     )
   );

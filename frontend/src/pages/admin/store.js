@@ -40,11 +40,36 @@ export const aoMudarEstado = callback => {
 };
 const avisar = assunto => ouvintes.forEach(callback => callback(assunto));
 
+/* Uma falha de rede isolada (uma requisicao que deu timeout por um instante de
+ * wifi ruim) nao pode acender o aviso na hora — o painel chama `carregar()`
+ * o tempo todo (a cada evento do SSE, a cada troca de aba), entao um unico
+ * soluco de rede bastava pra piscar "sem conexao" mesmo com o servidor de pe
+ * o tempo todo. Agora so acende se a falha persistir por alguns segundos sem
+ * nenhuma chamada bem-sucedida no meio — e volta pra "online" na hora, assim
+ * que uma passar. */
+let temporizadorOffline = null;
+const ATRASO_OFFLINE_MS = 4000;
+
 export function marcarConexao(online) {
-  if (estado.online === online) return;
-  estado.online = online;
-  document.body.classList.toggle("sem-conexao", !online);
-  avisar("conexao");
+  if (online) {
+    if (temporizadorOffline) {
+      clearTimeout(temporizadorOffline);
+      temporizadorOffline = null;
+    }
+    if (estado.online === true) return;
+    estado.online = true;
+    document.body.classList.toggle("sem-conexao", false);
+    avisar("conexao");
+    return;
+  }
+
+  if (temporizadorOffline || estado.online === false) return;
+  temporizadorOffline = setTimeout(() => {
+    temporizadorOffline = null;
+    estado.online = false;
+    document.body.classList.toggle("sem-conexao", true);
+    avisar("conexao");
+  }, ATRASO_OFFLINE_MS);
 }
 
 /* Cada carregador cuida da propria area. Dividir assim e o que permite o SSE
