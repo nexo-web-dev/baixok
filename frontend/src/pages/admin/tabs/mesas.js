@@ -162,16 +162,21 @@ export function ligarMesas() {
   delegar(alvo, "click", "[data-acao='qr']", (_e, botao) =>
     abrirQrMesa(Number(botao.dataset.n), estado.ajustes.menu_url));
 
-  $("#generate-menu-qr")?.addEventListener("click", () => abrirQrCardapio(estado.ajustes.menu_url));
-
-  $("#menu-url-save")?.addEventListener("click", async () => {
+  /* Um botao so: salva o endereco (se mudou) e ja gera o QR em seguida — sem
+   * isso a pessoa precisava lembrar de salvar antes de gerar, dois passos pra
+   * uma coisa so. */
+  $("#generate-menu-qr")?.addEventListener("click", async () => {
     const erro = $("#menu-url-error");
     if (erro) mostrar(erro, false);
     const valor = $("#menu-url-input")?.value.trim() || "";
+
     try {
-      await apiAjustes.gravar({ menu_url: valor });
-      await carregar("ajustes");
-      toast("Endereço do cardápio salvo. QR novos das mesas já usam esse link.");
+      if (valor && valor !== estado.ajustes.menu_url) {
+        await apiAjustes.gravar({ menu_url: valor });
+        await carregar("ajustes");
+        toast("Endereço do cardápio salvo.");
+      }
+      await abrirQrCardapio(estado.ajustes.menu_url);
     } catch (falha) {
       if (erro) { erro.textContent = falha.message; mostrar(erro, true); }
     }
