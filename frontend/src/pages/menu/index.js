@@ -46,6 +46,29 @@ function comboComoProduto(combo) {
 }
 
 const chaveCombinacao = (idA, idB) => [idA, idB].sort().join("|");
+const fotosPrecarregadas = new Set();
+
+function preCarregarFotos(produtos = []) {
+  const urls = [...new Set(produtos.map(produto => produto?.image).filter(Boolean))];
+  const carregar = url => {
+    if (fotosPrecarregadas.has(url)) return;
+    fotosPrecarregadas.add(url);
+    const imagem = new Image();
+    imagem.decoding = "async";
+    imagem.loading = "eager";
+    imagem.src = url;
+  };
+
+  urls.slice(0, 16).forEach(carregar);
+
+  let indice = 16;
+  function carregarLote() {
+    const limite = Math.min(indice + 6, urls.length);
+    for (; indice < limite; indice += 1) carregar(urls[indice]);
+    if (indice < urls.length) window.setTimeout(carregarLote, 120);
+  }
+  if (indice < urls.length) window.setTimeout(carregarLote, 80);
+}
 
 // ------------------------------------------------------------------ dados ---
 async function carregarCardapio() {
@@ -59,6 +82,7 @@ async function carregarCardapio() {
       (combinacoesSabores || []).map(c => [chaveCombinacao(c.produtoAId, c.produtoBId), c.preco])
     );
     estado.loja = loja || {};
+    preCarregarFotos(estado.produtos);
     return true;
   } catch (erro) {
     estado.produtos = [];

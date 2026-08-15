@@ -44,7 +44,8 @@ export function foto(produto, alt = "") {
     el("img.photo-bg.fit-media-bg", {
       src: produto.image,
       alt: "",
-      loading: "lazy",
+      loading: "eager",
+      fetchpriority: "low",
       decoding: "async",
       "aria-hidden": "true"
     }),
@@ -52,8 +53,9 @@ export function foto(produto, alt = "") {
       onload: marcarProporcaoImagem,
       src: produto.image,
       alt: alt || produto.name || "",
-      loading: "lazy",
-      decoding: "async",
+      loading: "eager",
+      fetchpriority: "high",
+      decoding: "sync",
       onerror: evento => evento.target.closest(".photo-frame")?.replaceWith(semFoto())
     })
   );

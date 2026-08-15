@@ -115,12 +115,14 @@
   body[data-page="menu"] .filter { flex: 0 0 auto; white-space: nowrap; min-height: 40px; }
   body[data-page="menu"] .menu-grid { display: flex; flex-direction: column; gap: 11px; }
   body[data-page="menu"] .product {
-    --product-photo-width: clamp(104px, 30vw, 122px);
-    grid-template-columns: var(--product-photo-width) minmax(0, 1fr);
+    --product-photo-width: clamp(98px, 28vw, 116px);
+    grid-template-columns: calc(var(--product-photo-width) + 12px) minmax(0, 1fr);
+    height: 142px;
     min-height: 138px;
     width: 100%;
     max-width: 100%;
     border-radius: var(--radius-md);
+    align-items: center;
     contain: layout paint;
     content-visibility: visible;
     contain-intrinsic-size: auto;
@@ -128,16 +130,34 @@
   body[data-page="menu"] .product.photo-wide,
   body[data-page="menu"] .product.photo-balanced,
   body[data-page="menu"] .product.photo-tall {
-    --product-photo-width: clamp(104px, 30vw, 122px);
+    --product-photo-width: clamp(98px, 28vw, 116px);
   }
   body[data-page="menu"] .product .photo-frame,
-  body[data-page="menu"] .product img,
   body[data-page="menu"] .product .no-photo {
+    width: var(--product-photo-width);
+    height: var(--product-photo-width);
+    min-height: 0;
+    align-self: center;
+    justify-self: center;
+    object-position: center;
+    border-radius: var(--radius-sm);
+  }
+  body[data-page="menu"] .product img {
     width: 100%;
     height: 100%;
-    min-height: 138px;
+    min-height: 0;
     object-position: center;
-    border-radius: var(--radius-md) 0 0 var(--radius-md);
+    border-radius: inherit;
+  }
+  body[data-page="menu"] .product .photo-frame > .photo-bg {
+    display: none;
+  }
+  body[data-page="menu"] .product .photo-frame::after {
+    display: none;
+  }
+  body[data-page="menu"] .product .photo-frame > .photo-main {
+    padding: 6px;
+    object-fit: contain !important;
   }
   body[data-page="menu"] .product .badge, body[data-page="menu"] .product .stock-chip { display: none; }
   body[data-page="menu"] .product-body { min-width: 0; padding: 13px 58px 13px 13px; gap: 5px; }
