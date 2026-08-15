@@ -89,7 +89,7 @@ const schema = z.object({
   LIMITE_LOGIN: z.coerce.number().int().min(1).default(10),
   LIMITE_PEDIDO: z.coerce.number().int().min(1).default(20),
   LIMITE_GEOCODIFICACAO: z.coerce.number().int().min(1).default(120),
-  LIMITE_GERAL: z.coerce.number().int().min(1).default(300),
+  LIMITE_GERAL: z.coerce.number().int().min(1).default(3000),
 
   /* Usado so pelo `npm run seed` para criar o primeiro administrador. */
   ADMIN_BOOTSTRAP_USER: z.string().min(3).default("admin"),

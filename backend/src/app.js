@@ -79,8 +79,8 @@ export function criarApp() {
    * que o schema ja limita em 500 KB. O antigo aceitava 5 MB em qualquer rota. */
   app.use(express.json({ limit: "1mb" }));
   app.use(cookieParser());
-  app.use(limiteGeral);
   app.use(carregarSessao);
+  app.use("/api", limiteGeral);
   app.use(exigirCsrf);
 
   app.use("/api", rotasApi);
