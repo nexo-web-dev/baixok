@@ -53,21 +53,36 @@ export const produtosService = {
   async cardapioPublico() {
     /* As duas consultas nao dependem uma da outra: em paralelo, o cardapio custa
      * uma ida ao banco em vez de duas em fila. */
-    const [promos, produtos] = await Promise.all([
+    const [promos, brindes, produtos] = await Promise.all([
       promocoesRepo.listarPublico(),
+      promocoesRepo.listarBrindesPublico(),
       produtosRepo.listarPublico()
     ]);
     const promocoes = new Map(promos.map(promo => [promo.productId, promo.price]));
+    const produtosPorId = new Map(produtos.map(produto => [produto.id, produto]));
+    const brindesPorProduto = new Map(brindes.map(brinde => [brinde.buyProductId, brinde]));
 
     return produtos
       .filter(produto => !controlaEstoqueCategoria(produto.category) || produto.stock > 0)
-      .map(({ stock: _stock, ...produto }) => ({
-        ...produto,
-        disponivel: true,
-        precoOriginal: promocoes.has(produto.id) ? produto.price : null,
-        price: promocoes.get(produto.id) ?? produto.price,
-        emPromocao: promocoes.has(produto.id)
-      }));
+      .map(({ stock: _stock, ...produto }) => {
+        const brinde = brindesPorProduto.get(produto.id);
+        const produtoBrinde = brinde ? produtosPorId.get(brinde.giftProductId) : null;
+
+        return {
+          ...produto,
+          disponivel: true,
+          precoOriginal: promocoes.has(produto.id) ? produto.price : null,
+          price: promocoes.get(produto.id) ?? produto.price,
+          emPromocao: promocoes.has(produto.id),
+          brindePromocional: brinde && produtoBrinde ? {
+            buyQty: brinde.buyQty,
+            giftQty: brinde.giftQty,
+            giftProductId: brinde.giftProductId,
+            giftName: produtoBrinde.name,
+            until: brinde.until
+          } : null
+        };
+      });
   },
 
   async buscar(id) {
@@ -211,6 +226,7 @@ export const produtosService = {
 
 export const promocoesService = {
   listar: () => promocoesRepo.listar(),
+  listarBrindes: () => promocoesRepo.listarBrindes(),
 
   async salvar(dados, { usuario, ip }) {
     const produto = await produtosRepo.buscar(dados.productId);
@@ -242,6 +258,40 @@ export const promocoesService = {
     await auditoriaRepo.registrar({
       usuarioId: usuario.id, usuario: usuario.usuario, acao: "promocao_encerrada",
       entidade: "promocao", entidadeId: id, ip
+    });
+    publicar("promocoes", [CANAL.PUBLICO, CANAL.OPERACAO]);
+  },
+
+  async salvarBrinde(dados, { usuario, ip }) {
+    const [produtoCompra, produtoBrinde] = await Promise.all([
+      produtosRepo.buscar(dados.buyProductId),
+      produtosRepo.buscar(dados.giftProductId)
+    ]);
+    if (!produtoCompra) throw naoEncontrado("Produto de compra nao encontrado.");
+    if (!produtoBrinde) throw naoEncontrado("Produto de brinde nao encontrado.");
+
+    const brinde = await promocoesRepo.salvarBrinde({ ...dados, id: uid("brinde") });
+    await auditoriaRepo.registrar({
+      usuarioId: usuario.id, usuario: usuario.usuario, acao: "promocao_brinde_salva",
+      entidade: "promocao_brinde", entidadeId: brinde.id,
+      detalhes: {
+        comprando: produtoCompra.name,
+        quantidadeCompra: brinde.buyQty,
+        ganha: produtoBrinde.name,
+        quantidadeBrinde: brinde.giftQty,
+        ate: brinde.until || ""
+      },
+      ip
+    });
+    publicar("promocoes", [CANAL.PUBLICO, CANAL.OPERACAO]);
+    return brinde;
+  },
+
+  async removerBrinde(id, { usuario, ip }) {
+    if (!(await promocoesRepo.removerBrinde(id))) throw naoEncontrado("Promocao leve e ganhe nao encontrada.");
+    await auditoriaRepo.registrar({
+      usuarioId: usuario.id, usuario: usuario.usuario, acao: "promocao_brinde_encerrada",
+      entidade: "promocao_brinde", entidadeId: id, ip
     });
     publicar("promocoes", [CANAL.PUBLICO, CANAL.OPERACAO]);
   }

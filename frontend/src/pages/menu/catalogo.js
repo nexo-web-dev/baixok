@@ -67,6 +67,9 @@ function cartaoProduto(produto, { lojaAberta = true } = {}) {
     el("div.product-body", {},
       el("strong", {}, produto.name),
       el("p", {}, produto.description || ""),
+      produto.brindePromocional
+        ? el("span.product-gift", {}, `Leve ${produto.brindePromocional.buyQty} e ganhe ${produto.brindePromocional.giftQty} ${produto.brindePromocional.giftName}`)
+        : null,
       el("div.price-row", {},
         el("span", {},
           promocional ? el("s", {}, reais(produto.precoOriginal)) : null,

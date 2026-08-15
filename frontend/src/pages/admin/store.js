@@ -21,6 +21,7 @@ export const estado = {
   produtos: [],
   insumos: [],
   promocoes: [],
+  brindesPromocionais: [],
   cupons: [],
   combos: [],
   combinacoesSabores: [],
@@ -62,7 +63,9 @@ const carregadores = {
     estado.insumos = (await apiInsumos.listar()).insumos;
   },
   async promocoes() {
-    estado.promocoes = (await apiPromocoes.listar()).promocoes;
+    const dados = await apiPromocoes.listar();
+    estado.promocoes = dados.promocoes || [];
+    estado.brindesPromocionais = dados.brindes || [];
   },
   async cupons() {
     /* So admin ve cupons. Para caixa e cozinha a rota responde 403, e a lista

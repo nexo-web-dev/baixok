@@ -41,7 +41,7 @@ function comboComoProduto(combo) {
     id: combo.id, name: combo.name, description: combo.description,
     price: combo.price, image: combo.image, category: "combos", badge: "Combo",
     active: combo.active, saborPizza: false, disponivel: true,
-    emPromocao: false, precoOriginal: null, __combo: true
+    emPromocao: false, precoOriginal: null, brindePromocional: null, __combo: true
   };
 }
 

@@ -63,7 +63,9 @@ export const apiInsumos = {
 export const apiPromocoes = {
   listar: () => http.get("/painel/promocoes"),
   salvar: promocao => http.post("/painel/promocoes", promocao),
-  remover: id => http.delete(`/painel/promocoes/${id}`)
+  remover: id => http.delete(`/painel/promocoes/${id}`),
+  salvarBrinde: regra => http.post("/painel/promocoes/brindes", regra),
+  removerBrinde: id => http.delete(`/painel/promocoes/brindes/${id}`)
 };
 
 export const apiCupons = {

@@ -20,7 +20,7 @@ import {
 import { abrirCaixaSchema, fecharCaixaSchema, listarFechamentosSchema } from "../schemas/caixa.schema.js";
 import {
   produtoSchema, ajusteEstoqueSchema, reordenarProdutoSchema, reordenarProdutosSchema, promocaoSchema, cupomSchema,
-  comboSchema, combinacaoSaborSchema
+  promocaoBrindeSchema, comboSchema, combinacaoSaborSchema
 } from "../schemas/catalogo.schema.js";
 import { insumoSchema, ajusteInsumoSchema } from "../schemas/insumo.schema.js";
 import { configEntregaSchema } from "../schemas/entrega.schema.js";
@@ -98,6 +98,8 @@ rotasPainel.delete("/insumos/:id", EDIT_ESTOQUE, validarParams(paramsId), insumo
 // -------------------------------------------------------- promocoes e cupons ---
 rotasPainel.get("/promocoes", ADMIN, promocoesController.listar);
 rotasPainel.post("/promocoes", ADMIN, validarCorpo(promocaoSchema), promocoesController.salvar);
+rotasPainel.post("/promocoes/brindes", ADMIN, validarCorpo(promocaoBrindeSchema), promocoesController.salvarBrinde);
+rotasPainel.delete("/promocoes/brindes/:id", ADMIN, validarParams(paramsId), promocoesController.removerBrinde);
 rotasPainel.delete("/promocoes/:id", ADMIN, validarParams(paramsId), promocoesController.remover);
 rotasPainel.get("/cupons", ADMIN, cuponsController.listar);
 rotasPainel.post("/cupons", ADMIN, validarCorpo(cupomSchema), cuponsController.criar);

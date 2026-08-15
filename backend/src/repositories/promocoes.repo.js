@@ -1,5 +1,5 @@
 /* Acesso a tabela `promocoes`. Uma por produto, garantido pelo UNIQUE. */
-import { todos, um, alteradas } from "../db/postgres.js";
+import { todos, um, alteradas, doBanco, paraBanco } from "../db/postgres.js";
 
 const paraApi = linha => linha && ({
   id: linha.id,
@@ -9,9 +9,24 @@ const paraApi = linha => linha && ({
   createdAt: linha.criado_em
 });
 
+const paraApiBrinde = linha => linha && ({
+  id: linha.id,
+  buyProductId: linha.produto_compra_id,
+  giftProductId: linha.produto_brinde_id,
+  buyQty: linha.quantidade_compra,
+  giftQty: linha.quantidade_brinde,
+  until: linha.ate,
+  active: doBanco(linha.ativo),
+  createdAt: linha.criado_em
+});
+
 export const promocoesRepo = {
   async listar() {
     return (await todos("SELECT * FROM promocoes ORDER BY criado_em DESC")).map(paraApi);
+  },
+
+  async listarBrindes() {
+    return (await todos("SELECT * FROM promocoes_brindes ORDER BY criado_em DESC")).map(paraApiBrinde);
   },
 
   /* Cardapio publico: o preco promocional ja e aplicado na vitrine, entao o
@@ -19,6 +34,15 @@ export const promocoesRepo = {
   async listarPublico() {
     const linhas = await todos("SELECT produto_id, preco FROM promocoes");
     return linhas.map(linha => ({ productId: linha.produto_id, price: linha.preco }));
+  },
+
+  async listarBrindesPublico() {
+    return (await todos(`
+      SELECT id, produto_compra_id, produto_brinde_id, quantidade_compra, quantidade_brinde, ate, ativo, criado_em
+      FROM promocoes_brindes
+      WHERE ativo = 1
+      ORDER BY criado_em DESC
+    `)).map(paraApiBrinde);
   },
 
   async buscarPorProduto(produtoId) {
@@ -36,7 +60,27 @@ export const promocoesRepo = {
     `, [id, productId, price, until]));
   },
 
+  async salvarBrinde({ id, buyProductId, giftProductId, buyQty = 1, giftQty = 1, until = "", active = true }) {
+    return paraApiBrinde(await um(`
+      INSERT INTO promocoes_brindes (
+        id, produto_compra_id, produto_brinde_id, quantidade_compra, quantidade_brinde, ate, ativo
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT (produto_compra_id, produto_brinde_id) DO UPDATE SET
+        quantidade_compra = excluded.quantidade_compra,
+        quantidade_brinde = excluded.quantidade_brinde,
+        ate = excluded.ate,
+        ativo = excluded.ativo,
+        atualizado_em = CURRENT_TIMESTAMP
+      RETURNING *
+    `, [id, buyProductId, giftProductId, buyQty, giftQty, until, paraBanco(active)]));
+  },
+
   async remover(id) {
     return (await alteradas("DELETE FROM promocoes WHERE id = ?", [id])) > 0;
+  },
+
+  async removerBrinde(id) {
+    return (await alteradas("DELETE FROM promocoes_brindes WHERE id = ?", [id])) > 0;
   }
 };

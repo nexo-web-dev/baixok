@@ -89,6 +89,18 @@ export const promocaoSchema = z.object({
   until: texto(20)
 }).strict();
 
+export const promocaoBrindeSchema = z.object({
+  buyProductId: idTexto,
+  giftProductId: idTexto,
+  buyQty: z.coerce.number().int().min(1).max(99).default(1),
+  giftQty: z.coerce.number().int().min(1).max(99).default(1),
+  until: texto(20),
+  active: z.boolean().default(true)
+}).strict().refine(
+  dados => dados.buyProductId !== dados.giftProductId,
+  { message: "Escolha produtos diferentes para compra e brinde.", path: ["giftProductId"] }
+);
+
 export const cupomSchema = z.object({
   code: z
     .string().trim().toUpperCase()

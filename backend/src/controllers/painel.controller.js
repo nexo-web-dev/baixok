@@ -148,13 +148,24 @@ export const combinacoesSaboresController = {
 
 export const promocoesController = {
   async listar(_req, res) {
-    res.json({ promocoes: await promocoesService.listar() });
+    const [promocoes, brindes] = await Promise.all([
+      promocoesService.listar(),
+      promocoesService.listarBrindes()
+    ]);
+    res.json({ promocoes, brindes });
   },
   async salvar(req, res) {
     res.status(201).json({ promocao: await promocoesService.salvar(req.validado.body, contexto(req)) });
   },
+  async salvarBrinde(req, res) {
+    res.status(201).json({ brinde: await promocoesService.salvarBrinde(req.validado.body, contexto(req)) });
+  },
   async remover(req, res) {
     await promocoesService.remover(req.validado.params.id, contexto(req));
+    res.json({ ok: true });
+  },
+  async removerBrinde(req, res) {
+    await promocoesService.removerBrinde(req.validado.params.id, contexto(req));
     res.json({ ok: true });
   }
 };

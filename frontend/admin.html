@@ -230,6 +230,39 @@
         </section>
 
         <section class="panel">
+          <h2>Leve e ganhe</h2>
+          <p class="small faint">Crie regras como: levando 2 pizzas, ganha 1 refrigerante. A regra aparece no cardapio junto do produto principal.</p>
+          <div class="promo-list" id="gift-promo-list"></div>
+          <div class="panel-divider">
+            <strong class="field-label gold">Nova regra</strong>
+            <div class="field-row">
+              <label class="field-stack">
+                <span>Levando</span>
+                <input id="gift-buy-qty" type="number" min="1" max="99" value="1" inputmode="numeric">
+              </label>
+              <label class="field-stack">
+                <span>Produto comprado</span>
+                <select id="gift-buy-product" aria-label="Produto que ativa o brinde"></select>
+              </label>
+            </div>
+            <div class="field-row">
+              <label class="field-stack">
+                <span>Ganha</span>
+                <input id="gift-free-qty" type="number" min="1" max="99" value="1" inputmode="numeric">
+              </label>
+              <label class="field-stack">
+                <span>Produto de brinde</span>
+                <select id="gift-free-product" aria-label="Produto dado como brinde"></select>
+              </label>
+            </div>
+            <div class="gift-product-preview" id="gift-product-preview"></div>
+            <input id="gift-until" placeholder="Valida ate (ex: 10/08)" maxlength="20">
+            <p class="form-error hidden" id="gift-error" role="alert"></p>
+            <button class="primary wide" type="button" id="save-gift-promo">Salvar leve e ganhe</button>
+          </div>
+        </section>
+
+        <section class="panel">
           <h2>Cupons</h2>
           <div class="coupon-list" id="coupon-list"></div>
           <div class="panel-divider">

@@ -187,6 +187,18 @@ body.cart-open .shop-layout { padding-right: calc(var(--cart-width) + 18px); }
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
 }
 .product .stock-chip { width: max-content; max-width: 100%; padding: 3px 9px; border: 1px solid rgba(217,154,104,.3); border-radius: var(--radius-pill); color: var(--muted-2); font-size: .74rem; font-weight: 700; }
+.product-gift {
+  display: inline-flex;
+  width: max-content;
+  max-width: 100%;
+  padding: 6px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(214,118,62,.16);
+  color: var(--gold);
+  font-size: .74rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
 .price-row, .totals, .order-top, .order-meta { display: flex; justify-content: space-between; gap: 10px; align-items: center; min-width: 0; }
 .product .price-row { flex-wrap: wrap; }
 .product .price-row span { color: var(--gold); font-size: 1rem; font-weight: 800; }
