@@ -516,6 +516,28 @@
     </div>
   </div>
 
+  <div class="modal hidden" id="order-delete-modal" role="dialog" aria-modal="true" aria-labelledby="order-delete-title">
+    <div class="modal-card order-delete-card">
+      <div class="order-detail-head">
+        <div>
+          <span class="eyebrow">Apagar pedido</span>
+          <h2 id="order-delete-title">Confirmar exclusão</h2>
+          <p>Isso apaga o pedido de vez, não é como cancelar. Confirme com sua senha de administrador.</p>
+        </div>
+        <button class="icon-close" type="button" id="order-delete-close" aria-label="Fechar">×</button>
+      </div>
+      <label>
+        Senha do administrador
+        <input id="order-delete-password" type="password" autocomplete="current-password" placeholder="Sua senha">
+      </label>
+      <p class="form-error hidden" id="order-delete-error" role="alert"></p>
+      <div class="order-detail-actions">
+        <button class="secondary" type="button" id="order-delete-cancel">Cancelar</button>
+        <button class="danger" type="button" id="order-delete-confirm">Apagar pedido</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal hidden" id="manual-modal" role="dialog" aria-modal="true" aria-labelledby="manual-title">
     <div class="modal-card">
       <div>

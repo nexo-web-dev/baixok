@@ -52,6 +52,10 @@ export const pedidosController = {
   async marcarImpresso(req, res) {
     await pedidosService.marcarImpresso(req.validado.params.id);
     res.json({ ok: true });
+  },
+  async remover(req, res) {
+    await pedidosService.remover(req.validado.params.id, req.validado.body, contexto(req));
+    res.json({ ok: true });
   }
 };
 
