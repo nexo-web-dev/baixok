@@ -75,10 +75,11 @@ export const reordenarProdutosSchema = z.object({
 
 export const ajusteEstoqueSchema = z.object({
   delta: z.coerce.number().int().min(-9999).max(9999).optional(),
-  valor: z.coerce.number().int().min(0).max(99999).optional()
+  valor: z.coerce.number().int().min(0).max(99999).optional(),
+  minStock: z.coerce.number().int().min(0).max(9999).optional()
 }).refine(
-  dados => dados.delta !== undefined || dados.valor !== undefined,
-  "Informe delta ou valor."
+  dados => dados.delta !== undefined || dados.valor !== undefined || dados.minStock !== undefined,
+  "Informe delta, valor ou minStock."
 );
 
 /* A regra "promocional < preco cheio" nao cabe aqui: o schema nao conhece o

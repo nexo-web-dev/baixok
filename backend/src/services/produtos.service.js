@@ -60,13 +60,32 @@ export const produtosService = {
     ]);
     const promocoes = new Map(promos.map(promo => [promo.productId, promo.price]));
     const produtosPorId = new Map(produtos.map(produto => [produto.id, produto]));
-    const brindesPorProduto = new Map(brindes.map(brinde => [brinde.buyProductId, brinde]));
+    /* Uma regra "leve e ganhe" e uma linha por par (produto comprado, produto
+     * de brinde), entao um mesmo produto comprado pode ter varias regras —
+     * uma pessoa levando 2 pizzas pode ganhar tanto um refrigerante quanto
+     * uma batata, por exemplo. Por isso agrupa em lista, nao um unico valor. */
+    const brindesPorProduto = new Map();
+    for (const brinde of brindes) {
+      const lista = brindesPorProduto.get(brinde.buyProductId) || [];
+      lista.push(brinde);
+      brindesPorProduto.set(brinde.buyProductId, lista);
+    }
 
     return produtos
       .filter(produto => !controlaEstoqueCategoria(produto.category) || produto.stock > 0)
       .map(({ stock: _stock, ...produto }) => {
-        const brinde = brindesPorProduto.get(produto.id);
-        const produtoBrinde = brinde ? produtosPorId.get(brinde.giftProductId) : null;
+        const brindesPromocionais = (brindesPorProduto.get(produto.id) || [])
+          .map(brinde => {
+            const produtoBrinde = produtosPorId.get(brinde.giftProductId);
+            return produtoBrinde ? {
+              buyQty: brinde.buyQty,
+              giftQty: brinde.giftQty,
+              giftProductId: brinde.giftProductId,
+              giftName: produtoBrinde.name,
+              until: brinde.until
+            } : null;
+          })
+          .filter(Boolean);
 
         return {
           ...produto,
@@ -74,13 +93,7 @@ export const produtosService = {
           precoOriginal: promocoes.has(produto.id) ? produto.price : null,
           price: promocoes.get(produto.id) ?? produto.price,
           emPromocao: promocoes.has(produto.id),
-          brindePromocional: brinde && produtoBrinde ? {
-            buyQty: brinde.buyQty,
-            giftQty: brinde.giftQty,
-            giftProductId: brinde.giftProductId,
-            giftName: produtoBrinde.name,
-            until: brinde.until
-          } : null
+          brindesPromocionais
         };
       });
   },
@@ -205,19 +218,24 @@ export const produtosService = {
     return produto;
   },
 
-  async ajustarEstoque(id, { delta, valor }, { usuario, ip }) {
+  async ajustarEstoque(id, { delta, valor, minStock }, { usuario, ip }) {
     const anterior = await this.buscar(id);
     if (!controlaEstoqueCategoria(anterior.category)) {
       throw new ErroApp("Estoque operacional e usado apenas para bebidas, refrigerantes e drinks.", 422, "estoque_nao_controlado");
     }
-    const produto = valor !== undefined
-      ? await produtosRepo.definirEstoque(id, valor)
-      : await produtosRepo.ajustarEstoque(id, delta);
+
+    let produto = anterior;
+    if (valor !== undefined) produto = await produtosRepo.definirEstoque(id, valor);
+    else if (delta !== undefined) produto = await produtosRepo.ajustarEstoque(id, delta);
+    if (minStock !== undefined) produto = await produtosRepo.definirEstoqueMinimo(id, minStock);
 
     await auditoriaRepo.registrar({
       usuarioId: usuario.id, usuario: usuario.usuario, acao: "estoque_ajustado",
       entidade: "produto", entidadeId: id,
-      detalhes: { de: anterior.stock, para: produto.stock, nome: produto.name }, ip
+      detalhes: {
+        de: anterior.stock, para: produto.stock,
+        minimoDe: anterior.minStock, minimoPara: produto.minStock, nome: produto.name
+      }, ip
     });
     publicar("produtos", [CANAL.PUBLICO, CANAL.OPERACAO]);
     return produto;

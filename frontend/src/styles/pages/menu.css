@@ -187,6 +187,7 @@ body.cart-open .shop-layout { padding-right: calc(var(--cart-width) + 18px); }
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
 }
 .product .stock-chip { width: max-content; max-width: 100%; padding: 3px 9px; border: 1px solid rgba(217,154,104,.3); border-radius: var(--radius-pill); color: var(--muted-2); font-size: .74rem; font-weight: 700; }
+.product-gifts { display: flex; flex-direction: column; gap: 6px; }
 .product-gift {
   display: inline-flex;
   width: max-content;

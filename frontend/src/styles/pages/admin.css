@@ -327,19 +327,17 @@
   display: grid; grid-template-columns: 74px minmax(0, 1fr) auto; gap: 12px; align-items: center;
   padding: 10px; border-radius: var(--radius-sm); background: var(--panel); border: 1px solid var(--line-soft);
   transition: border-color .16s ease, background .16s ease, transform .16s ease, opacity .16s ease;
+  cursor: grab;
+  touch-action: pan-y;
 }
+.admin-product-card .row-actions button { cursor: pointer; }
 .admin-product-card.is-dragging {
+  cursor: grabbing;
   opacity: .76;
   border-color: var(--gold);
   background: rgba(217,154,104,.12);
   transform: scale(.995);
 }
-.drag-handle {
-  cursor: grab;
-  touch-action: none;
-  user-select: none;
-}
-.drag-handle:active { cursor: grabbing; }
 .admin-product-thumb { width: 74px; height: 74px; overflow: hidden; border-radius: 14px; background: var(--soft); }
 .admin-product-thumb .fit-media,
 .admin-product-thumb img,
@@ -434,6 +432,9 @@
 .promo-product-info small { font-size: .7rem; font-weight: 800; }
 .field-stack { display: grid; gap: 6px; min-width: 0; width: 100%; }
 .field-stack span { color: var(--muted); font-size: .72rem; font-weight: 800; text-transform: uppercase; }
+.gift-free-items { display: grid; gap: 8px; }
+.gift-free-item { align-items: end; }
+.gift-free-item .gift-remove-item { flex: none; }
 .gift-product-preview {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -586,6 +587,14 @@
 .stock-card .counter { display: grid; grid-template-columns: 38px minmax(0, 1fr) 38px; gap: 8px; margin-top: 10px; padding: 0; background: transparent; border: 0; border-radius: 0; }
 .stock-card .counter button { display: grid; place-items: center; min-height: 38px; border-radius: var(--radius-pill); border: 1px solid var(--line); color: var(--gold); background: var(--soft); font-weight: 800; }
 .stock-card .counter input { min-height: 38px; padding-inline: 10px; text-align: center; border-radius: var(--radius-pill); }
+.stock-min-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.stock-min-row span { color: var(--muted); font-size: .72rem; }
+.stock-min-input {
+  width: 60px; min-height: 30px; padding-inline: 6px; text-align: center;
+  border-radius: var(--radius-pill); border: 1px solid var(--line); background: var(--soft); color: inherit;
+}
+.stock-card.low .stock-min-input { border-color: rgba(255,230,220,.28); background: rgba(0,0,0,.2); color: #fff; }
+.stock-card.low .stock-min-row span { color: #fff2e8; }
 .stock-line { display: flex; align-items: baseline; gap: 8px; margin-top: 10px; }
 .stock-number { color: var(--gold-light); font-family: var(--font-head); font-weight: 800; font-size: 1.9rem; line-height: 1; }
 .stock-card.low .stock-number, .stock-card.low .stock-line em { color: var(--danger); }

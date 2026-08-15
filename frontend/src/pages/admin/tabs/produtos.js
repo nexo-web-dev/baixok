@@ -198,7 +198,7 @@ function cardProduto(produto) {
   const controlaEstoque = controlaEstoqueCategoria(produto.category);
   const semEstoque = controlaEstoque && produto.stock <= 0;
 
-  return el("article.admin-product-card", { draggable: true, dataset: { id: produto.id } },
+  return el("article.admin-product-card", { draggable: true, title: "Segure e arraste para mudar a ordem", dataset: { id: produto.id } },
     el("div.admin-product-thumb", {}, fotoProdutoAdmin(produto)),
     el("div.admin-product-main", {},
       el("div.admin-product-title", {},
@@ -223,11 +223,6 @@ function cardProduto(produto) {
       )
     ),
     el("div.row-actions", { class: "right" },
-      el("button.ghost.small.drag-handle", {
-        type: "button",
-        title: "Arraste para mudar a ordem",
-        dataset: { acao: "arrastar-ordem", id: produto.id }
-      }, "Arrastar"),
       el("button.ghost.small", { type: "button", title: "Subir no cardápio", dataset: { acao: "mover-ordem", id: produto.id, direction: "up" } }, "Subir"),
       el("button.ghost.small", { type: "button", title: "Descer no cardápio", dataset: { acao: "mover-ordem", id: produto.id, direction: "down" } }, "Descer"),
       el("button.ghost.small", { type: "button", dataset: { acao: "editar", id: produto.id } }, "Editar"),
@@ -305,6 +300,12 @@ function ligarArrastarProdutos(lista) {
 
   let arrastando = null;
   let grupoAtual = null;
+  let temporizadorPressionar = null;
+  let pressaoCard = null;
+  let pressaoGrupo = null;
+  let pressaoInicio = null;
+  const LIMIAR_MOVIMENTO_PX = 10;
+  const TEMPO_PRESSIONAR_MS = 300;
 
   const cardMaisProximo = (grupo, y) => {
     const cards = [...grupo.querySelectorAll(".admin-product-card:not(.is-dragging)")];
@@ -324,8 +325,8 @@ function ligarArrastarProdutos(lista) {
 
   lista.addEventListener("dragstart", evento => {
     const card = evento.target.closest(".admin-product-card");
-    const handle = evento.target.closest(".drag-handle");
-    if (!card || !handle) {
+    const controle = evento.target.closest("button, a, input, select, textarea");
+    if (!card || controle) {
       evento.preventDefault();
       return;
     }
@@ -351,24 +352,49 @@ function ligarArrastarProdutos(lista) {
     if (grupo) await salvarOrdemVisivel(grupo);
   });
 
+  const cancelarPressao = () => {
+    if (temporizadorPressionar) clearTimeout(temporizadorPressionar);
+    temporizadorPressionar = null;
+    pressaoCard = null;
+    pressaoGrupo = null;
+    pressaoInicio = null;
+  };
+
   lista.addEventListener("pointerdown", evento => {
     const card = evento.target.closest(".admin-product-card");
-    const handle = evento.target.closest(".drag-handle");
-    if (!card || !handle || evento.pointerType === "mouse") return;
-    arrastando = card;
-    grupoAtual = card.closest(".product-category-list");
-    card.classList.add("is-dragging");
-    card.setPointerCapture?.(evento.pointerId);
-    evento.preventDefault();
-  }, { passive: false });
+    const controle = evento.target.closest("button, a, input, select, textarea");
+    if (!card || controle || evento.pointerType === "mouse") return;
+
+    pressaoCard = card;
+    pressaoGrupo = card.closest(".product-category-list");
+    pressaoInicio = { x: evento.clientX, y: evento.clientY, pointerId: evento.pointerId };
+    temporizadorPressionar = setTimeout(() => {
+      temporizadorPressionar = null;
+      arrastando = pressaoCard;
+      grupoAtual = pressaoGrupo;
+      arrastando.classList.add("is-dragging");
+      arrastando.setPointerCapture?.(pressaoInicio.pointerId);
+    }, TEMPO_PRESSIONAR_MS);
+  }, { passive: true });
 
   lista.addEventListener("pointermove", evento => {
-    if (!arrastando || !grupoAtual || evento.pointerType === "mouse") return;
-    moverNoGrupo(evento.clientY);
-    evento.preventDefault();
+    if (evento.pointerType === "mouse") return;
+
+    if (arrastando && grupoAtual) {
+      moverNoGrupo(evento.clientY);
+      evento.preventDefault();
+      return;
+    }
+
+    if (temporizadorPressionar && pressaoInicio) {
+      const dx = evento.clientX - pressaoInicio.x;
+      const dy = evento.clientY - pressaoInicio.y;
+      if (Math.hypot(dx, dy) > LIMIAR_MOVIMENTO_PX) cancelarPressao();
+    }
   }, { passive: false });
 
   const finalizarPonteiro = async evento => {
+    cancelarPressao();
     if (!arrastando || !grupoAtual || evento.pointerType === "mouse") return;
     const grupo = grupoAtual;
     arrastando.classList.remove("is-dragging");

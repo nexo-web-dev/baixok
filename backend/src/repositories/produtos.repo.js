@@ -267,6 +267,13 @@ export const produtosRepo = {
     `, [Math.max(0, quantidade), id]));
   },
 
+  async definirEstoqueMinimo(id, minimo) {
+    return paraApi(await um(`
+      UPDATE produtos SET estoque_min = ?, atualizado_em = now() WHERE id = ?
+      RETURNING *
+    `, [Math.max(0, minimo), id]));
+  },
+
   /* Usados dentro da transacao de pedido. O WHERE estoque >= ? faz a baixa e a
    * conferencia virarem um passo so: se outro pedido levou o ultimo item entre
    * uma coisa e outra, `alteradas` volta 0 e a transacao inteira e desfeita.

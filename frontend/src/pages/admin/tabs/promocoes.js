@@ -3,7 +3,7 @@
  * A lista de cupons so existe aqui, e a rota que a alimenta exige papel admin.
  * No sistema antigo ela vinha junto do estado publico e qualquer visitante do
  * cardapio conseguia ler todos os codigos no devtools. */
-import { el, render, $, delegar, mostrar } from "../../../utils/dom.js";
+import { el, render, $, $$, delegar, mostrar } from "../../../utils/dom.js";
 import { reais, paraNumero } from "../../../utils/formato.js";
 import { rotuloCategoria } from "../../../utils/categorias.js";
 import { apiPromocoes, apiCupons } from "../../../services/api.js";
@@ -123,12 +123,75 @@ function cardProdutoPreview(produto, titulo) {
   );
 }
 
+/* Uma regra pode dar mais de um produto de brinde: a lista de itens abaixo do
+ * "Levando" cresce com o botao "+ Adicionar produto de brinde". Cada item vira
+ * uma chamada separada ao salvar, ja que o backend guarda uma linha por par
+ * (produto comprado, produto de brinde). */
+let proximoItemBrindeId = 1;
+
+function itensBrindeContainer() {
+  return $("#gift-free-items");
+}
+
+function linhaItemBrinde(id) {
+  const select = el("select.gift-free-product", { "aria-label": "Produto dado como brinde" });
+  preencherSelectProdutos(select);
+  return el("div.field-row.gift-free-item", { dataset: { itemId: String(id) } },
+    el("label.field-stack", {},
+      el("span", {}, "Ganha"),
+      el("input.gift-free-qty", { type: "number", min: "1", max: "99", value: "1", inputmode: "numeric" })
+    ),
+    el("label.field-stack", {},
+      el("span", {}, "Produto de brinde"),
+      select
+    ),
+    el("button.ghost.small.gift-remove-item", {
+      type: "button", title: "Remover produto de brinde", dataset: { acao: "remover-item-brinde" }
+    }, "Remover")
+  );
+}
+
+function atualizarBotoesRemoverItemBrinde() {
+  const linhas = $$(".gift-free-item", itensBrindeContainer());
+  for (const linha of linhas) mostrar(linha.querySelector(".gift-remove-item"), linhas.length > 1);
+}
+
+function adicionarItemBrinde() {
+  const lista = itensBrindeContainer();
+  if (!lista) return;
+  lista.appendChild(linhaItemBrinde(proximoItemBrindeId++));
+  atualizarBotoesRemoverItemBrinde();
+  desenharPreviewBrinde();
+}
+
+function garantirItemBrindeInicial() {
+  const lista = itensBrindeContainer();
+  if (!lista) return;
+  if (!lista.querySelector(".gift-free-item")) lista.appendChild(linhaItemBrinde(proximoItemBrindeId++));
+  atualizarBotoesRemoverItemBrinde();
+}
+
+function reiniciarItensBrinde() {
+  const lista = itensBrindeContainer();
+  if (!lista) return;
+  render(lista);
+  lista.appendChild(linhaItemBrinde(proximoItemBrindeId++));
+  atualizarBotoesRemoverItemBrinde();
+}
+
+function itensBrindeDoFormulario() {
+  return $$(".gift-free-item", itensBrindeContainer()).map(linha => ({
+    giftProductId: linha.querySelector(".gift-free-product")?.value || "",
+    giftQty: Math.max(1, Math.floor(Number(linha.querySelector(".gift-free-qty")?.value || 1)))
+  }));
+}
+
 function desenharPreviewBrinde() {
   const alvo = $("#gift-product-preview");
   if (!alvo) return;
   render(alvo,
     cardProdutoPreview(produtoPorId($("#gift-buy-product")?.value), "Produto comprado"),
-    cardProdutoPreview(produtoPorId($("#gift-free-product")?.value), "Produto de brinde")
+    ...itensBrindeDoFormulario().map(item => cardProdutoPreview(produtoPorId(item.giftProductId), "Produto de brinde"))
   );
 }
 
@@ -171,7 +234,8 @@ export function desenharPromocoes() {
   }
 
   preencherSelectProdutos($("#gift-buy-product"));
-  preencherSelectProdutos($("#gift-free-product"));
+  garantirItemBrindeInicial();
+  for (const select of $$(".gift-free-product", itensBrindeContainer())) preencherSelectProdutos(select);
   desenharPreviewBrinde();
   desenharBrindes();
 
@@ -272,7 +336,13 @@ export function ligarPromocoes() {
 
   $("#promo-product")?.addEventListener("change", desenharPreviewPromocao);
   $("#gift-buy-product")?.addEventListener("change", desenharPreviewBrinde);
-  $("#gift-free-product")?.addEventListener("change", desenharPreviewBrinde);
+  $("#gift-add-free-item")?.addEventListener("click", adicionarItemBrinde);
+  delegar($("#gift-free-items"), "change", ".gift-free-product", desenharPreviewBrinde);
+  delegar($("#gift-free-items"), "click", "[data-acao='remover-item-brinde']", (_e, botao) => {
+    botao.closest(".gift-free-item")?.remove();
+    atualizarBotoesRemoverItemBrinde();
+    desenharPreviewBrinde();
+  });
 
   $("#save-promo")?.addEventListener("click", async () => {
     erroDoFormulario("promo-error", "");
@@ -302,23 +372,33 @@ export function ligarPromocoes() {
   $("#save-gift-promo")?.addEventListener("click", async () => {
     erroDoFormulario("gift-error", "");
     const buyProductId = $("#gift-buy-product")?.value;
-    const giftProductId = $("#gift-free-product")?.value;
     const buyQty = Math.max(1, Math.floor(Number($("#gift-buy-qty")?.value || 1)));
-    const giftQty = Math.max(1, Math.floor(Number($("#gift-free-qty")?.value || 1)));
     const until = $("#gift-until")?.value.trim() || "";
+    const itens = itensBrindeDoFormulario();
 
     if (!buyProductId) return erroDoFormulario("gift-error", "Escolha o produto comprado.");
-    if (!giftProductId) return erroDoFormulario("gift-error", "Escolha o produto de brinde.");
-    if (buyProductId === giftProductId) return erroDoFormulario("gift-error", "Compra e brinde precisam ser produtos diferentes.");
+    if (!itens.length || itens.some(item => !item.giftProductId)) {
+      return erroDoFormulario("gift-error", "Escolha o(s) produto(s) de brinde.");
+    }
+    if (itens.some(item => item.giftProductId === buyProductId)) {
+      return erroDoFormulario("gift-error", "Compra e brinde precisam ser produtos diferentes.");
+    }
+    if (new Set(itens.map(item => item.giftProductId)).size !== itens.length) {
+      return erroDoFormulario("gift-error", "Escolha produtos de brinde diferentes entre si.");
+    }
 
     try {
-      await apiPromocoes.salvarBrinde({ buyProductId, giftProductId, buyQty, giftQty, until, active: true });
+      for (const item of itens) {
+        await apiPromocoes.salvarBrinde({
+          buyProductId, giftProductId: item.giftProductId, buyQty, giftQty: item.giftQty, until, active: true
+        });
+      }
       await carregar("promocoes");
       desenharPromocoes();
       $("#gift-buy-qty").value = "1";
-      $("#gift-free-qty").value = "1";
       $("#gift-until").value = "";
-      toast("Regra leve e ganhe salva.");
+      reiniciarItensBrinde();
+      toast(itens.length > 1 ? "Regras leve e ganhe salvas." : "Regra leve e ganhe salva.");
     } catch (erro) {
       erroDoFormulario("gift-error", erro.message);
     }

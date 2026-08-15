@@ -67,8 +67,10 @@ function cartaoProduto(produto, { lojaAberta = true } = {}) {
     el("div.product-body", {},
       el("strong", {}, produto.name),
       el("p", {}, produto.description || ""),
-      produto.brindePromocional
-        ? el("span.product-gift", {}, `Leve ${produto.brindePromocional.buyQty} e ganhe ${produto.brindePromocional.giftQty} ${produto.brindePromocional.giftName}`)
+      produto.brindesPromocionais?.length
+        ? el("div.product-gifts", {}, ...produto.brindesPromocionais.map(brinde =>
+            el("span.product-gift", {}, `Leve ${brinde.buyQty} e ganhe ${brinde.giftQty} ${brinde.giftName}`)
+          ))
         : null,
       el("div.price-row", {},
         el("span", {},

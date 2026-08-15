@@ -245,16 +245,8 @@
                 <select id="gift-buy-product" aria-label="Produto que ativa o brinde"></select>
               </label>
             </div>
-            <div class="field-row">
-              <label class="field-stack">
-                <span>Ganha</span>
-                <input id="gift-free-qty" type="number" min="1" max="99" value="1" inputmode="numeric">
-              </label>
-              <label class="field-stack">
-                <span>Produto de brinde</span>
-                <select id="gift-free-product" aria-label="Produto dado como brinde"></select>
-              </label>
-            </div>
+            <div class="gift-free-items" id="gift-free-items"></div>
+            <button class="ghost small" type="button" id="gift-add-free-item">+ Adicionar produto de brinde</button>
             <div class="gift-product-preview" id="gift-product-preview"></div>
             <input id="gift-until" placeholder="Valida ate (ex: 10/08)" maxlength="20">
             <p class="form-error hidden" id="gift-error" role="alert"></p>

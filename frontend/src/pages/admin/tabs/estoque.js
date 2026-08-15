@@ -29,7 +29,6 @@ function cartaoProduto(produto) {
     el("strong", {}, produto.name),
     critico ? el("span.stock-alert", {}, "ALERTA DE ESTOQUE") : null,
     el("span.stock-value", { class: critico ? "danger-text" : "" }, String(estoqueAtual)),
-    el("span.small", {}, `minimo ${estoqueMinimo}`),
     el("div.counter", {},
       el("button", { type: "button", dataset: { acao: "estoque", id: produto.id, delta: "-1" }, "aria-label": `Tirar uma unidade de ${produto.name}` }, "-"),
       el("input", {
@@ -38,6 +37,14 @@ function cartaoProduto(produto) {
         "aria-label": `Estoque de ${produto.name}`
       }),
       el("button", { type: "button", dataset: { acao: "estoque", id: produto.id, delta: "1" }, "aria-label": `Adicionar uma unidade de ${produto.name}` }, "+")
+    ),
+    el("div.stock-min-row", {},
+      el("span.small", {}, "mínimo"),
+      el("input.stock-min-input", {
+        type: "number", min: "0", value: String(estoqueMinimo),
+        dataset: { acao: "estoque-minimo-direto", id: produto.id },
+        "aria-label": `Estoque mínimo de ${produto.name}`
+      })
     ),
     !produto.active ? el("span.small.faint", {}, "pausado no cardápio") : null
   );
@@ -206,6 +213,10 @@ export function ligarEstoque() {
   delegar(alvo, "change", "[data-acao='estoque-direto']", (_e, campo) => {
     const valor = Math.max(0, Math.floor(Number(campo.value) || 0));
     ajustar(campo.dataset.id, { valor });
+  });
+  delegar(alvo, "change", "[data-acao='estoque-minimo-direto']", (_e, campo) => {
+    const minStock = Math.max(0, Math.floor(Number(campo.value) || 0));
+    ajustar(campo.dataset.id, { minStock });
   });
   delegar(alvo, "change", "[data-acao='insumo-direto']", (_e, campo) => {
     ajustarInsumo(campo.dataset.id, { valor: numero(campo.value) });
