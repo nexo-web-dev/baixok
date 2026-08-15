@@ -75,12 +75,14 @@ function validarProduto(corpo, { controlaEstoque }) {
   }
   if (!(corpo.price > 0)) return "Informe um preco maior que zero.";
   if (controlaEstoque && (!Number.isFinite(corpo.stock) || corpo.stock < 0)) return "Informe um estoque valido para bebida.";
+  if (controlaEstoque && (!Number.isFinite(corpo.minStock) || corpo.minStock < 0)) return "Informe o estoque minimo para alerta.";
   if (corpo.description.length > 420) return "Descricao muito longa. Use um texto mais curto.";
   return validarImagemProduto(corpo.image);
 }
 
 function atualizarCampoEstoqueProduto() {
   const campo = $("#product-stock");
+  const minimo = $("#product-min-stock");
   if (!campo) return;
 
   const controla = controlaEstoqueCategoria($("#product-category")?.value);
@@ -89,7 +91,17 @@ function atualizarCampoEstoqueProduto() {
   campo.title = controla
     ? "Use este campo para bebidas, refrigerantes e drinks."
     : "Pizza, burguer, massa e porcao ficam ativos pelo cadastro, sem estoque operacional.";
-  if (!controla) campo.value = "";
+  if (minimo) {
+    minimo.disabled = !controla;
+    minimo.placeholder = controla ? "Estoque minimo para alerta" : "Sem minimo para comida";
+    minimo.title = controla
+      ? "Quando o estoque atual ficar igual ou abaixo deste numero, a aba Estoque pisca em vermelho."
+      : "Estoque minimo so e usado para bebidas, refrigerantes e drinks.";
+  }
+  if (!controla) {
+    campo.value = "";
+    if (minimo) minimo.value = "";
+  }
 }
 
 /* Sabor de pizza nao e escolha por produto: e a categoria inteira. Categoria
@@ -284,6 +296,7 @@ function limparFormulario() {
   $("#product-description").value = "";
   $("#product-price").value = "";
   $("#product-stock").value = "";
+  $("#product-min-stock").value = "";
   $("#product-order").value = "";
   $("#product-featured").value = "0";
   $("#product-category").value = "";
@@ -310,6 +323,7 @@ function editar(id) {
   atualizarCampoEstoqueProduto();
   atualizarCampoSaborPizza();
   $("#product-stock").value = controlaEstoqueCategoria(produto.category) ? String(produto.stock) : "";
+  $("#product-min-stock").value = controlaEstoqueCategoria(produto.category) ? String(produto.minStock ?? 4) : "";
   $("#product-image").value = produto.image || "";
   $("#product-active").checked = produto.active;
   $("#product-form-title").textContent = `Editando: ${produto.name}`;
@@ -323,6 +337,7 @@ async function salvar(evento) {
   const id = $("#product-id").value;
   const categoria = $("#product-category").value.trim();
   const controlaEstoque = controlaEstoqueCategoria(categoria);
+  const minStockDigitado = $("#product-min-stock").value.trim();
 
   const corpo = {
     name: $("#product-name").value.trim(),
@@ -330,7 +345,7 @@ async function salvar(evento) {
     category: categoria,
     price: paraNumero($("#product-price").value),
     stock: controlaEstoque ? Math.max(0, Math.floor(paraNumero($("#product-stock").value))) : 0,
-    minStock: controlaEstoque ? (estado.produtos.find(item => item.id === id)?.minStock ?? 4) : 0,
+    minStock: controlaEstoque ? Math.max(0, Math.floor(minStockDigitado === "" ? 4 : paraNumero(minStockDigitado))) : 0,
     order: Math.max(1, Math.floor(paraNumero($("#product-order").value) || ((estado.produtos.length || 0) + 1))),
     featuredOrder: Math.max(0, Math.min(3, Math.floor(paraNumero($("#product-featured").value) || 0))),
     active: $("#product-active").checked,

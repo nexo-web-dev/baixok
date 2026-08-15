@@ -148,10 +148,13 @@
           <datalist id="product-category-options"></datalist>
           <div class="field-row">
             <input id="product-price" type="number" step="0.01" min="0" required placeholder="Preço (R$)">
-            <input id="product-stock" type="number" step="1" min="0" placeholder="Estoque só para bebidas">
+            <input id="product-stock" type="number" step="1" min="0" placeholder="Estoque atual (bebidas)">
           </div>
           <div class="field-row">
+            <input id="product-min-stock" type="number" step="1" min="0" placeholder="Estoque mínimo para alerta">
             <input id="product-order" type="number" step="1" min="1" placeholder="Ordem no cardápio (ex: 1)">
+          </div>
+          <div class="field-row">
             <select id="product-featured" aria-label="Destaque do cardápio">
               <option value="0">Sem destaque</option>
               <option value="1">Destaque 1</option>
