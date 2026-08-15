@@ -363,6 +363,27 @@ export const pedidosRepo = {
     `, [desde, ate, canal, canal]);
   },
 
+  /* Diferente de agruparPor: canal, pagamento etc. sao coluna do PEDIDO, mas
+   * categoria e do ITEM — um pedido mistura pizza e drink na mesma linha, entao
+   * o agrupamento precisa somar por item (pedido_itens), nao por pedido. Combo
+   * nao tem produto_id (e um pacote, nao um produto do catalogo), entao cai
+   * no rotulo "combos" em vez de ficar de fora da soma. */
+  async porCategoria({ desde, ate, canal = null }) {
+    return await todos(`
+      SELECT
+        COALESCE(p.categoria, CASE WHEN i.combo_id IS NOT NULL THEN 'combos' ELSE 'outros' END) AS rotulo,
+        COALESCE(SUM(i.quantidade * i.preco_unit), 0) AS faturamento,
+        COALESCE(SUM(i.quantidade), 0)::int AS unidades
+        FROM pedido_itens i
+        JOIN pedidos ped ON ped.id = i.pedido_id
+        LEFT JOIN produtos p ON p.id = i.produto_id
+       WHERE ped.criado_em >= ?::timestamptz AND ped.criado_em <= ?::timestamptz AND ped.status = 'entregue'
+         AND (?::text IS NULL OR ped.canal = ?::text)
+       GROUP BY rotulo
+       ORDER BY faturamento DESC
+    `, [desde, ate, canal, canal]);
+  },
+
   async porMotoboy({ desde, ate, canal = null }) {
     return await todos(`
       SELECT btrim(motoboy) AS rotulo,

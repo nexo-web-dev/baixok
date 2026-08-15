@@ -4,7 +4,7 @@
  * de subir. O painel antigo gravava o arquivo original em base64 dentro do
  * banco: uma foto de celular de 4 MB virava ~5,5 MB de texto, e o cardapio de
  * todo cliente passava a carregar isso. */
-import { el, render, $, $$, delegar, mostrar } from "../../../utils/dom.js";
+import { el, render, $, $$, delegar, mostrar, debounce } from "../../../utils/dom.js";
 import { reais, paraNumero } from "../../../utils/formato.js";
 import { rotuloCategoria } from "../../../utils/categorias.js";
 import { controlaEstoqueCategoria } from "../../../utils/estoque.js";
@@ -601,10 +601,10 @@ export function ligarProdutos() {
 
   $("#form-produto")?.addEventListener("submit", salvar);
   $("#product-reset")?.addEventListener("click", limparFormulario);
-  $("#product-search")?.addEventListener("input", evento => {
+  $("#product-search")?.addEventListener("input", debounce(evento => {
     filtroBusca = evento.target.value;
     desenharProdutos();
-  });
+  }));
   $("#export-menu-pdf")?.addEventListener("click", abrirModalExportarPdf);
   $("#menu-pdf-close")?.addEventListener("click", fecharModalExportarPdf);
   $("#menu-pdf-cancel")?.addEventListener("click", fecharModalExportarPdf);

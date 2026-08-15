@@ -4,7 +4,7 @@
  * cardapio carregado; quem precifica de verdade e o servidor, igual ao pedido
  * do cliente. Nao ha campo de preco livre de proposito: teria virado o caminho
  * mais facil para lancar venda com valor errado sem deixar rastro. */
-import { el, render, $, delegar, mostrar, ligarModal } from "../../utils/dom.js";
+import { el, render, $, delegar, mostrar, ligarModal, debounce } from "../../utils/dom.js";
 import { reais } from "../../utils/formato.js";
 import { CANAIS_ROTULO, MODALIDADES_ROTULO, rotuloCategoria } from "../../utils/categorias.js";
 import { controlaEstoqueCategoria } from "../../utils/estoque.js";
@@ -322,7 +322,7 @@ export function ligarVendaManual() {
   ligarModal(modal, fecharVendaManual);
   $("#manual-close")?.addEventListener("click", fecharVendaManual);
   $("#manual-save")?.addEventListener("click", registrar);
-  $("#manual-search")?.addEventListener("input", desenharProdutos);
+  $("#manual-search")?.addEventListener("input", debounce(desenharProdutos));
   $("#open-manual-sale")?.addEventListener("click", () => abrirVendaManual(null));
 
   delegar(modal, "click", "[data-acao='canal']", (_e, botao) => {

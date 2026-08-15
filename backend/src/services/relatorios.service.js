@@ -69,8 +69,8 @@ export const relatoriosService = {
     const agrupadoPorMes = periodo === "tudo";
 
     const [
-      resumo, canceladosResumo, emFalta, porHora, porDia, porCanal, porPagamento, porModalidade, porMotoboy,
-      maisVendidos, menosVendidos, vendas, cancelados, taxaServico
+      resumo, canceladosResumo, emFalta, porHora, porDia, porCanal, porPagamento, porModalidade, porCategoria,
+      porMotoboy, maisVendidos, menosVendidos, vendas, cancelados, taxaServico
     ] = await Promise.all([
       pedidosRepo.resumoPeriodo(filtro),
       pedidosRepo.resumoCancelados(filtro),
@@ -80,6 +80,7 @@ export const relatoriosService = {
       pedidosRepo.agruparPor("canal", filtro),
       pedidosRepo.agruparPor("pagamento", filtro),
       pedidosRepo.agruparPor("modalidade", filtro),
+      pedidosRepo.porCategoria(filtro),
       pedidosRepo.porMotoboy(filtro),
       pedidosRepo.maisVendidos({ ...filtro, limite: 10 }),
       pedidosRepo.menosVendidos({ ...filtro, limite: 10 }),
@@ -110,6 +111,7 @@ export const relatoriosService = {
       porCanal,
       porPagamento,
       porModalidade,
+      porCategoria,
       porMotoboy,
       maisVendidos,
       menosVendidos,

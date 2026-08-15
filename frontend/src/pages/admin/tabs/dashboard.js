@@ -4,9 +4,9 @@
  * inteira de pedidos - com nome, telefone e endereco de cada cliente - para
  * somar faturamento no navegador. Alem de pesado, colocava a base de clientes
  * dentro de um tablet que fica no balcao. */
-import { el, render, $, delegar, mostrar } from "../../../utils/dom.js";
+import { el, render, $, delegar, mostrar, debounce } from "../../../utils/dom.js";
 import { reais, dinheiro } from "../../../utils/formato.js";
-import { CANAIS_ROTULO, MODALIDADES_ROTULO } from "../../../utils/categorias.js";
+import { CANAIS_ROTULO, MODALIDADES_ROTULO, rotuloCategoria } from "../../../utils/categorias.js";
 import { apiPedidos, apiRelatorios } from "../../../services/api.js";
 import { toastFalha, toastOk } from "../../../components/toast.js";
 import { imprimirAmbas } from "../../../components/impressao.js";
@@ -106,6 +106,7 @@ function barras(linhas, formatar, vazioMensagem = "Sem dados no periodo.", vazio
 
 const primeiro = lista => lista?.[0] || null;
 const dinheiroEPedidos = (valor, linha) => `${reais(valor)} · ${Number(linha.pedidos || 0)} ped.`;
+const dinheiroEUnidades = (valor, linha) => `${reais(valor)} · ${Number(linha.unidades || 0)} un.`;
 
 function produtoResumo(produto) {
   return produto ? `${produto.rotulo} (${produto.quantidade}x)` : "Sem venda";
@@ -241,8 +242,8 @@ export async function desenharDashboard() {
 
   const {
     resumo, porHora, porDia = [], agrupadoPorMes = false, porCanal, porPagamento, porModalidade = [],
-    porMotoboy = [], maisVendidos, menosVendidos = [], estoqueBaixo, periodo, vendas = [], cancelados = [],
-    taxaServico = { total: 0, contasFechadas: 0, contasSemCobranca: 0 }
+    porCategoria = [], porMotoboy = [], maisVendidos, menosVendidos = [], estoqueBaixo, periodo, vendas = [],
+    cancelados = [], taxaServico = { total: 0, contasFechadas: 0, contasSemCobranca: 0 }
   } = ultimoRelatorio;
   const pagamentoTop = primeiro(porPagamento);
   const plataformaTop = primeiro(porCanal);
@@ -312,6 +313,17 @@ export async function desenharDashboard() {
     dinheiroEPedidos,
     "Sem modalidades registradas.",
     "Mostra quantas entregas, retiradas e mesas saíram."
+  ));
+
+  render($("#category-chart"), barras(
+    porCategoria.map(linha => ({
+      rotulo: rotuloCategoria(linha.rotulo) || linha.rotulo || "-",
+      valor: Number(linha.faturamento || 0),
+      unidades: linha.unidades
+    })),
+    dinheiroEUnidades,
+    "Sem vendas por categoria neste período.",
+    "Pizza, burguer, drink... a divisão por categoria aparece aqui."
   ));
 
   render($("#hour-chart"), barras(
@@ -390,10 +402,10 @@ function exportarPlanilha() {
 }
 
 export function ligarDashboard() {
-  $("#sales-search")?.addEventListener("input", evento => {
+  $("#sales-search")?.addEventListener("input", debounce(evento => {
     buscaVendas.termo = evento.target.value;
     renderizarListasVendas();
-  });
+  }));
   $("#sales-filter-fulfillment")?.addEventListener("change", evento => {
     buscaVendas.fulfillment = evento.target.value;
     renderizarListasVendas();

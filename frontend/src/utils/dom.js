@@ -57,6 +57,17 @@ export function render(alvo, ...filhos) {
 
 export const mostrar = (node, visivel) => node?.classList.toggle("hidden", !visivel);
 
+/* Segura a chamada ate a digitacao parar. Sem isso, um campo de busca refaz a
+ * lista inteira (filtra + redesenha DOM) a cada tecla — em catalogos maiores
+ * isso empaca o campo bem na hora que a pessoa mais precisa dele fluido. */
+export function debounce(fn, atraso = 180) {
+  let temporizador = null;
+  return (...args) => {
+    clearTimeout(temporizador);
+    temporizador = setTimeout(() => fn(...args), atraso);
+  };
+}
+
 /* Delegacao de evento: um ouvinte no container em vez de um por linha.
  *
  * E o que substitui os onclick="funcao(id)" do HTML antigo. Alem de permitir
