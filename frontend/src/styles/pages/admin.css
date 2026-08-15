@@ -76,6 +76,11 @@
   color: var(--muted-2); font-size: .78rem; font-weight: 800;
 }
 .cash-status.open { color: var(--green); background: var(--green-bg); border-color: rgba(143,174,109,.35); }
+.cash-lock-note {
+  display: inline-flex; align-items: center; min-height: 42px; max-width: min(520px, 100%);
+  padding: 0 14px; border-radius: var(--radius-pill); border: 1px solid rgba(212,127,110,.35);
+  color: var(--danger); background: var(--danger-bg); font-size: .78rem; font-weight: 800;
+}
 .orders-clock {
   display: inline-flex; align-items: center; min-height: 42px; padding: 0 14px;
   border-radius: var(--radius-pill); color: var(--gold-light);
@@ -750,7 +755,7 @@
   .admin-product-title { align-items: flex-start; }
   .admin-product-title strong { font-size: .92rem; line-height: 1.2; }
   .admin-product-main p { font-size: .8rem; }
-  .cash-status, .orders-clock { width: 100%; margin-right: 0; justify-content: center; }
+  .cash-status, .cash-lock-note, .orders-clock { width: 100%; margin-right: 0; justify-content: center; text-align: center; }
   .status-shortcuts {
     display: flex;
     gap: 7px;

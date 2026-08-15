@@ -13,6 +13,7 @@ function atualizarStatusCaixa() {
   const abrir = $("#open-cash");
   const fechar = $("#close-cash");
   const manual = $("#open-manual-sale");
+  const aviso = $("#cash-lock-note");
   if (!alvo) return;
 
   const permitido = podeOperarCaixa();
@@ -22,6 +23,7 @@ function atualizarStatusCaixa() {
   if (!estado.caixaAtual) {
     alvo.textContent = "Caixa fechado";
     alvo.classList.remove("open");
+    mostrar(aviso, true);
     if (abrir) abrir.disabled = !permitido;
     if (fechar) fechar.disabled = true;
     if (manual) {
@@ -33,6 +35,7 @@ function atualizarStatusCaixa() {
 
   alvo.textContent = `Caixa aberto desde ${dataHora(estado.caixaAtual.abertoEm)}`;
   alvo.classList.add("open");
+  mostrar(aviso, false);
   if (abrir) abrir.disabled = true;
   if (fechar) fechar.disabled = !permitido;
   if (manual) {
