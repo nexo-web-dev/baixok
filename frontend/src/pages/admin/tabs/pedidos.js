@@ -3,9 +3,10 @@
  * A ordem das colunas continua a mesma, e o arrastar entre colunas foi mantido.
  * Cada acao virou uma chamada a API: o painel nao muda mais o proprio banco
  * local e torce para o servidor concordar depois. */
-import { el, render, $, delegar, mostrar } from "../../../utils/dom.js";
+import { el, render, $, delegar, mostrar, debounce } from "../../../utils/dom.js";
 import { reais, minutosDesde, esperaLegivel } from "../../../utils/formato.js";
-import { CANAIS_ROTULO, MODALIDADES_ROTULO, STATUS_ROTULO } from "../../../utils/categorias.js";
+import { CANAIS_ROTULO, MODALIDADES_ROTULO, STATUS_ROTULO, rotuloCategoria } from "../../../utils/categorias.js";
+import { controlaEstoqueCategoria } from "../../../utils/estoque.js";
 import { apiPedidos, apiAjustes } from "../../../services/api.js";
 import { estado, carregar } from "../store.js";
 import { toast, toastFalha } from "../../../components/toast.js";
@@ -13,7 +14,17 @@ import { imprimirAmbas, imprimirTeste } from "../../../components/impressao.js";
 import { registrarMotoboyLocal } from "./motoboy.js";
 
 const MINUTOS_ATRASO = 15;
+/* So pedido aberto pode ganhar ou perder item — entregue/cancelado ja fechou
+ * a conta, mexer no que foi vendido ali seria reescrever historico. */
+const STATUS_ABERTOS = ["novo", "preparo", "pronto"];
 let relogioPedidosTimer = null;
+let pedidoDetalheAtualId = null;
+let buscaAdicionarItem = "";
+
+const normalizarBuscaItem = valor => String(valor || "")
+  .normalize("NFD")
+  .replace(/\p{Diacritic}/gu, "")
+  .toLowerCase();
 
 const COLUNAS = [
   ["novo", "Aguardando aprovação"],
@@ -234,7 +245,8 @@ function fecharDetalhePedido() {
   mostrar($("#order-detail-modal"), false);
 }
 
-function linhaDetalheItem(item) {
+function linhaDetalheItem(item, pedido, editavel) {
+  const podeRemover = editavel && pedido.items.length > 1;
   return el("div.order-detail-item", { class: item.gift ? "gift" : "" },
     miniFotoItem(item),
     el("div", {},
@@ -243,7 +255,51 @@ function linhaDetalheItem(item) {
         ? el("span.gift-tag", {}, "Brinde · Leve e ganhe")
         : el("span", {}, `${reais(item.price)} cada`)
     ),
-    el("strong", {}, item.gift ? "Grátis" : reais(Number(item.price || 0) * Number(item.qty || 0)))
+    el("strong", {}, item.gift ? "Grátis" : reais(Number(item.price || 0) * Number(item.qty || 0))),
+    podeRemover
+      ? el("button.order-item-remove", {
+          type: "button", title: "Remover este item do pedido",
+          dataset: { acao: "remover-item-pedido", id: pedido.id, itemId: String(item.itemId) }
+        }, "×")
+      : null
+  );
+}
+
+/* So o resultado da busca redesenha, nunca o modal inteiro — senao o campo de
+ * texto perderia o foco (e o cursor) a cada letra digitada. */
+function atualizarListaAdicionarItem() {
+  const lista = $("#add-item-results");
+  if (!lista) return;
+
+  const termo = normalizarBuscaItem(buscaAdicionarItem).trim();
+  const opcoes = estado.produtos
+    .filter(produto => produto.active && (!controlaEstoqueCategoria(produto.category) || produto.stock > 0))
+    .filter(produto => !termo || normalizarBuscaItem(`${produto.name} ${produto.category || ""}`).includes(termo))
+    .slice(0, 8);
+
+  render(lista, ...(opcoes.length
+    ? opcoes.map(produto =>
+        el("button.add-item-option", {
+          type: "button",
+          dataset: { acao: "adicionar-item-pedido", id: pedidoDetalheAtualId, produtoId: produto.id }
+        },
+          el("span", {},
+            el("strong", {}, produto.name),
+            el("small", {}, rotuloCategoria(produto.category))
+          ),
+          el("em", {}, reais(produto.price))
+        ))
+    : [el("p.faint.small", {}, "Nenhum produto encontrado.")]));
+}
+
+function blocoAdicionarItem() {
+  return el("div.add-item-block", {},
+    el("strong", {}, "Adicionar item ao pedido"),
+    el("input", {
+      type: "search", placeholder: "Buscar produto para adicionar...",
+      dataset: { acao: "buscar-item-pedido" }
+    }),
+    el("div.add-item-results", { id: "add-item-results" })
   );
 }
 
@@ -252,6 +308,10 @@ function abrirDetalhePedido(id) {
   const modal = $("#order-detail-modal");
   const corpo = $("#order-detail-body");
   if (!pedido || !modal || !corpo) return;
+
+  pedidoDetalheAtualId = id;
+  buscaAdicionarItem = "";
+  const editavel = STATUS_ABERTOS.includes(pedido.status);
 
   const titulo = $("#order-detail-title");
   const subtitulo = $("#order-detail-subtitle");
@@ -272,7 +332,8 @@ function abrirDetalhePedido(id) {
       el("div", {}, el("span", {}, "Tempo"), el("strong", {}, esperaLegivel(minutosDesde(pedido.createdAt)))),
       pedido.tableNumber ? el("div", {}, el("span", {}, "Mesa"), el("strong", {}, `Mesa ${pedido.tableNumber}`)) : null
     ),
-    el("div.order-detail-items", {}, pedido.items.map(linhaDetalheItem)),
+    el("div.order-detail-items", {}, pedido.items.map(item => linhaDetalheItem(item, pedido, editavel))),
+    editavel ? blocoAdicionarItem() : null,
     troco ? el("p.order-note.money", {}, el("strong", {}, "Troco: "), troco) : null,
     pedido.note ? el("p.order-note", {}, el("strong", {}, "Observação: "), pedido.note) : null,
     pedido.phone ? el("p.order-place", {}, el("strong", {}, "Telefone: "), pedido.phone) : null,
@@ -282,6 +343,7 @@ function abrirDetalhePedido(id) {
       el("button.secondary", { type: "button", dataset: { acao: "reimprimir-detalhe", id: pedido.id } }, "Reimprimir nota")
     )
   );
+  if (editavel) atualizarListaAdicionarItem();
   mostrar(modal, true);
 }
 
@@ -417,5 +479,37 @@ export function ligarPedidos() {
   delegar($("#order-detail-body"), "click", "[data-acao='reimprimir-detalhe']", (_e, botao) => {
     const pedido = estado.pedidos.find(item => item.id === botao.dataset.id);
     if (pedido) imprimirAmbas(pedido);
+  });
+
+  delegar($("#order-detail-body"), "input", "[data-acao='buscar-item-pedido']", debounce(evento => {
+    buscaAdicionarItem = evento.target.value;
+    atualizarListaAdicionarItem();
+  }));
+
+  delegar($("#order-detail-body"), "click", "[data-acao='adicionar-item-pedido']", async (_e, botao) => {
+    botao.disabled = true;
+    try {
+      await apiPedidos.adicionarItens(botao.dataset.id, [{ id: botao.dataset.produtoId, qty: 1 }]);
+      await carregar("pedidos");
+      abrirDetalhePedido(botao.dataset.id);
+      toast("Item adicionado ao pedido. Reimprima a nota se a cozinha já tiver a via antiga.");
+    } catch (erro) {
+      toastFalha(erro, "Adicionar item");
+      botao.disabled = false;
+    }
+  });
+
+  delegar($("#order-detail-body"), "click", "[data-acao='remover-item-pedido']", async (_e, botao) => {
+    if (!confirm("Remover este item do pedido?")) return;
+    botao.disabled = true;
+    try {
+      await apiPedidos.removerItem(botao.dataset.id, Number(botao.dataset.itemId));
+      await carregar("pedidos");
+      abrirDetalhePedido(botao.dataset.id);
+      toast("Item removido do pedido.");
+    } catch (erro) {
+      toastFalha(erro, "Remover item");
+      botao.disabled = false;
+    }
   });
 }
