@@ -1,5 +1,6 @@
 const CLASSES_PROPORCAO = ["photo-wide", "photo-balanced", "photo-tall"];
 const CLASSES_FUNDO = ["photo-light-bg", "photo-bg-removed"];
+const FUNDO_CACHE = new Map();
 
 function aplicarProporcao(alvo, classe, proporcao) {
   if (!alvo) return;
@@ -23,7 +24,58 @@ function normalizarFundoClaro(imagem, frame) {
     imagem.src = imagem.dataset.originalSrc;
   }
 
+  const classe = detectarFundoClaro(imagem);
+  aplicarClasseFundo(frame, classe);
   imagem.dataset.fundoNormalizado = "1";
+}
+
+function detectarFundoClaro(imagem) {
+  const chave = imagem.currentSrc || imagem.src;
+  if (!chave) return "";
+  if (FUNDO_CACHE.has(chave)) return FUNDO_CACHE.get(chave);
+
+  let classe = "";
+  try {
+    const tamanho = 48;
+    const canvas = document.createElement("canvas");
+    canvas.width = tamanho;
+    canvas.height = tamanho;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return "";
+
+    ctx.drawImage(imagem, 0, 0, tamanho, tamanho);
+    const { data } = ctx.getImageData(0, 0, tamanho, tamanho);
+    let amostras = 0;
+    let claras = 0;
+
+    for (let y = 0; y < tamanho; y += 1) {
+      for (let x = 0; x < tamanho; x += 1) {
+        const borda = x < 6 || x >= tamanho - 6 || y < 6 || y >= tamanho - 6;
+        if (!borda) continue;
+
+        const i = (y * tamanho + x) * 4;
+        const alpha = data[i + 3];
+        if (alpha < 16) continue;
+
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        const brilho = (r + g + b) / 3;
+
+        amostras += 1;
+        if (brilho > 220 && max - min < 42) claras += 1;
+      }
+    }
+
+    if (amostras && claras / amostras > 0.54) classe = "photo-light-bg";
+  } catch {
+    classe = "";
+  }
+
+  FUNDO_CACHE.set(chave, classe);
+  return classe;
 }
 
 export function marcarProporcaoImagem(evento) {

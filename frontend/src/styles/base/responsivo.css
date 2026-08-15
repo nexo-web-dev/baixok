@@ -159,6 +159,11 @@
     padding: 6px;
     object-fit: contain !important;
   }
+  body[data-page="menu"] .product .photo-frame.photo-light-bg > .photo-main {
+    padding: 0;
+    mix-blend-mode: multiply;
+    filter: saturate(1.12) contrast(1.08) brightness(1.04);
+  }
   body[data-page="menu"] .product .badge, body[data-page="menu"] .product .stock-chip { display: none; }
   body[data-page="menu"] .product-body { min-width: 0; padding: 13px 58px 13px 13px; gap: 5px; }
   body[data-page="menu"] .product strong { font-size: 1rem; line-height: 1.14; overflow-wrap: anywhere; }

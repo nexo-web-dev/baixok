@@ -165,6 +165,21 @@ body.cart-open .shop-layout { padding-right: calc(var(--cart-width) + 18px); }
 .product img { background: transparent; }
 .product > .photo-frame > .photo-main,
 .cart-thumb .fit-media > .fit-media-main { filter: none; }
+.product > .photo-frame.photo-light-bg,
+.signature-strip article > .photo-frame.photo-light-bg {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(217,154,104,.15), transparent 58%),
+    linear-gradient(135deg, #2a1f18, #17110e);
+}
+.product > .photo-frame.photo-light-bg > .photo-main {
+  padding: 0;
+  mix-blend-mode: multiply;
+  filter: saturate(1.12) contrast(1.08) brightness(1.04);
+}
+.signature-strip article > .photo-frame.photo-light-bg > .photo-main {
+  mix-blend-mode: multiply;
+  filter: saturate(1.12) contrast(1.08) brightness(1.04);
+}
 .no-photo { display: grid; place-items: center; padding: 12px; color: var(--gold); background: repeating-linear-gradient(135deg, rgba(217,154,104,.08) 0 10px, rgba(255,255,255,.03) 10px 20px), var(--shell); text-align: center; font-weight: 800; font-size: .8rem; }
 .no-photo small { display: block; margin-top: 4px; color: var(--muted); font-size: .7rem; font-weight: 700; }
 .product-body { position: relative; z-index: 1; display: grid; gap: 8px; align-content: center; min-width: 0; overflow: hidden; padding: 14px 15px; }
