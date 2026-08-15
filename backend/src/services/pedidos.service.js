@@ -405,6 +405,45 @@ export const pedidosService = {
     return pedido;
   },
 
+  /* Acrescenta item num pedido que ja existe — cliente ligou pedindo mais uma
+   * coisa, ou o balcao esqueceu de lancar algo. So em pedido ainda aberto: nao
+   * faz sentido acrescentar item em pedido ja entregue ou cancelado.
+   *
+   * Desconto e taxa de entrega ficam como estavam — o cupom foi validado
+   * contra o subtotal de ENTAO, reavaliar ele contra o novo subtotal abriria
+   * espaco pra usar item novo pra "esticar" um desconto ja fechado. So o
+   * subtotal e o total sobem pelo valor do que entrou agora. */
+  async adicionarItens(id, itens, { usuario, ip }) {
+    const atual = await this.buscar(id);
+    if (!STATUS_ABERTOS.includes(atual.status)) {
+      throw new ErroApp("Só é possível adicionar item a pedidos em aberto.", 409, "pedido_fechado");
+    }
+
+    let precificados = [];
+    const pedido = await emTransacao(async () => {
+      precificados = await precificar(itens);
+      await baixarEstoque(precificados);
+      await pedidosRepo.adicionarItens(id, precificados);
+
+      const acrescimo = precificados.reduce((soma, item) => soma + item.price * item.qty, 0);
+      return pedidosRepo.atualizarTotais(id, {
+        subtotal: Math.round((atual.subtotal + acrescimo) * 100) / 100,
+        total: Math.round((atual.total + acrescimo) * 100) / 100
+      });
+    });
+
+    await auditoriaRepo.registrar({
+      usuarioId: usuario.id, usuario: usuario.usuario, acao: "pedido_item_adicionado",
+      entidade: "pedido", entidadeId: id,
+      detalhes: {
+        itens: precificados.map(item => `${item.qty}x ${item.name}`),
+        totalAntes: atual.total, totalDepois: pedido.total
+      }, ip
+    });
+    publicar("pedidos", [CANAL.OPERACAO, CANAL.TELAO, CANAL.PUBLICO]);
+    return pedido;
+  },
+
   async mudarStatus(id, dados, { usuario, ip }) {
     const status = typeof dados === "string" ? dados : dados.status;
     let atual = await this.buscar(id);

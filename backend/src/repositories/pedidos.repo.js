@@ -66,7 +66,12 @@ function imagemCombo(linha) {
 }
 
 const itemParaApi = linha => ({
+  /* `id` sempre foi o produto (compatibilidade com o resto do app). `itemId` e
+   * a linha em si (pedido_itens.id) — o unico jeito de mirar UMA linha pra
+   * remover, ja que duas linhas podem apontar pro mesmo produto (um brinde e
+   * uma compra normal do mesmo item, por exemplo). */
   id: linha.produto_id,
+  itemId: linha.id,
   id2: linha.produto_id_2 || null,
   comboId: linha.combo_id || null,
   name: linha.nome,
