@@ -4,7 +4,7 @@
  * de subir. O painel antigo gravava o arquivo original em base64 dentro do
  * banco: uma foto de celular de 4 MB virava ~5,5 MB de texto, e o cardapio de
  * todo cliente passava a carregar isso. */
-import { el, render, $, delegar } from "../../../utils/dom.js";
+import { el, render, $, $$, delegar, mostrar } from "../../../utils/dom.js";
 import { reais, paraNumero } from "../../../utils/formato.js";
 import { rotuloCategoria } from "../../../utils/categorias.js";
 import { controlaEstoqueCategoria } from "../../../utils/estoque.js";
@@ -522,6 +522,34 @@ async function salvar(evento) {
   }
 }
 
+function abrirModalExportarPdf() {
+  const lista = $("#menu-pdf-list");
+  if (!lista) return;
+
+  const ativos = estado.produtos.filter(produto => produto.active);
+  render(lista, ...produtosAgrupados(ativos).map(([categoria, itens]) =>
+    el("div.menu-pdf-group", {},
+      el("strong", {}, rotuloCategoria(categoria)),
+      ...itens.map(produto =>
+        el("label.menu-pdf-item", {},
+          el("input", { type: "checkbox", checked: true, dataset: { id: produto.id } }),
+          el("span", {}, produto.name),
+          el("small", {}, reais(produto.price))
+        )
+      )
+    )
+  ));
+  mostrar($("#menu-pdf-modal"), true);
+}
+
+function fecharModalExportarPdf() {
+  mostrar($("#menu-pdf-modal"), false);
+}
+
+function marcarTodosPdf(valor) {
+  for (const campo of $$("#menu-pdf-list input")) campo.checked = valor;
+}
+
 export function ligarProdutos() {
   const lista = $("#product-admin-list");
   const presets = $("#photo-presets");
@@ -577,12 +605,25 @@ export function ligarProdutos() {
     filtroBusca = evento.target.value;
     desenharProdutos();
   });
-  $("#export-menu-pdf")?.addEventListener("click", async botao => {
+  $("#export-menu-pdf")?.addEventListener("click", abrirModalExportarPdf);
+  $("#menu-pdf-close")?.addEventListener("click", fecharModalExportarPdf);
+  $("#menu-pdf-cancel")?.addEventListener("click", fecharModalExportarPdf);
+  $("#menu-pdf-modal")?.addEventListener("click", evento => {
+    if (evento.target === $("#menu-pdf-modal")) fecharModalExportarPdf();
+  });
+  $("#menu-pdf-all")?.addEventListener("click", () => marcarTodosPdf(true));
+  $("#menu-pdf-none")?.addEventListener("click", () => marcarTodosPdf(false));
+  $("#menu-pdf-confirm")?.addEventListener("click", async botao => {
+    const selecionados = $$("#menu-pdf-list input:checked").map(campo => campo.dataset.id);
+    if (!selecionados.length) return toastFalha(new Error("Marque ao menos um produto."), "Exportar cardápio");
+
     const alvo = botao.currentTarget;
     alvo.disabled = true;
     try {
       if (!Object.keys(estado.ajustes || {}).length) await carregar("ajustes");
-      await exportarCardapioPdf(estado.produtos, estado.ajustes);
+      const escolhidos = estado.produtos.filter(produto => selecionados.includes(produto.id));
+      await exportarCardapioPdf(escolhidos, estado.ajustes);
+      fecharModalExportarPdf();
     } catch (erro) {
       toastFalha(erro, "Exportar cardápio");
     } finally {

@@ -198,6 +198,18 @@
 .priority-urgent .flag.time { color: var(--danger); background: var(--danger-bg); }
 
 .order-detail-card { width: min(780px, calc(100vw - 24px)); padding: 20px; }
+.menu-pdf-card { width: min(560px, calc(100vw - 24px)); padding: 20px; display: grid; gap: 12px; }
+.menu-pdf-toolbar { display: flex; gap: 8px; }
+.menu-pdf-list { display: grid; gap: 14px; max-height: 50vh; overflow-y: auto; padding-right: 4px; }
+.menu-pdf-group { display: grid; gap: 6px; }
+.menu-pdf-group > strong { color: var(--gold); font-size: .82rem; text-transform: uppercase; letter-spacing: .03em; }
+.menu-pdf-item {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius-sm);
+  background: var(--sidebar); cursor: pointer;
+}
+.menu-pdf-item input { flex: none; width: 17px; height: 17px; accent-color: var(--gold); }
+.menu-pdf-item span { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: .86rem; }
+.menu-pdf-item small { flex: none; color: var(--gold); font-weight: 800; }
 .order-detail-head {
   display: flex; align-items: flex-start; justify-content: space-between; gap: 14px;
   padding-bottom: 10px; border-bottom: 1px solid var(--line-soft);

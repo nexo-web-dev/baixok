@@ -518,6 +518,28 @@
   </main>
 
   <!-- ----------------------------------------------------------- modais -->
+  <div class="modal hidden" id="menu-pdf-modal" role="dialog" aria-modal="true" aria-labelledby="menu-pdf-title">
+    <div class="modal-card menu-pdf-card">
+      <div class="order-detail-head">
+        <div>
+          <span class="eyebrow">Exportar cardápio</span>
+          <h2 id="menu-pdf-title">Escolher produtos do PDF</h2>
+          <p>Desmarque o que não quiser incluir. Só produtos ativos aparecem aqui.</p>
+        </div>
+        <button class="icon-close" type="button" id="menu-pdf-close" aria-label="Fechar">×</button>
+      </div>
+      <div class="menu-pdf-toolbar">
+        <button class="secondary small" type="button" id="menu-pdf-all">Marcar todos</button>
+        <button class="secondary small" type="button" id="menu-pdf-none">Desmarcar todos</button>
+      </div>
+      <div class="menu-pdf-list" id="menu-pdf-list"></div>
+      <div class="order-detail-actions">
+        <button class="secondary" type="button" id="menu-pdf-cancel">Cancelar</button>
+        <button class="primary" type="button" id="menu-pdf-confirm">⇩ Exportar PDF</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal hidden" id="order-detail-modal" role="dialog" aria-modal="true" aria-labelledby="order-detail-title">
     <div class="modal-card order-detail-card">
       <div class="order-detail-head">

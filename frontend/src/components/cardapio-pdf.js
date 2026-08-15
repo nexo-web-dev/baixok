@@ -60,7 +60,7 @@ const css = `
     background: rgba(217,154,104,.14); color: ${GOLD_LIGHT};
     font-size: 11px; text-transform: uppercase; letter-spacing: .12em; font-weight: 800;
   }
-  .category { margin: 0 0 18px; break-inside: avoid-column; }
+  .category { margin: 0 0 18px; }
   .category h2 {
     display: flex; align-items: center; gap: 10px;
     margin: 0 0 10px; padding: 6px 12px; border-radius: 8px;
@@ -70,10 +70,13 @@ const css = `
     font-size: 16px; font-weight: 800; color: ${GOLD_LIGHT}; text-transform: uppercase; letter-spacing: .06em;
     break-after: avoid;
   }
-  .grid { columns: 2; column-gap: 14px; }
+  /* Grid de verdade, nao columns: multicol nao respeita a largura da coluna de
+   * forma confiavel quando o filho e display:grid + break-inside:avoid — o
+   * motor de impressao deixava a descricao longa vazar pra fora da pagina. */
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; }
   .item {
     display: grid; grid-template-columns: 48px 1fr; gap: 10px; align-items: start;
-    margin: 0 0 10px; padding: 9px; border-radius: 10px;
+    min-width: 0; padding: 9px; border-radius: 10px;
     background: ${PANEL}; border: 1px solid ${LINE}; break-inside: avoid;
   }
   .item img, .item .no-photo {
@@ -82,13 +85,13 @@ const css = `
   }
   .item .no-photo { display: grid; place-items: center; font-size: 8px; color: ${FAINT}; text-align: center; }
   .item-body { min-width: 0; }
-  .item-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-  .item-top strong { font-size: 12.5px; font-weight: 800; color: ${INK}; }
+  .item-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; min-width: 0; }
+  .item-top strong { min-width: 0; overflow-wrap: anywhere; font-size: 12.5px; font-weight: 800; color: ${INK}; }
   .item-top span {
     flex: none; padding: 2px 8px; border-radius: 999px; background: ${GOLD};
     font-weight: 800; color: ${ON_ACCENT}; font-size: 11.5px; white-space: nowrap;
   }
-  .item-body p { margin: 3px 0 0; color: ${MUTED}; font-size: 10px; line-height: 1.35; }
+  .item-body p { margin: 3px 0 0; overflow-wrap: anywhere; color: ${MUTED}; font-size: 10px; line-height: 1.35; }
   .footer {
     margin-top: 6px; padding: 16px 18px; border-radius: 14px;
     background: linear-gradient(90deg, rgba(201,116,67,.22), rgba(217,154,104,.08));
@@ -190,8 +193,18 @@ export async function exportarCardapioPdf(produtos, ajustes) {
 
   const nomeLoja = ajustes?.nome_loja || "Baixo K";
   const doc = janela.document;
+  /* Links de fonte sao estaticos (sem dado de produto), entao document.write
+   * direto e seguro aqui — o resto do documento (nome, descricao) so entra
+   * via el()/importNode, nunca por string. Sem isso a aba nova nao herda o
+   * <link> do Google Fonts do admin.html e cai pra Georgia/Arial. */
   doc.open();
-  doc.write("<!doctype html><html><head><meta charset='utf-8'><title>Cardápio</title></head><body></body></html>");
+  doc.write(
+    "<!doctype html><html><head><meta charset='utf-8'><title>Cardápio</title>" +
+    "<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">" +
+    "<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>" +
+    "<link href=\"https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Figtree:wght@400;500;600;700;800&display=swap\" rel=\"stylesheet\">" +
+    "</head><body></body></html>"
+  );
   doc.close();
   doc.title = `${nomeLoja} - Cardápio`;
 
@@ -203,8 +216,17 @@ export async function exportarCardapioPdf(produtos, ajustes) {
     doc.body.append(doc.importNode(parte, true));
   }
 
+  /* Espera a fonte baixar antes de imprimir — sem isso a caixa de impressao
+   * as vezes abre a tempo de pegar so a fonte de fallback. Teto de 1.5s pra
+   * nunca travar a exportacao numa rede lenta. */
+  const fontesProntas = doc.fonts?.ready
+    ? Promise.race([doc.fonts.ready, new Promise(resolve => setTimeout(resolve, 1500))])
+    : Promise.resolve();
+
   janela.addEventListener("load", () => {
-    janela.focus();
-    janela.print();
+    fontesProntas.then(() => {
+      janela.focus();
+      janela.print();
+    });
   });
 }
