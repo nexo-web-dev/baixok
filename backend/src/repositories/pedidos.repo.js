@@ -310,6 +310,17 @@ export const pedidosRepo = {
     `, valores);
   },
 
+  /* Por id da linha, nao por produto: remover so pode mirar UMA linha, mesmo
+   * que o pedido tenha duas entradas do mesmo produto (uma comprada, uma de
+   * brinde, por exemplo). O `pedido_id` no WHERE e cinto de seguranca — sem
+   * ele, um id de linha de outro pedido tambem bateria. */
+  async removerItem(pedidoId, itemId) {
+    return (await alteradas(
+      "DELETE FROM pedido_itens WHERE id = ? AND pedido_id = ?",
+      [itemId, pedidoId]
+    )) > 0;
+  },
+
   async atualizarTotais(id, { subtotal, total }) {
     await alteradas(
       "UPDATE pedidos SET subtotal = ?, total = ?, atualizado_em = now() WHERE id = ?",

@@ -29,6 +29,14 @@ export const idTexto = z
 
 export const paramsId = z.object({ id: idTexto });
 
+/* Pedido (id de texto) + linha do pedido (id numerico, pedido_itens.id) — usado
+ * pra remover exatamente uma linha, ja que duas linhas podem apontar pro
+ * mesmo produto (compra normal e brinde do mesmo item, por exemplo). */
+export const paramsIdItem = z.object({
+  id: idTexto,
+  itemId: z.coerce.number().int().positive()
+});
+
 export const paramsParProdutos = z.object({ a: idTexto, b: idTexto });
 
 export const paramsNumero = z.object({

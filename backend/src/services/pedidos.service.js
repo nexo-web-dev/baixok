@@ -444,6 +444,65 @@ export const pedidosService = {
     return pedido;
   },
 
+  /* Remove uma linha do pedido — pediu errado, cliente desistiu de um item.
+   * Por itemId (a linha), nao por produto: mira exatamente a linha clicada,
+   * mesmo que o pedido tenha duas entradas do mesmo produto. Devolve o
+   * estoque daquele item se ele tinha sido baixado, e nunca deixa o pedido
+   * zerado — sem item nenhum, o caminho certo e cancelar o pedido inteiro. */
+  async removerItem(id, itemId, { usuario, ip }) {
+    const atual = await this.buscar(id);
+    if (!STATUS_ABERTOS.includes(atual.status)) {
+      throw new ErroApp("Só é possível remover item de pedidos em aberto.", 409, "pedido_fechado");
+    }
+    const item = atual.items.find(item => item.itemId === itemId);
+    if (!item) throw naoEncontrado("Item não encontrado neste pedido.");
+    if (atual.items.length <= 1) {
+      throw new ErroApp(
+        "O pedido precisa ter ao menos um item. Para tirar o último, cancele o pedido.",
+        409,
+        "ultimo_item"
+      );
+    }
+
+    const pedido = await emTransacao(async () => {
+      if (atual.stockDeducted) {
+        if (item.comboId) {
+          const combo = await combosRepo.buscar(item.comboId);
+          for (const compItem of (combo?.items || [])) {
+            const produtoComp = await produtosRepo.buscar(compItem.productId);
+            if (controlaEstoqueCategoria(produtoComp?.category)) {
+              await produtosRepo.devolverEstoque(compItem.productId, compItem.quantity * item.qty);
+            }
+          }
+        } else {
+          if (item.id) {
+            const produto = await produtosRepo.buscar(item.id);
+            if (controlaEstoqueCategoria(produto?.category)) await produtosRepo.devolverEstoque(item.id, item.qty);
+          }
+          if (item.id2) {
+            const produto2 = await produtosRepo.buscar(item.id2);
+            if (controlaEstoqueCategoria(produto2?.category)) await produtosRepo.devolverEstoque(item.id2, item.qty);
+          }
+        }
+      }
+
+      await pedidosRepo.removerItem(id, itemId);
+      const valorItem = item.price * item.qty;
+      return pedidosRepo.atualizarTotais(id, {
+        subtotal: Math.max(0, Math.round((atual.subtotal - valorItem) * 100) / 100),
+        total: Math.max(0, Math.round((atual.total - valorItem) * 100) / 100)
+      });
+    });
+
+    await auditoriaRepo.registrar({
+      usuarioId: usuario.id, usuario: usuario.usuario, acao: "pedido_item_removido",
+      entidade: "pedido", entidadeId: id,
+      detalhes: { item: `${item.qty}x ${item.name}`, totalAntes: atual.total, totalDepois: pedido.total }, ip
+    });
+    publicar("pedidos", [CANAL.OPERACAO, CANAL.TELAO, CANAL.PUBLICO]);
+    return pedido;
+  },
+
   async mudarStatus(id, dados, { usuario, ip }) {
     const status = typeof dados === "string" ? dados : dados.status;
     let atual = await this.buscar(id);

@@ -12,10 +12,11 @@ import {
 } from "../controllers/painel.controller.js";
 import { exigirLogin, exigirPapel, exigirAba } from "../middlewares/auth.js";
 import { validarCorpo, validarQuery, validarParams } from "../middlewares/validate.js";
-import { paramsId, paramsNumero, paramsParProdutos } from "../schemas/comum.schema.js";
+import { paramsId, paramsIdItem, paramsNumero, paramsParProdutos } from "../schemas/comum.schema.js";
 import {
   criarPedidoManualSchema, mudarStatusSchema, cancelarPedidoSchema, motoboyPedidoSchema,
-  listarPedidosSchema, relatorioSchema, localizacaoMotoboySchema, excluirPedidoSchema
+  listarPedidosSchema, relatorioSchema, localizacaoMotoboySchema, excluirPedidoSchema,
+  adicionarItensPedidoSchema
 } from "../schemas/pedido.schema.js";
 import { abrirCaixaSchema, fecharCaixaSchema, listarFechamentosSchema } from "../schemas/caixa.schema.js";
 import {
@@ -55,6 +56,8 @@ rotasPainel.post("/pedidos", EDIT_PEDIDOS, validarCorpo(criarPedidoManualSchema)
 /* Apagar e diferente de cancelar: some com o registro. So o admin, e mesmo
  * logado precisa confirmar a propria senha de novo (corpo da requisicao). */
 rotasPainel.delete("/pedidos/:id", ADMIN, validarParams(paramsId), validarCorpo(excluirPedidoSchema), pedidosController.remover);
+rotasPainel.post("/pedidos/:id/itens", EDIT_PEDIDOS, validarParams(paramsId), validarCorpo(adicionarItensPedidoSchema), pedidosController.adicionarItens);
+rotasPainel.delete("/pedidos/:id/itens/:itemId", EDIT_PEDIDOS, validarParams(paramsIdItem), pedidosController.removerItem);
 
 // ----------------------------------------------------------------- motoboy ---
 rotasPainel.get("/motoboys/localizacoes", exigirPapel("admin", "caixa"), motoboysController.localizacoes);

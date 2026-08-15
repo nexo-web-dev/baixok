@@ -56,6 +56,14 @@ export const pedidosController = {
   async remover(req, res) {
     await pedidosService.remover(req.validado.params.id, req.validado.body, contexto(req));
     res.json({ ok: true });
+  },
+  async adicionarItens(req, res) {
+    const { id } = req.validado.params;
+    res.json({ pedido: await pedidosService.adicionarItens(id, req.validado.body.items, contexto(req)) });
+  },
+  async removerItem(req, res) {
+    const { id, itemId } = req.validado.params;
+    res.json({ pedido: await pedidosService.removerItem(id, itemId, contexto(req)) });
   }
 };
 
