@@ -9,6 +9,7 @@ import { dinheiro, reais } from "../../utils/formato.js";
 import { carrinho, cupomGuardado } from "./carrinho-store.js";
 import { apiPublica } from "../../services/api.js";
 import { toast } from "../../components/toast.js";
+import { marcarProporcaoImagem } from "../../utils/fotos.js";
 
 /* Ultimo resultado da validacao do cupom, vindo do servidor. */
 let cupomAplicado = null;
@@ -35,6 +36,7 @@ function fotoCarrinho(item) {
       "aria-hidden": "true"
     }),
     el("img.fit-media-main", {
+      onload: marcarProporcaoImagem,
       src: item.image,
       alt: item.name || "Produto",
       loading: "lazy",

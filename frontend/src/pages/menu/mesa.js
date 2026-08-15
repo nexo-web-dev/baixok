@@ -7,6 +7,7 @@
 import { el, render, $, mostrar, $$ } from "../../utils/dom.js";
 import { reais } from "../../utils/formato.js";
 import { apiPublica } from "../../services/api.js";
+import { marcarProporcaoImagem } from "../../utils/fotos.js";
 
 export function mesaDaUrl() {
   const parametros = new URLSearchParams(location.search);
@@ -145,6 +146,7 @@ function desenharComanda(comanda) {
               "aria-hidden": "true"
             }),
             el("img.fit-media-main", {
+              onload: marcarProporcaoImagem,
               src: item.image,
               alt: item.name || "Produto",
               loading: "lazy",

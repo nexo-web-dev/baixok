@@ -2,6 +2,7 @@
 import { el, render, $ } from "../../utils/dom.js";
 import { reais } from "../../utils/formato.js";
 import { rotuloCategoria } from "../../utils/categorias.js";
+import { marcarProporcaoImagem } from "../../utils/fotos.js";
 
 const normalizarBusca = valor => String(valor || "")
   .normalize("NFD")
@@ -48,6 +49,7 @@ export function foto(produto, alt = "") {
       "aria-hidden": "true"
     }),
     el("img.photo-main.fit-media-main", {
+      onload: marcarProporcaoImagem,
       src: produto.image,
       alt: alt || produto.name || "",
       loading: "lazy",
