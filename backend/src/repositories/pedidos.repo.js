@@ -247,6 +247,12 @@ export const pedidosRepo = {
     return this.buscar(id);
   },
 
+  /* Apaga o pedido de vez. `pedido_itens` e `mesa_itens` caem junto por
+   * ON DELETE CASCADE — nao precisa de segunda consulta aqui. */
+  async remover(id) {
+    return (await alteradas("DELETE FROM pedidos WHERE id = ?", [id])) > 0;
+  },
+
   async resumoCancelados({ desde, ate, canal = null }) {
     return await um(`
       SELECT COUNT(*)::int AS pedidos,

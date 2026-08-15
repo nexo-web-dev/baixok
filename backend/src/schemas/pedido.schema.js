@@ -62,6 +62,14 @@ export const cancelarPedidoSchema = z.object({
   motivo: texto(200, { obrigatorio: true })
 });
 
+/* Apagar pedido some com o registro de verdade — diferente de cancelar, que so
+ * muda o status e mantem tudo rastreavel. Por isso exige a senha do proprio
+ * admin de novo, mesmo com a sessao ja logada: confirma que e a pessoa na
+ * frente do teclado, nao uma aba esquecida aberta. */
+export const excluirPedidoSchema = z.object({
+  senha: texto(200, { obrigatorio: true })
+}).strict();
+
 export const motoboyPedidoSchema = z.object({
   motoboy: texto(80, { obrigatorio: true })
 });

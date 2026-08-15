@@ -32,6 +32,7 @@ import { caixaRepo } from "../repositories/caixa.repo.js";
 import { auditoriaRepo } from "../repositories/auditoria.repo.js";
 import { cuponsService } from "./cupons.service.js";
 import { entregaService } from "./entrega.service.js";
+import { authService } from "./auth.service.js";
 import { ErroApp, naoEncontrado, conflito } from "../lib/errors.js";
 import { publicar, CANAL } from "../lib/events.js";
 import { idPedido } from "../lib/ids.js";
@@ -502,6 +503,32 @@ export const pedidosService = {
     });
     publicar("pedidos", [CANAL.OPERACAO, CANAL.TELAO, CANAL.PUBLICO]);
     return pedido;
+  },
+
+  /* Apaga o pedido de vez, nao so marca como cancelado. So o admin chega
+   * nessa rota (a role fica no middleware), e mesmo assim a senha e conferida
+   * de novo aqui — sessao aberta na loja nao basta para apagar uma venda.
+   * O que some do registro fica preservado na auditoria, com os itens e o
+   * total, para o "quem apagou o que" continuar rastreavel. */
+  async remover(id, { senha } = {}, { usuario, ip }) {
+    await authService.confirmarSenha({ usuarioAtual: usuario, senha });
+
+    const pedido = await this.buscar(id);
+    const removido = await pedidosRepo.remover(id);
+    if (!removido) throw naoEncontrado("Pedido não encontrado.");
+
+    await auditoriaRepo.registrar({
+      usuarioId: usuario.id, usuario: usuario.usuario, acao: "pedido_excluido",
+      entidade: "pedido", entidadeId: id,
+      detalhes: {
+        cliente: pedido.customer,
+        status: pedido.status,
+        total: pedido.total,
+        itens: pedido.items.map(item => `${item.qty}x ${item.name}`)
+      },
+      ip
+    });
+    publicar("pedidos", [CANAL.OPERACAO, CANAL.TELAO]);
   },
 
   async definirMotoboy(id, motoboy, { usuario, ip }) {
