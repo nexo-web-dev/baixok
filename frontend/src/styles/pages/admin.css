@@ -382,6 +382,16 @@
 .photo-upload { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .photo-upload img { width: 40px; height: 40px; border-radius: var(--radius-xs); object-fit: contain; background: var(--soft); border: 2px solid var(--green); }
 .photo-upload .photo-empty { color: var(--faint); font-size: .72rem; }
+.photo-warning {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(243, 198, 107, .32);
+  border-radius: var(--radius-sm);
+  background: rgba(243, 198, 107, .10);
+  color: var(--gold-light);
+  font-size: .76rem;
+  line-height: 1.35;
+}
 .check-field { display: inline-flex; align-items: center; gap: 8px; min-height: 38px; color: var(--muted-2); font-size: .82rem; }
 .check-field input { width: 18px; min-height: 18px; accent-color: var(--copper); }
 

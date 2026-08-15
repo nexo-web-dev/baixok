@@ -11,11 +11,13 @@ import { texto, dinheiro, idTexto } from "./comum.schema.js";
 const imagemSchema = z
   .string()
   .trim()
-  .max(260_000, "Imagem grande demais. Envie uma foto menor.")
+  .max(2_500_000, "Imagem grande demais. Envie uma foto menor.")
   .refine(
     valor => valor === ""
       || /^\/?images\/[\w.-]+$/.test(valor)
-      || /^\/api\/publico\/produtos\/[^/]+\/imagem(?:\?v=[^&\s]*)?$/.test(valor)
+      || /^\/?uploads\/[\w.-]+$/.test(valor)
+      || /^\/api\/publico\/produtos\/[^/]+\/imagem(?:\?[^&\s]*)?$/.test(valor)
+      || /^https?:\/\/[^\s<>"']+$/.test(valor)
       || /^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(valor),
     "Use uma imagem do próprio site ou envie um arquivo de imagem."
   )

@@ -15,29 +15,49 @@ import { toast, toastFalha } from "../../../components/toast.js";
 const rascunhoCombo = { id: null, itens: [] };
 const LADO_MAXIMO = 720;
 const QUALIDADE = 0.72;
-const LIMITE_IMAGEM = 260_000;
+const LIMITE_IMAGEM = 1_200_000;
 const normalizarImagem = valor => String(valor || "").trim().replace(/^\/images\//, "images/");
 const EXTENSAO_IMAGEM = /\.(png|jpe?g|webp)(?:$|[?#])/i;
 
-function validarImagemCombo(valor) {
+function avisoImagemCombo(valor) {
   const foto = normalizarImagem(valor);
   if (!foto) return "";
-  if (/[\r\n<>"']/.test(foto)) return "Foto invalida. Use o botao Enviar foto, um link direto ou um arquivo em images/.";
+  if (/[\r\n<>"']/.test(foto)) {
+    return "A foto foi mantida, mas pode falhar por conter quebra de linha, aspas ou simbolos. Prefira Enviar foto ou link direto.";
+  }
   if (foto.startsWith("data:image/")) {
-    if (!/^data:image\/(png|jpe?g|webp);base64,/i.test(foto)) return "Foto invalida. Use PNG, JPG ou WEBP.";
-    if (foto.length > LIMITE_IMAGEM + 2_000) return "Foto pesada demais. Envie uma imagem menor.";
+    if (!/^data:image\/(png|jpe?g|webp);base64,/i.test(foto)) {
+      return "A foto foi mantida, mas o formato pode nao abrir em alguns celulares. Prefira PNG, JPG ou WEBP.";
+    }
+    if (foto.length > LIMITE_IMAGEM + 2_000) {
+      return "A foto foi mantida, mas pode deixar o cardapio pesado. Prefira Enviar foto para reduzir antes de salvar.";
+    }
     return "";
   }
   if (/^https?:\/\//i.test(foto)) {
     try {
       new URL(foto);
     } catch {
-      return "Link da foto invalido.";
+      return "A foto foi mantida, mas o link parece incompleto. Confira se abre no navegador.";
     }
-    return EXTENSAO_IMAGEM.test(foto) ? "" : "Use um link direto da imagem terminando em .jpg, .png ou .webp.";
+    return EXTENSAO_IMAGEM.test(foto) || foto.includes("/api/")
+      ? ""
+      : "A foto foi mantida, mas links sem .jpg, .png ou .webp podem falhar em alguns celulares.";
   }
-  if (!foto.includes("..") && /^(images|uploads)\//i.test(foto) && EXTENSAO_IMAGEM.test(foto)) return "";
-  return "Foto invalida. Use Enviar foto, URL direta .jpg/.png/.webp ou caminho images/arquivo.png.";
+  if (!foto.includes("..") && /^(images|uploads|api|\/api)\//i.test(foto)) {
+    return EXTENSAO_IMAGEM.test(foto) || foto.includes("/api/")
+      ? ""
+      : "A foto foi mantida, mas caminhos sem .jpg, .png ou .webp podem nao carregar.";
+  }
+  return "A foto foi mantida, mas pode nao abrir. Use Enviar foto, URL direta ou caminho images/arquivo.png quando possivel.";
+}
+
+function atualizarAvisoFotoCombo(valor) {
+  const alvo = $("#combo-image-warning");
+  if (!alvo) return;
+  const aviso = avisoImagemCombo(valor);
+  alvo.textContent = aviso;
+  alvo.classList.toggle("hidden", !aviso);
 }
 
 function prepararFoto(arquivo) {
@@ -56,7 +76,6 @@ function prepararFoto(arquivo) {
       canvas.getContext("2d").drawImage(imagem, 0, 0, canvas.width, canvas.height);
 
       const dataUrl = canvas.toDataURL("image/jpeg", QUALIDADE);
-      if (dataUrl.length > LIMITE_IMAGEM) return reject(new Error("Imagem ainda muito pesada. Tente uma foto menor."));
       resolve(dataUrl);
     };
     imagem.onerror = () => {
@@ -69,6 +88,7 @@ function prepararFoto(arquivo) {
 
 function atualizarPreviewCombo(valor) {
   const normalizado = normalizarImagem(valor);
+  atualizarAvisoFotoCombo(normalizado);
   const preview = $("#combo-photo-preview");
   const vazio = $("#combo-photo-empty");
   if (preview) {
@@ -385,8 +405,6 @@ export function ligarCombos() {
       active: $("#combo-active").checked,
       items: rascunhoCombo.itens.map(item => ({ productId: item.productId, quantity: item.quantity }))
     };
-    const erroImagem = validarImagemCombo(corpo.image);
-    if (erroImagem) return erroDoFormulario("combo-error", erroImagem);
     if (!corpo.name) return erroDoFormulario("combo-error", "Dê um nome ao combo.");
     if (corpo.price <= 0) return erroDoFormulario("combo-error", "Informe o preço do combo.");
     if (!corpo.items.length) return erroDoFormulario("combo-error", "Adicione ao menos um produto ao combo.");

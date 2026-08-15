@@ -21,7 +21,7 @@ const PRESETS = [
 
 const LADO_MAXIMO = 720;
 const QUALIDADE = 0.72;
-const LIMITE_IMAGEM = 260_000;
+const LIMITE_IMAGEM = 1_200_000;
 let filtroCategoria = "todos";
 let filtroBusca = "";
 
@@ -44,27 +44,45 @@ const normalizarImagem = valor => String(valor || "").trim().replace(/^\/images\
 const EXTENSAO_IMAGEM = /\.(png|jpe?g|webp)(?:$|[?#])/i;
 const CATEGORIA_SEGURA = /^[\p{L}\p{N}\s&+.,()/-]{2,42}$/u;
 
-function validarImagemProduto(valor) {
+function avisoImagemProduto(valor) {
   const foto = normalizarImagem(valor);
   if (!foto) return "";
-  if (/[\r\n<>"']/.test(foto)) return "Foto invalida. Use o botao Enviar foto, um link direto ou um arquivo em images/.";
+  if (/[\r\n<>"']/.test(foto)) {
+    return "A foto foi mantida, mas pode falhar por conter quebra de linha, aspas ou simbolos. Prefira Enviar foto ou link direto.";
+  }
   if (foto.startsWith("data:image/")) {
-    if (!/^data:image\/(png|jpe?g|webp);base64,/i.test(foto)) return "Foto invalida. Use PNG, JPG ou WEBP.";
-    if (foto.length > LIMITE_IMAGEM + 2_000) return "Foto pesada demais. Envie uma imagem menor.";
+    if (!/^data:image\/(png|jpe?g|webp);base64,/i.test(foto)) {
+      return "A foto foi mantida, mas o formato pode nao abrir em alguns celulares. Prefira PNG, JPG ou WEBP.";
+    }
+    if (foto.length > LIMITE_IMAGEM + 2_000) {
+      return "A foto foi mantida, mas pode deixar o cardapio pesado. Prefira Enviar foto para reduzir antes de salvar.";
+    }
     return "";
   }
   if (/^https?:\/\//i.test(foto)) {
     try {
       new URL(foto);
     } catch {
-      return "Link da foto invalido.";
+      return "A foto foi mantida, mas o link parece incompleto. Confira se abre no navegador.";
     }
-    return EXTENSAO_IMAGEM.test(foto)
+    return EXTENSAO_IMAGEM.test(foto) || foto.includes("/api/")
       ? ""
-      : "Use um link direto da imagem terminando em .jpg, .png ou .webp.";
+      : "A foto foi mantida, mas links sem .jpg, .png ou .webp podem falhar em alguns celulares.";
   }
-  if (!foto.includes("..") && /^(images|uploads)\//i.test(foto) && EXTENSAO_IMAGEM.test(foto)) return "";
-  return "Foto invalida. Use Enviar foto, URL direta .jpg/.png/.webp ou caminho images/arquivo.png.";
+  if (!foto.includes("..") && /^(images|uploads|api|\/api)\//i.test(foto)) {
+    return EXTENSAO_IMAGEM.test(foto) || foto.includes("/api/")
+      ? ""
+      : "A foto foi mantida, mas caminhos sem .jpg, .png ou .webp podem nao carregar.";
+  }
+  return "A foto foi mantida, mas pode nao abrir. Use Enviar foto, URL direta ou caminho images/arquivo.png quando possivel.";
+}
+
+function atualizarAvisoFotoProduto(valor) {
+  const alvo = $("#product-image-warning");
+  if (!alvo) return;
+  const aviso = avisoImagemProduto(valor);
+  alvo.textContent = aviso;
+  alvo.classList.toggle("hidden", !aviso);
 }
 
 function validarProduto(corpo, { controlaEstoque }) {
@@ -77,7 +95,7 @@ function validarProduto(corpo, { controlaEstoque }) {
   if (controlaEstoque && (!Number.isFinite(corpo.stock) || corpo.stock < 0)) return "Informe um estoque valido para bebida.";
   if (controlaEstoque && (!Number.isFinite(corpo.minStock) || corpo.minStock < 0)) return "Informe o estoque minimo para alerta.";
   if (corpo.description.length > 420) return "Descricao muito longa. Use um texto mais curto.";
-  return validarImagemProduto(corpo.image);
+  return "";
 }
 
 function atualizarCampoEstoqueProduto() {
@@ -133,7 +151,6 @@ function prepararFoto(arquivo) {
       canvas.getContext("2d").drawImage(imagem, 0, 0, canvas.width, canvas.height);
 
       const dataUrl = canvas.toDataURL("image/jpeg", QUALIDADE);
-      if (dataUrl.length > LIMITE_IMAGEM) return reject(new Error("Imagem ainda muito pesada. Tente uma foto menor."));
       resolve(dataUrl);
     };
     imagem.onerror = () => {
@@ -146,6 +163,7 @@ function prepararFoto(arquivo) {
 
 function atualizarPreview(valor) {
   const normalizado = normalizarImagem(valor);
+  atualizarAvisoFotoProduto(normalizado);
   const preview = $("#product-photo-preview");
   const vazio = $(".photo-empty");
   if (preview) {
