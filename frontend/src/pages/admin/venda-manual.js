@@ -12,7 +12,7 @@ import { apiPedidos, apiPublica } from "../../services/api.js";
 import { estado, carregar, precoEfetivo } from "./store.js";
 import { toast, toastFalha } from "../../components/toast.js";
 
-const PAGAMENTOS = ["Dinheiro", "Pix", "Cartão", "Online"];
+const PAGAMENTOS = ["Dinheiro", "Pix", "Cartão"];
 
 const rascunho = { itens: [], canal: "loja", pagamento: "Dinheiro", modalidade: "retirada", mesa: null };
 let aoConcluir = null;

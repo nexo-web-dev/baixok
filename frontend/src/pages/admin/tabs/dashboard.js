@@ -133,7 +133,7 @@ function parametrosDashboard() {
 /* "Pagar no balcao" fica de fora de proposito: nunca foi forma de pagamento
  * de verdade, so o marcador de "ainda nao pago" enquanto a mesa estava aberta
  * — o fechamento da conta troca pelo pagamento real (ver mesas.service.js). */
-const PAGAMENTOS_CONHECIDOS = ["Dinheiro", "Pix", "Cartão", "Online"];
+const PAGAMENTOS_CONHECIDOS = ["Dinheiro", "Pix", "Cartão"];
 
 function categoriasDoCatalogo() {
   return [...new Set((estado.produtos || []).map(produto => String(produto.category || "").trim()).filter(Boolean))];
