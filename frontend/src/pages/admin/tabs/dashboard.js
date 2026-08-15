@@ -271,11 +271,14 @@ export async function desenharDashboard() {
       estoqueBaixo.length ? "alert-copper" : "")
   );
 
+  const tituloDia = $("#day-chart-title");
+  if (tituloDia) tituloDia.textContent = agrupadoPorMes ? "Vendas por mês" : "Vendas por dia";
+
   render($("#day-chart"), barras(
     porDia.map(linha => ({ rotulo: linha.rotulo, valor: linha.faturamento })),
     reais,
-    "Sem vendas por dia neste período.",
-    "Troque para 7 dias ou 30 dias para enxergar a evolução."
+    agrupadoPorMes ? "Sem vendas registradas ainda." : "Sem vendas por dia neste período.",
+    agrupadoPorMes ? "Assim que houver pedidos entregues, o histórico mensal aparece aqui." : "Troque para 7 dias ou 30 dias para enxergar a evolução."
   ));
 
   render($("#channel-chart"), barras(

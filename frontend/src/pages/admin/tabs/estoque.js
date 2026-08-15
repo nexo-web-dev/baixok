@@ -7,6 +7,7 @@ import { apiProdutos, apiInsumos } from "../../../services/api.js";
 import { estado, carregar } from "../store.js";
 import { toast, toastFalha } from "../../../components/toast.js";
 import { controlaEstoqueCategoria } from "../../../utils/estoque.js";
+import { dataHora } from "../../../utils/formato.js";
 
 let insumoEmEdicao = null;
 
@@ -46,6 +47,7 @@ function cartaoProduto(produto) {
         "aria-label": `Estoque mínimo de ${produto.name}`
       })
     ),
+    produto.updatedAt ? el("span.small.faint", {}, `última alteração: ${dataHora(produto.updatedAt)}`) : null,
     !produto.active ? el("span.small.faint", {}, "pausado no cardápio") : null
   );
 }
