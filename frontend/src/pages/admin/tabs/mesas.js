@@ -9,7 +9,7 @@ import { apiMesas, apiAjustes } from "../../../services/api.js";
 import { estado, carregar } from "../store.js";
 import { toast, toastFalha } from "../../../components/toast.js";
 import { imprimir } from "../../../components/impressao.js";
-import { abrirQrMesa } from "../../../components/qr-mesa.js";
+import { abrirQrMesa, abrirQrCardapio } from "../../../components/qr-mesa.js";
 import { abrirVendaManual } from "../venda-manual.js";
 
 const ROTULO_STATUS = { livre: "Livre", aberta: "Usando", fechando: "Falta pagamento" };
@@ -161,6 +161,8 @@ export function ligarMesas() {
 
   delegar(alvo, "click", "[data-acao='qr']", (_e, botao) =>
     abrirQrMesa(Number(botao.dataset.n), estado.ajustes.menu_url));
+
+  $("#generate-menu-qr")?.addEventListener("click", () => abrirQrCardapio(estado.ajustes.menu_url));
 
   $("#menu-url-save")?.addEventListener("click", async () => {
     const erro = $("#menu-url-error");

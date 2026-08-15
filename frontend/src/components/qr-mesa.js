@@ -53,7 +53,9 @@ function retanguloArredondado(ctx, x, y, largura, altura, raio) {
   ctx.closePath();
 }
 
-async function gerarQrParaImpressao(numero, url) {
+/* Cartaz generico: usado tanto pelo QR de mesa (pill "MESA X") quanto pelo QR
+ * geral do cardapio (pill "CARDÁPIO DIGITAL") — mesma arte, so texto muda. */
+async function gerarCartazQr(url, { pill, rodapeTitulo, rodapeTexto }) {
   const qr = await QRCode.toDataURL(url, { ...OPCOES, width: 640, margin: 1 });
   const [imagemQr, logo] = await Promise.all([
     carregarImagem(qr),
@@ -95,13 +97,14 @@ async function gerarQrParaImpressao(numero, url) {
   }
   escreverCentralizado(ctx, "BAIXO K", CENTRO, 182, 30, 800, INK);
 
-  // Numero da mesa em destaque — e o que precisa ser lido de longe.
+  // Selo em destaque — e o que precisa ser lido de longe.
   const pillY = 218;
   const pillH = 96;
   ctx.fillStyle = COPPER;
-  retanguloArredondado(ctx, CENTRO - 220, pillY, 440, pillH, pillH / 2);
+  const pillLargura = Math.max(440, pill.length * 26 + 80);
+  retanguloArredondado(ctx, CENTRO - pillLargura / 2, pillY, pillLargura, pillH, pillH / 2);
   ctx.fill();
-  escreverCentralizado(ctx, `MESA ${numero}`, CENTRO, pillY + pillH / 2 + 20, 54, 900, "#ffffff");
+  escreverCentralizado(ctx, pill, CENTRO, pillY + pillH / 2 + 20, 54, 900, "#ffffff");
 
   escreverCentralizado(ctx, "Aponte a câmera do celular para o código abaixo", CENTRO, pillY + pillH + 46, 22, 600, MUTED);
 
@@ -121,9 +124,9 @@ async function gerarQrParaImpressao(numero, url) {
   ctx.fillStyle = "#f7ede3";
   retanguloArredondado(ctx, CENTRO - 260, rodapeY, 520, 56, 28);
   ctx.fill();
-  escreverCentralizado(ctx, "Chame o garçom para fechar a conta", CENTRO, rodapeY + 36, 22, 700, "#8a4a24");
+  escreverCentralizado(ctx, rodapeTitulo, CENTRO, rodapeY + 36, 22, 700, "#8a4a24");
 
-  escreverCentralizado(ctx, "Escaneie, monte seu pedido e envie direto para a cozinha", CENTRO, rodapeY + 100, 19, 500, MUTED);
+  escreverCentralizado(ctx, rodapeTexto, CENTRO, rodapeY + 100, 19, 500, MUTED);
 
   return canvas.toDataURL("image/png");
 }
@@ -138,7 +141,11 @@ export async function abrirQrMesa(numero, menuUrl) {
 
   try {
     const paraTela = await QRCode.toDataURL(url, { ...OPCOES, width: 220 });
-    const paraImpressao = await gerarQrParaImpressao(numero, url);
+    const paraImpressao = await gerarCartazQr(url, {
+      pill: `MESA ${numero}`,
+      rodapeTitulo: "Chame o garçom para fechar a conta",
+      rodapeTexto: "Escaneie, monte seu pedido e envie direto para a cozinha"
+    });
 
     $("#qr-image").src = paraTela;
     $("#qr-print").href = paraImpressao;
@@ -146,6 +153,33 @@ export async function abrirQrMesa(numero, menuUrl) {
     mostrar(modal, true);
   } catch {
     toastErro("Não foi possível gerar o QR code desta mesa.");
+  }
+}
+
+/* Mesmo cartaz da mesa, mas apontando pro cardapio geral (sem numero de mesa)
+ * — pra colar na porta, no balcao, no cartao de visita etc. */
+export async function abrirQrCardapio(menuUrl) {
+  const modal = $("#qr-modal");
+  if (!modal) return;
+
+  const url = (menuUrl || `${location.origin}/index.html`).trim();
+  $("#qr-title").textContent = "Cardápio digital";
+  $("#qr-url").textContent = url;
+
+  try {
+    const paraTela = await QRCode.toDataURL(url, { ...OPCOES, width: 220 });
+    const paraImpressao = await gerarCartazQr(url, {
+      pill: "CARDÁPIO DIGITAL",
+      rodapeTitulo: "Peça direto pelo celular",
+      rodapeTexto: "Escaneie, monte seu pedido e envie para retirada ou entrega"
+    });
+
+    $("#qr-image").src = paraTela;
+    $("#qr-print").href = paraImpressao;
+    $("#qr-print").download = "qr-cardapio.png";
+    mostrar(modal, true);
+  } catch {
+    toastErro("Não foi possível gerar o QR code do cardápio.");
   }
 }
 
