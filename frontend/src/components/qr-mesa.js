@@ -97,14 +97,24 @@ async function gerarCartazQr(url, { pill, rodapeTitulo, rodapeTexto }) {
   }
   escreverCentralizado(ctx, "BAIXO K", CENTRO, 182, 30, 800, INK);
 
-  // Selo em destaque — e o que precisa ser lido de longe.
+  // Selo em destaque — e o que precisa ser lido de longe. Largura medida de
+  // verdade (nao estimada por quantidade de letra): "CARDÁPIO DIGITAL" e bem
+  // mais largo por caractere do que "MESA 4", e uma estimativa fixa cortava
+  // o texto pra fora do balao.
   const pillY = 218;
   const pillH = 96;
+  const pillMargem = 60;
+  let pillFonte = 54;
+  ctx.font = `900 ${pillFonte}px Arial, sans-serif`;
+  while (ctx.measureText(pill).width > LARGURA - pillMargem * 2 && pillFonte > 30) {
+    pillFonte -= 2;
+    ctx.font = `900 ${pillFonte}px Arial, sans-serif`;
+  }
+  const pillLargura = Math.max(440, ctx.measureText(pill).width + 100);
   ctx.fillStyle = COPPER;
-  const pillLargura = Math.max(440, pill.length * 26 + 80);
   retanguloArredondado(ctx, CENTRO - pillLargura / 2, pillY, pillLargura, pillH, pillH / 2);
   ctx.fill();
-  escreverCentralizado(ctx, pill, CENTRO, pillY + pillH / 2 + 20, 54, 900, "#ffffff");
+  escreverCentralizado(ctx, pill, CENTRO, pillY + pillH / 2 + pillFonte / 2.7, pillFonte, 900, "#ffffff");
 
   escreverCentralizado(ctx, "Aponte a câmera do celular para o código abaixo", CENTRO, pillY + pillH + 46, 22, 600, MUTED);
 

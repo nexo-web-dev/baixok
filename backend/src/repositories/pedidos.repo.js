@@ -286,6 +286,33 @@ export const pedidosRepo = {
     return this.buscar(id);
   },
 
+  /* Mesmo INSERT de `inserir()`, mas pra um pedido que ja existe — cliente
+   * pediu mais uma coisa por telefone, ou o balcao esqueceu de lancar algo. */
+  async adicionarItens(pedidoId, itens) {
+    if (!itens.length) return;
+    const valores = [];
+    const marcadores = itens.map(item => {
+      valores.push(
+        pedidoId, item.id ?? null, item.id2 ?? null, item.comboId ?? null, item.name, item.qty, item.price,
+        paraBanco(Boolean(item.gift))
+      );
+      return "(?, ?, ?, ?, ?, ?, ?, ?)";
+    }).join(", ");
+
+    await alteradas(`
+      INSERT INTO pedido_itens (pedido_id, produto_id, produto_id_2, combo_id, nome, quantidade, preco_unit, brinde)
+      VALUES ${marcadores}
+    `, valores);
+  },
+
+  async atualizarTotais(id, { subtotal, total }) {
+    await alteradas(
+      "UPDATE pedidos SET subtotal = ?, total = ?, atualizado_em = now() WHERE id = ?",
+      [subtotal, total, id]
+    );
+    return this.buscar(id);
+  },
+
   async cancelar(id, motivo) {
     await alteradas(
       "UPDATE pedidos SET status = 'cancelado', motivo_cancelamento = ?, atualizado_em = now() WHERE id = ?",

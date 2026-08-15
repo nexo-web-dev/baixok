@@ -53,6 +53,13 @@ export const criarPedidoManualSchema = z.object({
   tableNumber: z.coerce.number().int().min(1).max(999).nullable().default(null)
 }).strict();
 
+/* Acrescentar item num pedido que ja existe — cliente ligou pedindo mais uma
+ * coisa, ou o balcao esqueceu de lancar algo. Mesmo formato de item do pedido
+ * novo: sem preco, o servidor precifica pelo cadastro atual. */
+export const adicionarItensPedidoSchema = z.object({
+  items: z.array(itemPedidoSchema).min(1, "Adicione ao menos um item.").max(LIMITES.ITENS_POR_PEDIDO)
+}).strict();
+
 export const mudarStatusSchema = z.object({
   status: z.enum(STATUS_PEDIDO, { message: "Status invalido." }),
   motoboy: texto(80).optional()
