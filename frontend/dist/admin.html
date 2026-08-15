@@ -11,11 +11,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/admin-yKrs7sKa.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/api-BZWm3GtP.js">
-  <link rel="modulepreload" crossorigin href="/assets/estoque-CW66zFTe.js">
+  <script type="module" crossorigin src="/assets/admin-DYcHXF9I.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/api-Bto_1JnK.js">
+  <link rel="modulepreload" crossorigin href="/assets/estoque-CQEPAuI7.js">
   <link rel="modulepreload" crossorigin href="/assets/categorias-HQM12cpL.js">
-  <link rel="stylesheet" crossorigin href="/assets/admin-BsfTmRM3.css">
+  <link rel="stylesheet" crossorigin href="/assets/admin-CoL-yKee.css">
 </head>
 <body data-page="admin">
   <div class="aviso-offline" role="alert">Sem conexão com o servidor. As alterações não estão sendo salvas.</div>
@@ -518,6 +518,28 @@
         <button class="icon-close" type="button" id="order-detail-close" aria-label="Fechar detalhes">×</button>
       </div>
       <div id="order-detail-body"></div>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="order-delete-modal" role="dialog" aria-modal="true" aria-labelledby="order-delete-title">
+    <div class="modal-card order-delete-card">
+      <div class="order-detail-head">
+        <div>
+          <span class="eyebrow">Apagar pedido</span>
+          <h2 id="order-delete-title">Confirmar exclusão</h2>
+          <p>Isso apaga o pedido de vez, não é como cancelar. Confirme com sua senha de administrador.</p>
+        </div>
+        <button class="icon-close" type="button" id="order-delete-close" aria-label="Fechar">×</button>
+      </div>
+      <label>
+        Senha do administrador
+        <input id="order-delete-password" type="password" autocomplete="current-password" placeholder="Sua senha">
+      </label>
+      <p class="form-error hidden" id="order-delete-error" role="alert"></p>
+      <div class="order-detail-actions">
+        <button class="secondary" type="button" id="order-delete-cancel">Cancelar</button>
+        <button class="danger" type="button" id="order-delete-confirm">Apagar pedido</button>
+      </div>
     </div>
   </div>
 

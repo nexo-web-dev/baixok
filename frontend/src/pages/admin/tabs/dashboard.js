@@ -10,9 +10,11 @@ import { CANAIS_ROTULO, MODALIDADES_ROTULO } from "../../../utils/categorias.js"
 import { apiPedidos, apiRelatorios } from "../../../services/api.js";
 import { toastFalha, toastOk } from "../../../components/toast.js";
 import { imprimirAmbas } from "../../../components/impressao.js";
+import { estado } from "../store.js";
 
 const filtros = { periodo: "hoje", canal: "", desde: "", ate: "" };
 let ultimoRelatorio = null;
+let pedidoParaExcluir = null;
 
 function metrica(rotulo, valor, nota, tom = "") {
   return el("article.metric-card", { class: tom },
@@ -151,7 +153,10 @@ function vendaLinha(pedido) {
         : null,
       cancelado
         ? null
-        : el("button.secondary.small", { type: "button", dataset: { action: "cancel-sale" } }, "Cancelar")
+        : el("button.secondary.small", { type: "button", dataset: { action: "cancel-sale" } }, "Cancelar"),
+      estado.usuario?.papel === "admin"
+        ? el("button.danger.small", { type: "button", dataset: { action: "delete-sale" } }, "Excluir")
+        : null
     ),
     el("div.sale-detail.hidden", {},
       el("strong", {}, "Detalhes do pedido"),
@@ -404,4 +409,54 @@ export function ligarDashboard() {
   };
   delegar($("#dashboard-sales"), "click", "[data-action='details-sale']", alternarDetalhes);
   delegar($("#dashboard-canceled"), "click", "[data-action='details-sale']", alternarDetalhes);
+
+  const abrirExclusao = (_evento, botao) => {
+    const linha = botao.closest(".sale-row");
+    if (!linha) return;
+    pedidoParaExcluir = linha.dataset.id;
+    const erro = $("#order-delete-error");
+    const senha = $("#order-delete-password");
+    if (erro) { erro.textContent = ""; erro.classList.add("hidden"); }
+    if (senha) senha.value = "";
+    $("#order-delete-modal")?.classList.remove("hidden");
+    senha?.focus();
+  };
+  delegar($("#dashboard-sales"), "click", "[data-action='delete-sale']", abrirExclusao);
+  delegar($("#dashboard-canceled"), "click", "[data-action='delete-sale']", abrirExclusao);
+
+  const fecharExclusao = () => {
+    pedidoParaExcluir = null;
+    $("#order-delete-modal")?.classList.add("hidden");
+  };
+  $("#order-delete-close")?.addEventListener("click", fecharExclusao);
+  $("#order-delete-cancel")?.addEventListener("click", fecharExclusao);
+  $("#order-delete-modal")?.addEventListener("click", evento => {
+    if (evento.target === $("#order-delete-modal")) fecharExclusao();
+  });
+
+  $("#order-delete-confirm")?.addEventListener("click", async () => {
+    const erro = $("#order-delete-error");
+    const campoSenha = $("#order-delete-password");
+    const senha = campoSenha?.value || "";
+    if (erro) { erro.textContent = ""; erro.classList.add("hidden"); }
+
+    if (!senha) {
+      if (erro) { erro.textContent = "Digite sua senha de administrador."; erro.classList.remove("hidden"); }
+      return;
+    }
+    if (!pedidoParaExcluir) return;
+
+    const botao = $("#order-delete-confirm");
+    botao.disabled = true;
+    try {
+      await apiPedidos.remover(pedidoParaExcluir, senha);
+      toastOk("Pedido apagado.");
+      fecharExclusao();
+      await desenharDashboard();
+    } catch (erroReq) {
+      if (erro) { erro.textContent = erroReq.message || "Não foi possível apagar o pedido."; erro.classList.remove("hidden"); }
+    } finally {
+      botao.disabled = false;
+    }
+  });
 }

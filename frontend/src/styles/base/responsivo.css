@@ -241,16 +241,17 @@
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
   }
+  /* Sem altura propria e sem scroll proprio: antes essa caixa tinha um teto
+   * de ~210px com rolagem interna, o que criava uma segunda area de scroll
+   * dentro da gaveta (que ja rola inteira) — o resultado era uma janela minuscula
+   * mostrando so metade de um item. Agora a lista cresce junto do resto e quem
+   * rola e so a gaveta. */
   body[data-page="menu"] .cart-items {
     display: grid;
     grid-auto-rows: max-content;
     align-content: start;
-    flex: 0 1 auto;
+    flex: 0 0 auto;
     gap: 10px;
-    max-height: min(28svh, 210px);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    scrollbar-gutter: stable;
     padding: 0 2px 10px 0;
     border-bottom: 1px solid rgba(255,255,255,.08);
   }
@@ -258,9 +259,6 @@
     top: 0;
     max-height: none;
     padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px));
-  }
-  body[data-page="menu"][data-mode="mesa"] .cart-items {
-    max-height: min(26svh, 190px);
   }
   body[data-page="menu"].cart-open .cart { opacity: 1; pointer-events: auto; transform: translateY(0); }
   body[data-page="menu"].cart-open .shop-layout { padding-right: 20px; }
