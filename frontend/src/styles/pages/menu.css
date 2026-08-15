@@ -142,7 +142,7 @@ body.cart-open .shop-layout { padding-right: calc(var(--cart-width) + 18px); }
 .product {
   --product-photo-size: clamp(126px, 8.4vw, 148px);
   --product-photo-width: var(--product-photo-size);
-  display: grid; grid-template-columns: calc(var(--product-photo-size) + 28px) minmax(0, 1fr); height: 168px; min-height: 168px; position: relative; overflow: hidden;
+  display: grid; grid-template-columns: calc(var(--product-photo-size) + 28px) minmax(0, 1fr); height: auto; min-height: 168px; position: relative; overflow: hidden;
   border-radius: var(--radius-md); background: var(--panel); border: 1px solid var(--line);
   transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease; content-visibility: auto; contain-intrinsic-size: 168px;
 }

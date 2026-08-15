@@ -53,6 +53,23 @@ export function foto(produto, alt = "") {
   );
 }
 
+/* Selo "leve e ganhe" com a foto do brinde — usado no card da grade e no
+ * detalhe do produto, pra quem abrir o produto tambem ver o que vai ganhar. */
+export function blocoBrindes(produto) {
+  if (!produto.brindesPromocionais?.length) return null;
+  return el("div.product-gifts", {}, ...produto.brindesPromocionais.map(brinde =>
+    el("span.product-gift", {},
+      brinde.giftImage
+        ? el("img.product-gift-photo", {
+            src: brinde.giftImage, alt: "", loading: "lazy", decoding: "async",
+            onerror: evento => evento.target.remove()
+          })
+        : null,
+      `Leve ${brinde.buyQty} e ganhe ${brinde.giftQty} ${brinde.giftName}`
+    )
+  ));
+}
+
 function cartaoProduto(produto, { lojaAberta = true } = {}) {
   const promocional = produto.emPromocao && produto.precoOriginal > produto.price;
 
@@ -67,19 +84,7 @@ function cartaoProduto(produto, { lojaAberta = true } = {}) {
     el("div.product-body", {},
       el("strong", {}, produto.name),
       el("p", {}, produto.description || ""),
-      produto.brindesPromocionais?.length
-        ? el("div.product-gifts", {}, ...produto.brindesPromocionais.map(brinde =>
-            el("span.product-gift", {},
-              brinde.giftImage
-                ? el("img.product-gift-photo", {
-                    src: brinde.giftImage, alt: "", loading: "lazy", decoding: "async",
-                    onerror: evento => evento.target.remove()
-                  })
-                : null,
-              `Leve ${brinde.buyQty} e ganhe ${brinde.giftQty} ${brinde.giftName}`
-            )
-          ))
-        : null,
+      blocoBrindes(produto),
       el("div.price-row", {},
         el("span", {},
           promocional ? el("s", {}, reais(produto.precoOriginal)) : null,

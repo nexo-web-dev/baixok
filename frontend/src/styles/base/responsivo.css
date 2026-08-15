@@ -4,11 +4,20 @@
   html:has(body[data-page="menu"]) { width: 100%; max-width: 100%; overflow-x: clip; scroll-behavior: auto; }
   body[data-page="menu"] { width: 100%; max-width: 100%; min-width: 0; margin: 0; overflow-x: clip; }
   body[data-page="menu"] * { max-width: 100%; }
-  body[data-page="menu"] .topbar { position: sticky; padding: 12px 20px 8px; background: var(--shell); }
+  body[data-page="menu"] .topbar { position: sticky; padding: 12px 20px 8px; background: var(--shell); flex-wrap: wrap; row-gap: 8px; }
   body[data-page="menu"] .brand img { width: 40px; height: 40px; }
   body[data-page="menu"] .brand strong { font-size: 1rem; }
   body[data-page="menu"] .brand span { font-size: .76rem; }
-  body[data-page="menu"] .top-actions .secondary { display: none; }
+  /* Antes ficavam escondidos no celular sem alternativa nenhuma pra chegar
+   * neles. Agora quebram pra uma segunda linha, alinhados a direita, em vez
+   * de disputar espaco com a marca na mesma linha. */
+  body[data-page="menu"] .top-actions { width: 100%; justify-content: flex-end; gap: 6px; }
+  body[data-page="menu"] .top-actions .secondary {
+    min-height: 32px;
+    padding: 0 10px;
+    font-size: .72rem;
+    white-space: nowrap;
+  }
   body[data-page="menu"] .closed-banner {
     display: grid;
     gap: 4px;

@@ -13,7 +13,7 @@ import { registrarPwa } from "../../services/pwa.js";
 import { reais, dataHora } from "../../utils/formato.js";
 import { rotuloCategoria } from "../../utils/categorias.js";
 import { controlaEstoqueCategoria } from "../../utils/estoque.js";
-import { desenharDestaques, desenharFiltros, desenharGrade, foto } from "./catalogo.js";
+import { desenharDestaques, desenharFiltros, desenharGrade, foto, blocoBrindes } from "./catalogo.js";
 import { carrinho, aoMudarCarrinho } from "./carrinho-store.js";
 import {
   desenharCarrinho, aplicarCupom, removerCupom, revalidarCupom,
@@ -334,6 +334,7 @@ function abrirDetalhesProduto(id) {
         el("span.eyebrow", {}, produto.badge || rotuloCategoria(produto.category) || "Item"),
         el("h2#product-detail-title", {}, produto.name),
         el("p", {}, produto.description || "Produto do cardápio Baixo K."),
+        blocoBrindes(produto),
         el("div.product-detail-price", {},
           promocional ? el("s", {}, reais(produto.precoOriginal)) : null,
           el("strong", {}, reais(produto.price))
