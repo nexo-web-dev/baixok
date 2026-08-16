@@ -135,8 +135,14 @@ function parametrosDashboard() {
  * — o fechamento da conta troca pelo pagamento real (ver mesas.service.js). */
 const PAGAMENTOS_CONHECIDOS = ["Dinheiro", "Pix", "Cartão"];
 
+/* So categorias com produto ATIVO — "remover" produto so desativa (arquiva),
+ * entao um rascunho antigo nunca publicado nao pode continuar aparecendo
+ * no filtro como se fosse uma categoria de verdade. */
 function categoriasDoCatalogo() {
-  return [...new Set((estado.produtos || []).map(produto => String(produto.category || "").trim()).filter(Boolean))];
+  return [...new Set((estado.produtos || [])
+    .filter(produto => produto.active)
+    .map(produto => String(produto.category || "").trim())
+    .filter(Boolean))];
 }
 
 function preencherFiltroSelect(id, opcoes, rotuloPadrao, rotular = valor => valor) {

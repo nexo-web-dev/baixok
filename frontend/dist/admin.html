@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/admin-_6-vjvBN.js"></script>
+  <script type="module" crossorigin src="/assets/admin-EYQcf9ho.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/api-DtQzBf01.js">
   <link rel="modulepreload" crossorigin href="/assets/estoque-CX_N3V3-.js">
   <link rel="modulepreload" crossorigin href="/assets/categorias-CaaVB_Yc.js">
@@ -30,18 +30,18 @@
     </div>
 
     <nav class="nav-list" id="nav-list" aria-label="Seções">
-      <button class="nav-item active" type="button" data-tab="pedidos"><span class="nav-icon" aria-hidden="true">☰</span>Pedidos<span class="nav-badge hidden" id="nav-badge">0</span></button>
-      <button class="nav-item" type="button" data-tab="motoboy"><span class="nav-icon" aria-hidden="true">MB</span>Motoboy</button>
-      <button class="nav-item" type="button" data-tab="mesas"><span class="nav-icon" aria-hidden="true">▢</span>Mesas (salão)</button>
-      <button class="nav-item" type="button" data-tab="produtos"><span class="nav-icon" aria-hidden="true">◱</span>Produtos</button>
-      <button class="nav-item" type="button" data-tab="promos"><span class="nav-icon" aria-hidden="true">✦</span>Promoções</button>
-      <button class="nav-item" type="button" data-tab="combos"><span class="nav-icon" aria-hidden="true">◆</span>Combos</button>
-      <button class="nav-item" type="button" data-tab="entrega"><span class="nav-icon" aria-hidden="true">◈</span>Área de entrega</button>
-      <button class="nav-item" type="button" data-tab="estoque"><span class="nav-icon" aria-hidden="true">▤</span>Estoque</button>
-      <button class="nav-item" type="button" data-tab="dashboard"><span class="nav-icon" aria-hidden="true">◔</span>Dashboard</button>
-      <button class="nav-item" type="button" data-tab="plano"><span class="nav-icon" aria-hidden="true">PL</span>Plano do sistema</button>
-      <button class="nav-item" type="button" data-tab="usuarios"><span class="nav-icon" aria-hidden="true">◍</span>Usuários</button>
-      <button class="nav-item" type="button" data-tab="fechamentos"><span class="nav-icon" aria-hidden="true">FC</span>Fechamentos</button>
+      <button class="nav-item active" type="button" data-tab="pedidos" title="Fila de pedidos: tudo que entra pelo cardápio, WhatsApp ou lançamento manual."><span class="nav-icon" aria-hidden="true">☰</span>Pedidos<span class="nav-badge hidden" id="nav-badge">0</span></button>
+      <button class="nav-item" type="button" data-tab="motoboy" title="Entregas prontas e entregues, quem levou cada pedido e a localização do entregador."><span class="nav-icon" aria-hidden="true">MB</span>Motoboy</button>
+      <button class="nav-item" type="button" data-tab="mesas" title="Comandas do salão por mesa, abertas via QR code, com fechamento de conta."><span class="nav-icon" aria-hidden="true">▢</span>Mesas (salão)</button>
+      <button class="nav-item" type="button" data-tab="produtos" title="Cadastro de produtos: fotos, categoria, preço e ordem do cardápio."><span class="nav-icon" aria-hidden="true">◱</span>Produtos</button>
+      <button class="nav-item" type="button" data-tab="promos" title="Preço promocional com validade e cupons de desconto."><span class="nav-icon" aria-hidden="true">✦</span>Promoções</button>
+      <button class="nav-item" type="button" data-tab="combos" title="Pizza de 2 sabores e combos: itens novos compostos por produtos existentes."><span class="nav-icon" aria-hidden="true">◆</span>Combos</button>
+      <button class="nav-item" type="button" data-tab="entrega" title="Faixas de raio e taxa de entrega a partir do endereço da loja."><span class="nav-icon" aria-hidden="true">◈</span>Área de entrega</button>
+      <button class="nav-item" type="button" data-tab="estoque" title="Controle de estoque de produtos do cardápio e insumos internos."><span class="nav-icon" aria-hidden="true">▤</span>Estoque</button>
+      <button class="nav-item" type="button" data-tab="dashboard" title="Faturamento, filtros e indicadores do período — resultado do caixa."><span class="nav-icon" aria-hidden="true">◔</span>Dashboard</button>
+      <button class="nav-item" type="button" data-tab="plano" title="Mensalidade do sistema e status de pagamento do projeto."><span class="nav-icon" aria-hidden="true">PL</span>Plano do sistema</button>
+      <button class="nav-item" type="button" data-tab="usuarios" title="Cadastro de acesso da equipe: administrador, caixa e cozinha."><span class="nav-icon" aria-hidden="true">◍</span>Usuários</button>
+      <button class="nav-item" type="button" data-tab="fechamentos" title="Histórico de caixas fechados, com relatório para imprimir ou salvar."><span class="nav-icon" aria-hidden="true">FC</span>Fechamentos</button>
     </nav>
 
     <div class="nav-foot">
@@ -434,7 +434,7 @@
           </div>
         </div>
         <div class="sales-filter-bar">
-          <input id="sales-search" type="search" placeholder="Buscar por cliente, telefone, nº do pedido ou item...">
+          <input id="sales-search" type="search" autocomplete="off" placeholder="Buscar por cliente, telefone, nº do pedido ou item...">
           <select id="sales-filter-fulfillment" aria-label="Filtrar por modalidade">
             <option value="">Todas as modalidades</option>
             <option value="retirada">Retirada</option>
@@ -582,7 +582,7 @@
       </div>
       <label>
         Senha do administrador
-        <input id="order-delete-password" type="password" autocomplete="current-password" placeholder="Sua senha">
+        <input id="order-delete-password" type="password" autocomplete="off" placeholder="Sua senha">
       </label>
       <p class="form-error hidden" id="order-delete-error" role="alert"></p>
       <div class="order-detail-actions">
@@ -677,7 +677,7 @@
       </div>
       <label>
         Senha
-        <input id="cash-password" type="password" autocomplete="current-password" placeholder="Sua senha de acesso">
+        <input id="cash-password" type="password" autocomplete="off" placeholder="Sua senha de acesso">
       </label>
       <div class="field-row">
         <button class="primary wide" type="submit">Confirmar abertura</button>
