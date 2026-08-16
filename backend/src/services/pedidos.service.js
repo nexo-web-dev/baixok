@@ -632,20 +632,29 @@ export const pedidosService = {
   /* Corrige o pagamento de um pedido ja lancado — o caso real e marcar como
    * "Calote" quando o produto ja saiu (entrega feita, mesa liberada) e o
    * cliente nao pagou. Nao mexe em estoque nem em status: o produto foi
-   * embora de verdade, so o dinheiro que nao chegou. */
-  async definirPagamento(id, pagamento, { usuario, ip }) {
+   * embora de verdade, so o dinheiro que nao chegou.
+   *
+   * Motivo e obrigatorio so pra Calote — e o que fica registrado pra conferir
+   * depois, igual ja acontece com o motivo de cancelamento. */
+  async definirPagamento(id, pagamento, motivo, { usuario, ip }) {
     const valor = String(pagamento || "").trim();
     if (!valor) throw new ErroApp("Informe a forma de pagamento.", 400, "pagamento_obrigatorio");
+
+    const motivoLimpo = String(motivo || "").trim();
+    if (valor === "Calote" && !motivoLimpo) {
+      throw new ErroApp("Informe o motivo do calote.", 400, "motivo_obrigatorio");
+    }
 
     const atual = await this.buscar(id);
     if (atual.status === "cancelado") throw conflito("Pedido cancelado não tem pagamento pra marcar.");
 
     await pedidosRepo.definirPagamentoEmLote([id], valor);
+    await pedidosRepo.definirMotivoNaoPago(id, valor === "Calote" ? motivoLimpo : "");
 
     await auditoriaRepo.registrar({
       usuarioId: usuario.id, usuario: usuario.usuario, acao: "pedido_pagamento_alterado",
       entidade: "pedido", entidadeId: id,
-      detalhes: { de: atual.payment, para: valor, total: atual.total },
+      detalhes: { de: atual.payment, para: valor, motivo: motivoLimpo, total: atual.total },
       ip
     });
     publicar("pedidos", [CANAL.OPERACAO, CANAL.TELAO]);

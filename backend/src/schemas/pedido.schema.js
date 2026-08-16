@@ -82,7 +82,10 @@ export const motoboyPedidoSchema = z.object({
 });
 
 export const definirPagamentoSchema = z.object({
-  pagamento: texto(60, { obrigatorio: true })
+  pagamento: texto(60, { obrigatorio: true }),
+  /* Obrigatorio so quando pagamento = "Calote" — checado no service, nao aqui,
+   * porque o schema nao sabe nada sobre o valor de outro campo nessa versao. */
+  motivo: texto(200)
 }).strict();
 
 export const localizacaoMotoboySchema = z.object({

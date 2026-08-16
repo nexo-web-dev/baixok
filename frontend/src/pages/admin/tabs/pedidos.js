@@ -494,9 +494,10 @@ export function ligarPedidos() {
     if (pedido) imprimirAmbas(pedido);
   });
   delegar($("#order-detail-body"), "click", "[data-acao='marcar-calote-pedido']", async (_e, botao) => {
-    if (!confirm("Marcar este pedido como calote? O valor sai do faturamento e entra como prejuízo no dashboard.")) return;
+    const motivo = (prompt("Motivo do calote (obrigatório e fica registrado):", "") ?? "").trim();
+    if (!motivo) return toastFalha(new Error("Informe o motivo para marcar como calote."), "Calote");
     try {
-      await apiPedidos.definirPagamento(botao.dataset.id, "Calote");
+      await apiPedidos.definirPagamento(botao.dataset.id, "Calote", motivo);
       await carregar("pedidos");
       abrirDetalhePedido(botao.dataset.id);
       toast("Pedido marcado como calote.");

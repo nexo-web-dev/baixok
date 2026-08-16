@@ -154,6 +154,7 @@ export const relatoriosService = {
           telefone: pedido.phone,
           endereco: pedido.place,
           motivoCancelamento: pedido.cancelReason,
+          motivoNaoPago: pedido.naoPagoReason,
           motoboy: pedido.motoboy,
           pagamento: pedido.payment,
           itens: pedido.items.map(item => `${item.qty}x ${item.name}`).join("; "),

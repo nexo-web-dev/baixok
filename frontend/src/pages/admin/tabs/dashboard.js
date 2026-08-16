@@ -72,6 +72,8 @@ function renderizarListasVendas() {
   const { vendas = [], cancelados = [] } = ultimoRelatorio || {};
   renderizarLista("dashboard-sales", "dashboard-sales-empty", vendas, vendaLinha, "Nenhuma venda neste período.");
   renderizarLista("dashboard-canceled", "dashboard-canceled-empty", cancelados, canceladoLinha, "Nenhum pedido cancelado neste período.");
+  renderizarLista("dashboard-unpaid", "dashboard-unpaid-empty",
+    vendas.filter(pedido => pedido.payment === "Calote"), vendaLinha, "Nenhum calote neste período.");
 }
 
 function metrica(rotulo, valor, nota, tom = "") {
@@ -235,6 +237,7 @@ function vendaLinha(pedido) {
       ),
       pedido.fulfillment === "entrega" && pedido.motoboy ? el("span", {}, `Motoboy: ${pedido.motoboy}`) : null,
       cancelado && pedido.cancelReason ? el("span.danger-text", {}, `Motivo: ${pedido.cancelReason}`) : null,
+      pedido.payment === "Calote" && pedido.naoPagoReason ? el("span.danger-text", {}, `Motivo do calote: ${pedido.naoPagoReason}`) : null,
       troco ? el("span.money-text", {}, `Troco: ${troco}`) : null,
       el("div.sale-items", {}, pedido.items.length ? pedido.items.map(itemVenda) : el("em", {}, "Sem itens"))
     ),
@@ -249,6 +252,9 @@ function vendaLinha(pedido) {
       cancelado
         ? null
         : el("button.secondary.small", { type: "button", dataset: { action: "cancel-sale" } }, "Cancelar"),
+      !cancelado && pedido.status === "entregue" && pedido.payment !== "Calote"
+        ? el("button.danger.small", { type: "button", dataset: { action: "mark-unpaid-sale" } }, "Marcar não paga")
+        : null,
       estado.usuario?.papel === "admin"
         ? el("button.danger.small", { type: "button", dataset: { action: "delete-sale" } }, "Excluir")
         : null
@@ -259,6 +265,7 @@ function vendaLinha(pedido) {
       el("span", {}, `Endereço/local: ${pedido.place || "-"}`),
       pedido.note ? el("span", {}, `Obs.: ${pedido.note}`) : null,
       pedido.cancelReason ? el("span.danger-text", {}, `Motivo do cancelamento: ${pedido.cancelReason}`) : null,
+      pedido.naoPagoReason ? el("span.danger-text", {}, `Motivo do calote: ${pedido.naoPagoReason}`) : null,
       pedido.motoboy ? el("span", {}, `Motoboy: ${pedido.motoboy}`) : null
     )
   );
@@ -421,7 +428,7 @@ function exportarPlanilha() {
 
   apiRelatorios.exportar(parametrosDashboard())
     .then(({ linhas, periodo }) => {
-      const colunas = ["id", "data", "status", "canal", "modalidade", "cliente", "telefone", "endereco", "motivoCancelamento", "motoboy", "pagamento", "itens", "subtotal", "desconto", "taxaEntrega", "total"];
+      const colunas = ["id", "data", "status", "canal", "modalidade", "cliente", "telefone", "endereco", "motivoCancelamento", "motivoNaoPago", "motoboy", "pagamento", "itens", "subtotal", "desconto", "taxaEntrega", "total"];
       const escapar = valor => `"${String(valor ?? "").replace(/"/g, '""')}"`;
 
       const csv = [
@@ -504,7 +511,7 @@ export function ligarDashboard() {
     desenharDashboard();
   });
 
-  delegar($("#dashboard-sales"), "click", "[data-action='cancel-sale']", async (_evento, botao) => {
+  const cancelarVenda = async (_evento, botao) => {
     const linha = botao.closest(".sale-row");
     if (!linha) return;
     const motivo = (prompt("Motivo do cancelamento da venda (obrigatório):", "") ?? "").trim();
@@ -518,9 +525,28 @@ export function ligarDashboard() {
       toastFalha(erro, "Venda");
       botao.disabled = false;
     }
-  });
+  };
+  delegar($("#dashboard-sales"), "click", "[data-action='cancel-sale']", cancelarVenda);
+  delegar($("#dashboard-unpaid"), "click", "[data-action='cancel-sale']", cancelarVenda);
 
-  delegar($("#dashboard-sales"), "click", "[data-action='reprint-sale']", async (_evento, botao) => {
+  const marcarVendaNaoPaga = async (_evento, botao) => {
+    const linha = botao.closest(".sale-row");
+    if (!linha) return;
+    const motivo = (prompt("Motivo do calote (obrigatório e fica registrado):", "") ?? "").trim();
+    if (!motivo) return toastFalha(new Error("Informe o motivo para marcar como calote."), "Venda");
+    botao.disabled = true;
+    try {
+      await apiPedidos.definirPagamento(linha.dataset.id, "Calote", motivo);
+      toastOk("Venda marcada como calote.");
+      await desenharDashboard();
+    } catch (erro) {
+      toastFalha(erro, "Venda");
+      botao.disabled = false;
+    }
+  };
+  delegar($("#dashboard-sales"), "click", "[data-action='mark-unpaid-sale']", marcarVendaNaoPaga);
+
+  const reimprimirVenda = async (_evento, botao) => {
     const linha = botao.closest(".sale-row");
     if (!linha) return;
     botao.disabled = true;
@@ -533,7 +559,9 @@ export function ligarDashboard() {
     } finally {
       botao.disabled = false;
     }
-  });
+  };
+  delegar($("#dashboard-sales"), "click", "[data-action='reprint-sale']", reimprimirVenda);
+  delegar($("#dashboard-unpaid"), "click", "[data-action='reprint-sale']", reimprimirVenda);
 
   const alternarDetalhes = (_evento, botao) => {
     const detalhe = botao.closest(".sale-row")?.querySelector(".sale-detail");
@@ -541,6 +569,7 @@ export function ligarDashboard() {
   };
   delegar($("#dashboard-sales"), "click", "[data-action='details-sale']", alternarDetalhes);
   delegar($("#dashboard-canceled"), "click", "[data-action='details-sale']", alternarDetalhes);
+  delegar($("#dashboard-unpaid"), "click", "[data-action='details-sale']", alternarDetalhes);
 
   const abrirExclusao = (_evento, botao) => {
     const linha = botao.closest(".sale-row");
@@ -555,6 +584,7 @@ export function ligarDashboard() {
   };
   delegar($("#dashboard-sales"), "click", "[data-action='delete-sale']", abrirExclusao);
   delegar($("#dashboard-canceled"), "click", "[data-action='delete-sale']", abrirExclusao);
+  delegar($("#dashboard-unpaid"), "click", "[data-action='delete-sale']", abrirExclusao);
 
   const fecharExclusao = () => {
     pedidoParaExcluir = null;

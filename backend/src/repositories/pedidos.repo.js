@@ -42,6 +42,7 @@ const paraApi = (linha, itens = []) => linha && ({
   place: linha.local,
   note: linha.observacao,
   cancelReason: linha.motivo_cancelamento || "",
+  naoPagoReason: linha.motivo_nao_pago || "",
   payment: linha.pagamento,
   trocoPara: linha.troco_para,
   tableNumber: linha.mesa_n,
@@ -231,6 +232,13 @@ export const pedidosRepo = {
     await alteradas(
       `UPDATE pedidos SET pagamento = ?, atualizado_em = now() WHERE id IN (${marcadores})`,
       [pagamento, ...ids]
+    );
+  },
+
+  async definirMotivoNaoPago(id, motivo) {
+    await alteradas(
+      "UPDATE pedidos SET motivo_nao_pago = ?, atualizado_em = now() WHERE id = ?",
+      [motivo, id]
     );
   },
 
