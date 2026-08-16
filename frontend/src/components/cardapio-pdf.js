@@ -51,13 +51,13 @@ const css = `
     text-align: center; break-after: avoid;
   }
   .cover img {
-    position: relative; width: 56px; height: 56px; border-radius: 50%; object-fit: cover;
-    border: 2px solid ${GOLD}; box-shadow: 0 0 0 4px rgba(217,154,104,.14);
+    position: relative; width: 74px; height: 74px; border-radius: 50%; object-fit: cover;
+    border: 2px solid ${GOLD}; box-shadow: 0 0 0 5px rgba(217,154,104,.16);
   }
   .cover h1 {
-    position: relative; margin: 6px 0 0; font-family: 'Bricolage Grotesque', Georgia, serif; font-weight: 800;
-    font-size: 26px; letter-spacing: .01em; color: ${INK};
-    text-shadow: 0 2px 18px rgba(201,116,67,.45);
+    position: relative; margin: 7px 0 0; font-family: 'Bricolage Grotesque', Georgia, serif; font-weight: 800;
+    font-size: 36px; letter-spacing: .01em; color: ${INK};
+    text-shadow: 0 2px 20px rgba(201,116,67,.5);
   }
   .cover p {
     position: relative; margin: 2px 0 0; padding: 3px 12px; border-radius: 999px;
@@ -68,6 +68,26 @@ const css = `
   .category h2 {
     display: flex; align-items: center; margin: 0 0 6px; break-after: avoid;
   }
+  /* Caixa com borda em volta de cada categoria — junto da foto de destaque
+   * (quando a categoria tem um produto marcado como destaque em Produtos),
+   * e o que da aquele efeito de "cartaz" da referencia sem precisar de arte
+   * nenhuma alem da propria foto ja cadastrada no catalogo. */
+  .category-box {
+    display: flex; gap: 8px; padding: 6px; border-radius: 12px; min-height: 92px;
+    border: 1.5px solid rgba(217,154,104,.32);
+    background: linear-gradient(180deg, rgba(36,29,21,.55), transparent 65%);
+  }
+  .category-box .grid { flex: 1; align-content: start; }
+  /* Posicao absoluta de proposito: um <img> com height:100% dentro de flex
+   * sem altura fixa vira refem da proporcao original da foto (photo grande
+   * fazia a caixa inteira da categoria crescer pra acompanhar). Tirando o
+   * <img> do fluxo, quem decide a altura da caixa volta a ser o texto da
+   * lista (ou o min-height acima, se a lista for curta). */
+  .hero-photo {
+    position: relative; flex: 0 0 33%; min-width: 64px; border-radius: 9px; overflow: hidden;
+    background: ${SOFT}; border: 1px solid rgba(217,154,104,.4);
+  }
+  .hero-photo img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
   .cat-icon {
     flex: none; z-index: 1; display: grid; place-items: center;
     width: 19px; height: 19px; margin-right: -9px; border-radius: 50%;
@@ -85,7 +105,7 @@ const css = `
    * de 20 so em drinks). */
   .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px 8px; }
   .item {
-    display: grid; grid-template-columns: 26px 1fr; gap: 6px; align-items: center;
+    display: grid; grid-template-columns: 26px 1fr; gap: 6px; align-items: start;
     min-width: 0; padding: 4px 6px; border-radius: 6px;
     background: ${PANEL}; border: 1px solid ${LINE}; break-inside: avoid;
   }
@@ -94,13 +114,17 @@ const css = `
     background: ${SOFT}; border: 1px solid rgba(217,154,104,.35);
   }
   .item .no-photo { display: grid; place-items: center; font-size: 5px; color: ${FAINT}; text-align: center; }
-  /* Nome ...linha pontilhada... preco — o classico de cardapio impresso, feito
-   * so com um span flexivel de borda pontilhada entre os dois. */
-  .item-body { min-width: 0; display: flex; align-items: baseline; gap: 4px; }
+  /* Nome nunca corta: quebra em ate 2 linhas em vez de truncar com "...".
+   * A linha pontilhada com o preco fica embaixo, numa linha propria — o
+   * classico de cardapio impresso, so que sem arriscar sumir com parte do
+   * nome do produto. */
+  .item-body { min-width: 0; }
   .item-body strong {
-    flex: none; max-width: 62%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    font-size: 9px; font-weight: 700; color: ${INK};
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden; overflow-wrap: break-word;
+    font-size: 9px; font-weight: 700; color: ${INK}; line-height: 1.25;
   }
+  .item-body .price-row { display: flex; align-items: baseline; gap: 4px; margin-top: 2px; }
   .item-body .dots { flex: 1; min-width: 4px; margin-bottom: 2px; border-bottom: 1px dotted ${FAINT}; }
   .item-body em { flex: none; font-weight: 800; color: ${GOLD}; font-size: 9px; font-style: normal; white-space: nowrap; }
   .footer {
@@ -110,10 +134,13 @@ const css = `
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
     break-inside: avoid;
   }
-  .footer-text strong { display: block; font-size: 10.5px; color: ${INK}; }
-  .footer-text span { display: block; margin-top: 2px; color: ${GOLD_LIGHT}; font-size: 8.5px; font-weight: 700; }
-  .footer .qr-card { padding: 5px; border-radius: 8px; background: #ffffff; line-height: 0; }
-  .footer .qr-card img { display: block; width: 44px; height: 44px; }
+  .footer-text strong {
+    display: block; font-family: 'Bricolage Grotesque', Georgia, serif;
+    font-size: 16px; font-weight: 800; color: ${INK}; text-transform: uppercase; letter-spacing: .02em;
+  }
+  .footer-text span { display: block; margin-top: 3px; color: ${GOLD_LIGHT}; font-size: 12px; font-weight: 800; }
+  .footer .qr-card { padding: 6px; border-radius: 9px; background: #ffffff; line-height: 0; }
+  .footer .qr-card img { display: block; width: 62px; height: 62px; }
   /* Faixa de contato — so aparece se endereco e/ou whatsapp estiverem
    * preenchidos em Ajustes; sem os dois, nao ha o que mostrar aqui. */
   .contact-bar {
@@ -148,8 +175,10 @@ function linhaItem(produto) {
     fotoItem(produto),
     el("div.item-body", {},
       el("strong", {}, produto.name),
-      el("span.dots", {}),
-      el("em", {}, reais(produto.price))
+      el("div.price-row", {},
+        el("span.dots", {}),
+        el("em", {}, reais(produto.price))
+      )
     )
   );
 }
@@ -180,13 +209,41 @@ function iconeCategoria(categoria) {
   return "🍽️";
 }
 
+/* O mesmo "destaque" que ja existe em Produtos (usado no cardapio digital)
+ * escolhe a foto grande daqui — sem selo de destaque nenhum na categoria,
+ * cai pro primeiro produto com foto. Nunca inventa imagem: sem nenhuma foto
+ * cadastrada na categoria, ela sai so em lista, sem caixa de foto vazia. */
+function fotoDestaque(itens) {
+  const marcados = itens
+    .filter(produto => produto.image && Number(produto.featuredOrder) > 0)
+    .sort((a, b) => Number(a.featuredOrder) - Number(b.featuredOrder));
+  return marcados[0] || itens.find(produto => produto.image) || null;
+}
+
+/* Lista mais estreita ao lado da foto precisa de menos colunas pra nao
+ * espremer o nome do produto — sem isso "Burguer Duplo Cheddar+" vira
+ * ilegivel numa coluna de 4 numa caixa que perdeu um terco da largura pra
+ * foto. */
+function colunasParaLista(qtdItens) {
+  if (qtdItens <= 3) return 1;
+  if (qtdItens <= 8) return 2;
+  return 3;
+}
+
 function secaoCategoria(categoria, itens) {
+  const destaque = fotoDestaque(itens);
+  const grid = el("div.grid", {}, ...itens.map(linhaItem));
+  if (destaque) grid.style.gridTemplateColumns = `repeat(${colunasParaLista(itens.length)}, 1fr)`;
+
   return el("section.category", {},
     el("h2", {},
       el("span.cat-icon", {}, iconeCategoria(categoria)),
       el("span.cat-label", {}, rotuloCategoria(categoria))
     ),
-    el("div.grid", {}, ...itens.map(linhaItem))
+    el("div.category-box", {},
+      destaque ? el("div.hero-photo", {}, el("img", { src: destaque.image, alt: "" })) : null,
+      grid
+    )
   );
 }
 

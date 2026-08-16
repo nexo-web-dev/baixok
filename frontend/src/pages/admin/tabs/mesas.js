@@ -84,6 +84,11 @@ export function desenharMesas() {
    * quando um evento em tempo real redesenha a aba. */
   const campoUrl = $("#menu-url-input");
   if (campoUrl && document.activeElement !== campoUrl) campoUrl.value = estado.ajustes.menu_url || "";
+
+  const campoEndereco = $("#loja-endereco-input");
+  if (campoEndereco && document.activeElement !== campoEndereco) campoEndereco.value = estado.ajustes.endereco_loja || "";
+  const campoWhatsapp = $("#loja-whatsapp-input");
+  if (campoWhatsapp && document.activeElement !== campoWhatsapp) campoWhatsapp.value = estado.ajustes.whatsapp_entrega || "";
 }
 
 async function recarregar() {
@@ -177,6 +182,26 @@ export function ligarMesas() {
         toast("Endereço do cardápio salvo.");
       }
       await abrirQrCardapio(estado.ajustes.menu_url);
+    } catch (falha) {
+      if (erro) { erro.textContent = falha.message; mostrar(erro, true); }
+    }
+  });
+
+  /* Whatsapp exige so digitos com DDI: quem digita "(21) 99999-0000" nao pode
+   * tomar erro de formato — normaliza aqui e completa o 55 do Brasil quando
+   * a pessoa digita so DDD + numero. */
+  $("#salvar-loja-contato")?.addEventListener("click", async () => {
+    const erro = $("#loja-contato-error");
+    if (erro) mostrar(erro, false);
+
+    const endereco = $("#loja-endereco-input")?.value.trim() || "";
+    let whatsapp = ($("#loja-whatsapp-input")?.value || "").replace(/\D/g, "");
+    if (whatsapp.length === 11 || whatsapp.length === 10) whatsapp = `55${whatsapp}`;
+
+    try {
+      await apiAjustes.gravar({ endereco_loja: endereco, whatsapp_entrega: whatsapp });
+      await carregar("ajustes");
+      toast("Endereço e WhatsApp salvos.");
     } catch (falha) {
       if (erro) { erro.textContent = falha.message; mostrar(erro, true); }
     }

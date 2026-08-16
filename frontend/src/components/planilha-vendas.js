@@ -117,8 +117,12 @@ export async function exportarPlanilhaVendas({ periodo, linhas }) {
     const indice = COLUNAS.findIndex(coluna => coluna.chave === chave) + 1;
     if (!indice) return;
     const letra = aba.getColumn(indice).letter;
+    const soma = linhas.reduce((total, linha) => total + (Number(linha[chave]) || 0), 0);
     const celula = linhaTotais.getCell(indice);
-    celula.value = { formula: `SUM(${letra}4:${letra}${3 + linhas.length})` };
+    /* `result` junto da formula: sem ele a celula fica em branco ate o Excel
+     * recalcular, o que nao acontece sozinho no Modo de Exibicao Protegida
+     * (todo arquivo baixado da internet abre assim por padrao). */
+    celula.value = { formula: `SUM(${letra}4:${letra}${3 + linhas.length})`, result: soma };
     celula.numFmt = MOEDA;
     celula.font = { bold: true, color: { argb: INK } };
     celula.alignment = { horizontal: "right" };

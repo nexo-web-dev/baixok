@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/admin-Dhn5g_Q1.js"></script>
+  <script type="module" crossorigin src="/assets/admin-Daaa20lW.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/api-BHgLJqDJ.js">
   <link rel="modulepreload" crossorigin href="/assets/estoque-BsZoBo_Q.js">
   <link rel="modulepreload" crossorigin href="/assets/categorias-CaaVB_Yc.js">
@@ -117,6 +117,18 @@
           <button class="primary" type="button" id="generate-menu-qr">▦ Salvar e gerar QR do cardápio</button>
         </div>
         <p class="form-error hidden" id="menu-url-error" role="alert"></p>
+      </div>
+      <div class="tab-guide" id="loja-contato-panel">
+        <strong>Endereço e WhatsApp da loja</strong>
+        <p>Aparecem no rodapé do cardápio exportado em PDF (e no botão de pedir pelo WhatsApp do cardápio digital).</p>
+        <div class="field-row">
+          <input id="loja-endereco-input" type="text" placeholder="Rua Sacadura Cabral, 10 - RJ" style="flex:1">
+        </div>
+        <div class="field-row">
+          <input id="loja-whatsapp-input" type="text" placeholder="21 99999-0000 (com DDD)" style="flex:1">
+          <button class="primary" type="button" id="salvar-loja-contato">Salvar</button>
+        </div>
+        <p class="form-error hidden" id="loja-contato-error" role="alert"></p>
       </div>
       <div class="tables-bar">
         <strong>Mesas no salão</strong>

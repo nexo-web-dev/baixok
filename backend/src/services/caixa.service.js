@@ -31,25 +31,41 @@ function contarModalidades(linhas) {
 
 async function resumoFechamento(caixa, fechadoEm = new Date()) {
   const filtro = { desde: paraSql(new Date(caixa.abertoEm)), ate: paraSql(fechadoEm) };
-  const [resumo, cancelados, pagamentos, canais, modalidades, motoboys] = await Promise.all([
+  const [resumo, cancelados, naoPago, pagamentos, canais, modalidades, motoboys, entregues] = await Promise.all([
     pedidosRepo.resumoPeriodo(filtro),
     pedidosRepo.resumoCancelados(filtro),
+    pedidosRepo.resumoNaoPago(filtro),
     pedidosRepo.agruparPor("pagamento", filtro),
     pedidosRepo.agruparPor("canal", filtro),
     pedidosRepo.agruparPor("modalidade", filtro),
-    pedidosRepo.porMotoboy(filtro)
+    pedidosRepo.porMotoboy(filtro),
+    /* pedidosRepo.listar nao filtra por pagamento — separa os "Não pago" na
+     * propria memoria, igual o dashboard ja faz pra lista de vendas. */
+    pedidosRepo.listar({ desde: filtro.desde, ate: filtro.ate, status: "entregue", limite: 1000 })
   ]);
   const contagem = contarModalidades(modalidades);
+  const naoPagosLista = entregues
+    .filter(pedido => pedido.payment === "Não pago")
+    .map(pedido => ({
+      cliente: pedido.customer || "Cliente",
+      total: arredondar(pedido.total),
+      motivo: pedido.naoPagoReason || ""
+    }));
 
   return {
     fechadoEm: fechadoEm.toISOString(),
-    pedidos: Number(resumo.pedidos || 0),
+    /* Total de pedidos que saiu da loja no periodo — pago ou nao. Faturamento
+     * continua so com o que pagou; aqui e volume de operacao, nao dinheiro. */
+    pedidos: Number(resumo.pedidos || 0) + Number(naoPago?.pedidos || 0),
     faturamento: arredondar(resumo.faturamento),
     descontos: arredondar(resumo.descontos),
     taxasEntrega: arredondar(resumo.taxas_entrega),
     ticketMedio: arredondar(resumo.ticket_medio),
     cancelados: Number(cancelados?.pedidos || 0),
     valorCancelado: arredondar(cancelados?.valor),
+    calotes: Number(naoPago?.pedidos || 0),
+    valorCalote: arredondar(naoPago?.valor),
+    naoPagosLista,
     entregas: contagem.entregas,
     retiradas: contagem.retiradas,
     mesas: contagem.mesas,
@@ -101,6 +117,17 @@ function linhasTabela(linhas) {
       <td>${escapar(linha.rotulo)}</td>
       <td class="num">${Number(linha.pedidos || 0)}</td>
       <td class="num money">${moeda(linha.faturamento)}</td>
+    </tr>
+  `).join("");
+}
+
+function linhasNaoPagos(linhas) {
+  if (!linhas?.length) return "<tr><td colspan=\"3\" class=\"empty-row\">Nenhum pedido não pago neste caixa.</td></tr>";
+  return linhas.map(linha => `
+    <tr>
+      <td>${escapar(linha.cliente)}</td>
+      <td class="num money">${moeda(linha.total)}</td>
+      <td>${escapar(linha.motivo || "-")}</td>
     </tr>
   `).join("");
 }
@@ -314,10 +341,11 @@ function htmlRelatorio(caixa) {
 
     <main>
       <section class="grid">
-        <div class="metric green"><span>Pedidos entregues</span><strong>${caixa.pedidos}</strong></div>
+        <div class="metric green"><span>Total pedidos</span><strong>${caixa.pedidos}</strong></div>
         <div class="metric money"><span>Faturamento</span><strong>${moeda(caixa.faturamento)}</strong></div>
         <div class="metric money"><span>Ticket médio</span><strong>${moeda(caixa.ticketMedio)}</strong></div>
         <div class="metric danger"><span>Cancelados</span><strong>${caixa.cancelados}</strong></div>
+        <div class="metric danger"><span>Não pagos</span><strong>${caixa.calotes || 0}</strong></div>
         <div class="metric"><span>Entregas</span><strong>${caixa.entregas}</strong></div>
         <div class="metric"><span>Retiradas</span><strong>${caixa.retiradas}</strong></div>
         <div class="metric"><span>Mesas</span><strong>${caixa.mesas}</strong></div>
@@ -343,6 +371,11 @@ function htmlRelatorio(caixa) {
         <div class="table-card full">
           <div class="section-title"><h2>Entregas por motoboy</h2><span>repasse</span></div>
           <table><thead><tr><th>Motoboy</th><th class="num">Entregas</th><th class="num">Taxas</th><th class="num">Total vendido</th></tr></thead><tbody>${linhasMotoboy(caixa.motoboys)}</tbody></table>
+        </div>
+
+        <div class="table-card full">
+          <div class="section-title"><h2>Pedidos não pagos</h2><span>prejuízo · ${moeda(caixa.valorCalote)}</span></div>
+          <table><thead><tr><th>Cliente</th><th class="num">Valor</th><th>Motivo</th></tr></thead><tbody>${linhasNaoPagos(caixa.naoPagosLista)}</tbody></table>
         </div>
       </section>
 

@@ -20,6 +20,9 @@ const paraApi = linha => linha && ({
   ticketMedio: linha.ticket_medio,
   cancelados: linha.cancelados,
   valorCancelado: linha.valor_cancelado,
+  calotes: linha.calotes,
+  valorCalote: linha.valor_calote,
+  naoPagosLista: json(linha.naopagos_lista),
   entregas: linha.entregas,
   retiradas: linha.retiradas,
   mesas: linha.mesas,
@@ -75,6 +78,9 @@ export const caixaRepo = {
              ticket_medio = ?,
              cancelados = ?,
              valor_cancelado = ?,
+             calotes = ?,
+             valor_calote = ?,
+             naopagos_lista = ?,
              entregas = ?,
              retiradas = ?,
              mesas = ?,
@@ -88,7 +94,8 @@ export const caixaRepo = {
     `, [
       resumo.fechadoEm, usuario.id, usuario.nome || usuario.usuario || "",
       resumo.pedidos, resumo.faturamento, resumo.descontos, resumo.taxasEntrega, resumo.ticketMedio,
-      resumo.cancelados, resumo.valorCancelado, resumo.entregas, resumo.retiradas, resumo.mesas,
+      resumo.cancelados, resumo.valorCancelado, resumo.calotes, resumo.valorCalote,
+      JSON.stringify(resumo.naoPagosLista), resumo.entregas, resumo.retiradas, resumo.mesas,
       JSON.stringify(resumo.pagamentos), JSON.stringify(resumo.canais), JSON.stringify(resumo.modalidades),
       JSON.stringify(resumo.motoboys), observacao, id
     ]);
