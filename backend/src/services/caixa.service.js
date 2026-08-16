@@ -409,6 +409,12 @@ function htmlRelatorio(caixa) {
 </html>`;
 }
 
+/* Exportado so pra teste (tests/csp-html.test.js): garante que o HTML deste
+ * relatorio nunca reintroduza atributo de evento inline (onclick= e afins),
+ * que o CSP do servidor bloqueia sem avisar ninguem — ja aconteceu de verdade
+ * no botao de imprimir. */
+export { htmlRelatorio };
+
 export const caixaService = {
   atual: () => caixaRepo.atual(),
   listar: filtros => caixaRepo.listar(filtros),
