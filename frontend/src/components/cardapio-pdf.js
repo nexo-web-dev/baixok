@@ -66,13 +66,18 @@ const css = `
   }
   .category { margin: 0 0 9px; break-inside: avoid-column; }
   .category h2 {
-    display: flex; align-items: center; gap: 8px;
-    margin: 0 0 5px; padding: 3px 9px; border-radius: 6px;
-    background: linear-gradient(90deg, rgba(201,116,67,.22), transparent);
-    border-left: 3px solid ${COPPER};
+    display: flex; align-items: center; margin: 0 0 6px; break-after: avoid;
+  }
+  .cat-icon {
+    flex: none; z-index: 1; display: grid; place-items: center;
+    width: 19px; height: 19px; margin-right: -9px; border-radius: 50%;
+    background: ${BG}; border: 1.5px solid ${GOLD}; font-size: 10px; line-height: 1;
+  }
+  .cat-label {
+    flex: 1; min-width: 0; padding: 4px 10px 4px 17px; border-radius: 999px;
+    background: linear-gradient(90deg, ${COPPER}, rgba(201,116,67,.55));
     font-family: 'Bricolage Grotesque', Georgia, serif;
-    font-size: 11.5px; font-weight: 800; color: ${GOLD_LIGHT}; text-transform: uppercase; letter-spacing: .05em;
-    break-after: avoid;
+    font-size: 11px; font-weight: 800; color: #fff6ea; text-transform: uppercase; letter-spacing: .06em;
   }
   /* 3 colunas, sem descricao: e o que faz o cardapio inteiro caber numa
    * pagina — descricao era o maior consumo de altura de cada item. */
@@ -87,12 +92,15 @@ const css = `
     background: ${SOFT}; border: 1px solid rgba(217,154,104,.35);
   }
   .item .no-photo { display: grid; place-items: center; font-size: 5px; color: ${FAINT}; text-align: center; }
-  .item-body { min-width: 0; display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
+  /* Nome ...linha pontilhada... preco — o classico de cardapio impresso, feito
+   * so com um span flexivel de borda pontilhada entre os dois. */
+  .item-body { min-width: 0; display: flex; align-items: baseline; gap: 4px; }
   .item-body strong {
-    min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    flex: none; max-width: 62%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     font-size: 9px; font-weight: 700; color: ${INK};
   }
-  .item-body span { flex: none; font-weight: 800; color: ${GOLD}; font-size: 9px; white-space: nowrap; }
+  .item-body .dots { flex: 1; min-width: 4px; margin-bottom: 2px; border-bottom: 1px dotted ${FAINT}; }
+  .item-body em { flex: none; font-weight: 800; color: ${GOLD}; font-size: 9px; font-style: normal; white-space: nowrap; }
   .footer {
     margin-top: 4px; padding: 10px 12px; border-radius: 10px;
     background: linear-gradient(90deg, rgba(201,116,67,.22), rgba(217,154,104,.08));
@@ -104,6 +112,28 @@ const css = `
   .footer-text span { display: block; margin-top: 2px; color: ${GOLD_LIGHT}; font-size: 8.5px; font-weight: 700; }
   .footer .qr-card { padding: 5px; border-radius: 8px; background: #ffffff; line-height: 0; }
   .footer .qr-card img { display: block; width: 44px; height: 44px; }
+  /* Faixa de contato — so aparece se endereco e/ou whatsapp estiverem
+   * preenchidos em Ajustes; sem os dois, nao ha o que mostrar aqui. */
+  .contact-bar {
+    margin-top: 6px; border-radius: 10px; overflow: hidden;
+    background: ${BG}; border: 1px solid rgba(217,154,104,.28);
+    display: flex; break-inside: avoid;
+  }
+  .contact-col {
+    flex: 1; min-width: 0; display: flex; align-items: center; gap: 7px;
+    padding: 8px 10px; border-left: 1px solid rgba(217,154,104,.2);
+  }
+  .contact-col:first-child { border-left: 0; }
+  .contact-col i { flex: none; font-size: 14px; font-style: normal; }
+  .contact-col div { min-width: 0; }
+  .contact-col strong {
+    display: block; font-size: 7.5px; font-weight: 800; color: ${GOLD};
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+  .contact-col span {
+    display: block; margin-top: 1px; font-size: 8.5px; font-weight: 700; color: ${INK};
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
 `;
 
 function fotoItem(produto) {
@@ -116,7 +146,8 @@ function linhaItem(produto) {
     fotoItem(produto),
     el("div.item-body", {},
       el("strong", {}, produto.name),
-      el("span", {}, reais(produto.price))
+      el("span.dots", {}),
+      el("em", {}, reais(produto.price))
     )
   );
 }
@@ -131,10 +162,54 @@ function agruparPorCategoria(produtos) {
   return grupos;
 }
 
+/* Sem arte propria pro cardapio impresso, o emoji por categoria substitui os
+ * icones desenhados a mao — casa com a paleta do sistema sem depender de
+ * nenhum arquivo externo. Por trecho do nome (nao igualdade exata): categoria
+ * no catalogo e texto livre, ver categorias.js. */
+function iconeCategoria(categoria) {
+  const nome = String(categoria || "").toLowerCase();
+  if (nome.includes("pizza")) return "🍕";
+  if (nome.includes("burg")) return "🍔";
+  if (nome.includes("mass")) return "🍝";
+  if (nome.includes("porç") || nome.includes("porc") || nome.includes("batata")) return "🍟";
+  if (nome.includes("drink") || nome.includes("bebid") || nome.includes("suco") || nome.includes("refri")) return "🥤";
+  if (nome.includes("combo")) return "🎉";
+  if (nome.includes("sobrem") || nome.includes("doce")) return "🍰";
+  return "🍽️";
+}
+
 function secaoCategoria(categoria, itens) {
   return el("section.category", {},
-    el("h2", {}, rotuloCategoria(categoria)),
+    el("h2", {},
+      el("span.cat-icon", {}, iconeCategoria(categoria)),
+      el("span.cat-label", {}, rotuloCategoria(categoria))
+    ),
     el("div.grid", {}, ...itens.map(linhaItem))
+  );
+}
+
+function faixaContato(ajustes) {
+  const endereco = String(ajustes?.endereco_loja || "").trim();
+  const whatsapp = String(ajustes?.whatsapp_entrega || "").trim();
+  if (!endereco && !whatsapp) return null;
+
+  return el("div.contact-bar", {},
+    el("div.contact-col", {},
+      el("i", {}, "🛵"),
+      el("div", {}, el("strong", {}, "Bateu aquela fome?"), el("span", {}, "Peça agora!"))
+    ),
+    endereco
+      ? el("div.contact-col", {},
+          el("i", {}, "📍"),
+          el("div", {}, el("strong", {}, "Nosso endereço"), el("span", {}, endereco))
+        )
+      : null,
+    whatsapp
+      ? el("div.contact-col", {},
+          el("i", {}, "💬"),
+          el("div", {}, el("strong", {}, "Peça pelo"), el("span", {}, `WhatsApp ${whatsapp}`))
+        )
+      : null
   );
 }
 
@@ -161,7 +236,8 @@ function montarCorpo({ produtos, ajustes, qrDataUrl, menuUrl }) {
         rodapeUrl ? el("span", {}, rodapeUrl) : null
       ),
       qrDataUrl ? el("div.qr-card", {}, el("img", { src: qrDataUrl, alt: "QR do cardápio" })) : null
-    )
+    ),
+    faixaContato(ajustes)
   );
 }
 
