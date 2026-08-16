@@ -81,9 +81,14 @@ function produtoDoItem(item) {
 
 function miniFotoItem(item) {
   const produto = produtoDoItem(item);
-  const imagem = item?.image || produto?.image || "";
-  if (!imagem) return el("div.order-detail-thumb.no-photo", {}, "Sem foto");
-  return el("span.fit-media.order-detail-thumb", {},
+  return fotoMini(item?.image || produto?.image || "", item.name || produto?.name || "Produto", "order-detail-thumb");
+}
+
+/* Mesmo miniaturizador usado no item do pedido e na busca de adicionar item —
+ * mantem o mesmo tamanho/estilo de "cartinha com foto" nos dois lugares. */
+function fotoMini(imagem, nome, classe) {
+  if (!imagem) return el(`div.${classe}.no-photo`, {}, "Sem foto");
+  return el(`span.fit-media.${classe}`, {},
     el("img.fit-media-bg", {
       src: imagem,
       alt: "",
@@ -93,10 +98,10 @@ function miniFotoItem(item) {
     }),
     el("img.fit-media-main", {
       src: imagem,
-      alt: item.name || produto?.name || "Produto",
+      alt: nome,
       loading: "lazy",
       decoding: "async",
-      onerror: evento => evento.target.closest(".fit-media")?.replaceWith(el("div.order-detail-thumb.no-photo", {}, "Sem foto"))
+      onerror: evento => evento.target.closest(".fit-media")?.replaceWith(el(`div.${classe}.no-photo`, {}, "Sem foto"))
     })
   );
 }
@@ -283,6 +288,7 @@ function atualizarListaAdicionarItem() {
           type: "button",
           dataset: { acao: "adicionar-item-pedido", id: pedidoDetalheAtualId, produtoId: produto.id }
         },
+          fotoMini(produto.image, produto.name, "add-item-thumb"),
           el("span", {},
             el("strong", {}, produto.name),
             el("small", {}, rotuloCategoria(produto.category))

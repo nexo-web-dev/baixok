@@ -6,7 +6,10 @@
 import { todos as consultar, alteradas } from "../db/postgres.js";
 
 const PADROES = {
-  menu_url: "",
+  /* Dominio fixo da loja — nao e um placeholder generico porque este sistema
+   * e feito sob medida pra esta casa, nao um produto multi-cliente. Continua
+   * editavel na aba Mesas se o dominio um dia mudar. */
+  menu_url: "https://baixo-k.squareweb.app/index.html",
   whatsapp_entrega: "",
   taxa_servico_mesa: "0.1",
   nome_loja: "Baixo K",
@@ -21,7 +24,12 @@ export const ajustesRepo = {
   async todos() {
     const linhas = await consultar("SELECT chave, valor FROM ajustes");
     const guardado = Object.fromEntries(linhas.map(linha => [linha.chave, linha.valor]));
-    return { ...PADROES, ...guardado };
+    const mesclado = { ...PADROES, ...guardado };
+    /* Vazio gravado por engano (um "Salvar" antigo com o campo em branco, por
+     * exemplo) nao pode vencer o padrao — sem isso o dominio fixo da loja
+     * nunca apareceria pra quem ja tinha essa linha em branco no banco. */
+    if (!mesclado.menu_url) mesclado.menu_url = PADROES.menu_url;
+    return mesclado;
   },
 
   async ler(chave) {

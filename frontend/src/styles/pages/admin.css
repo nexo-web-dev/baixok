@@ -260,12 +260,14 @@
 .add-item-option strong { font-size: .86rem; overflow-wrap: anywhere; }
 .add-item-option small { color: var(--muted); font-size: .7rem; text-transform: uppercase; }
 .add-item-option em { flex: none; color: var(--gold); font-style: normal; font-weight: 800; }
-.order-detail-thumb {
+.order-detail-thumb, .add-item-thumb {
   width: 70px; height: 70px; min-height: 70px; border-radius: 14px;
   object-fit: contain; object-position: center; background: var(--soft);
 }
-.order-detail-thumb.fit-media { display: block; overflow: hidden; }
+.add-item-thumb { width: 46px; height: 46px; min-height: 46px; min-width: 46px; border-radius: 10px; flex: none; }
+.order-detail-thumb.fit-media, .add-item-thumb.fit-media { display: block; overflow: hidden; }
 .order-detail-thumb.fit-media,
+.add-item-thumb.fit-media,
 .promo-product-thumb.fit-media,
 .combo-product-thumb.fit-media {
   --media-bg: #fff;
@@ -273,11 +275,13 @@
   background: linear-gradient(135deg, #fff 0%, #f5f0e9 100%);
 }
 .order-detail-thumb.fit-media > .fit-media-bg,
+.add-item-thumb.fit-media > .fit-media-bg,
 .promo-product-thumb.fit-media > .fit-media-bg,
 .combo-product-thumb.fit-media > .fit-media-bg {
   display: none;
 }
 .order-detail-thumb.fit-media > .fit-media-main,
+.add-item-thumb.fit-media > .fit-media-main,
 .promo-product-thumb.fit-media > .fit-media-main,
 .combo-product-thumb.fit-media > .fit-media-main {
   object-fit: contain !important;
@@ -285,10 +289,11 @@
   padding: 5px;
   box-sizing: border-box;
 }
-.order-detail-thumb.no-photo {
+.order-detail-thumb.no-photo, .add-item-thumb.no-photo {
   display: grid; place-items: center; color: var(--gold); font-size: .66rem; font-weight: 800; text-align: center;
   background: repeating-linear-gradient(135deg, rgba(217,154,104,.08) 0 8px, rgba(255,255,255,.03) 8px 16px), var(--soft);
 }
+.add-item-thumb.no-photo { font-size: .56rem; }
 .order-detail-item div { display: grid; gap: 4px; min-width: 0; }
 .order-detail-item div strong { color: var(--ink); overflow-wrap: anywhere; }
 .order-detail-item div span { color: var(--muted); font-size: .78rem; }
