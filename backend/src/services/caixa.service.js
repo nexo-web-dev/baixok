@@ -127,6 +127,15 @@ const dataHora = valor => new Intl.DateTimeFormat("pt-BR", {
   timeStyle: "short"
 }).format(new Date(valor));
 
+/* Vira o <title> da pagina, e o navegador usa o <title> como nome sugerido
+ * do arquivo ao "Salvar como PDF" — sem a data ali, dois fechamentos do
+ * mesmo mes salvam com nome identico e um sobrescreve o outro sem avisar.
+ * Sem dois-pontos: ":" nao e permitido em nome de arquivo no Windows. */
+const dataArquivo = valor => new Intl.DateTimeFormat("pt-BR", {
+  timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric",
+  hour: "2-digit", minute: "2-digit"
+}).format(new Date(valor)).replace(/\//g, "-").replace(",", "").replace(":", "h");
+
 function linhasTabela(linhas) {
   if (!linhas?.length) return "<tr><td colspan=\"3\" class=\"empty-row\">Sem movimento neste caixa.</td></tr>";
   return linhas.map(linha => `
@@ -168,7 +177,7 @@ function htmlRelatorio(caixa) {
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <title>Fechamento de caixa - Baixo K</title>
+  <title>Fechamento de caixa - Baixo K - ${dataArquivo(caixa.fechadoEm)}</title>
   <style>
     @page { size: A4; margin: 12mm; }
     * { box-sizing: border-box; }
@@ -311,6 +320,17 @@ function htmlRelatorio(caixa) {
       font-size: 12px;
       line-height: 1.45;
     }
+    .guide {
+      margin-bottom: 20px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: #fff6eb;
+      border: 1px dashed var(--line);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .guide strong { color: var(--ink); }
     footer {
       display: flex;
       justify-content: space-between;
@@ -358,6 +378,12 @@ function htmlRelatorio(caixa) {
     </section>
 
     <main>
+      <p class="guide">
+        <strong>Como ler este relatório:</strong> "Faturamento" é só o dinheiro que realmente entrou no período.
+        Pedidos <strong>cancelados</strong> e <strong>não pagos</strong> ficam de fora dessa conta — cancelado é o que
+        nunca chegou a sair da loja; não pago é quando o produto saiu mas o cliente não pagou (cartão recusado,
+        cliente sumiu etc.). A lista de cada um, com o motivo, está nas tabelas mais abaixo.
+      </p>
       <section class="grid">
         <div class="metric green"><span>Total pedidos</span><strong>${caixa.pedidos}</strong></div>
         <div class="metric money"><span>Faturamento</span><strong>${moeda(caixa.faturamento)}</strong></div>
