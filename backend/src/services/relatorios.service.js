@@ -72,12 +72,12 @@ export const relatoriosService = {
     const agrupadoPorMes = periodo === "tudo";
 
     const [
-      resumo, canceladosResumo, caloteResumo, emFalta, porHora, porDia, porCanal, porPagamento, porModalidade, porCategoria,
+      resumo, canceladosResumo, naoPagoResumo, emFalta, porHora, porDia, porCanal, porPagamento, porModalidade, porCategoria,
       porMotoboy, maisVendidos, menosVendidos, vendas, cancelados, taxaServico
     ] = await Promise.all([
       pedidosRepo.resumoPeriodo(filtro),
       pedidosRepo.resumoCancelados(filtro),
-      pedidosRepo.resumoCalote(filtro),
+      pedidosRepo.resumoNaoPago(filtro),
       produtosRepo.emFalta(),
       pedidosRepo.porHora(filtro),
       agrupadoPorMes ? pedidosRepo.porMes(filtro) : pedidosRepo.porDia(filtro),
@@ -103,8 +103,8 @@ export const relatoriosService = {
         taxasEntrega: Math.round(resumo.taxas_entrega * 100) / 100,
         cancelados: canceladosResumo.pedidos,
         valorCancelado: Math.round(canceladosResumo.valor * 100) / 100,
-        calotes: caloteResumo.pedidos,
-        valorCalote: Math.round(caloteResumo.valor * 100) / 100
+        naoPagos: naoPagoResumo.pedidos,
+        valorNaoPago: Math.round(naoPagoResumo.valor * 100) / 100
       },
       taxaServico: {
         total: Math.round(taxaServico.total * 100) / 100,

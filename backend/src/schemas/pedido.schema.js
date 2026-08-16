@@ -62,7 +62,11 @@ export const adicionarItensPedidoSchema = z.object({
 
 export const mudarStatusSchema = z.object({
   status: z.enum(STATUS_PEDIDO, { message: "Status invalido." }),
-  motoboy: texto(80).optional()
+  motoboy: texto(80).optional(),
+  /* So faz sentido junto de status "entregue": marca ali mesmo, na hora, que
+   * o pagamento nao foi recebido — motivo obrigatorio checado no service. */
+  pagamentoNaoRecebido: z.boolean().optional(),
+  motivoNaoPago: texto(200).optional()
 });
 
 export const cancelarPedidoSchema = z.object({
@@ -83,8 +87,9 @@ export const motoboyPedidoSchema = z.object({
 
 export const definirPagamentoSchema = z.object({
   pagamento: texto(60, { obrigatorio: true }),
-  /* Obrigatorio so quando pagamento = "Calote" — checado no service, nao aqui,
-   * porque o schema nao sabe nada sobre o valor de outro campo nessa versao. */
+  /* Obrigatorio so quando pagamento = "Não pago" — checado no service, nao
+   * aqui, porque o schema nao sabe nada sobre o valor de outro campo nessa
+   * versao. */
   motivo: texto(200)
 }).strict();
 

@@ -393,20 +393,20 @@ export const pedidosRepo = {
              COALESCE(SUM(desconto), 0) AS descontos,
              COALESCE(SUM(taxa_entrega), 0) AS taxas_entrega
         FROM pedidos
-       WHERE ${f.sql} AND status = 'entregue' AND pagamento IS DISTINCT FROM 'Calote'
+       WHERE ${f.sql} AND status = 'entregue' AND pagamento IS DISTINCT FROM 'Não pago'
     `, f.params);
   },
 
   /* Mesma ideia de resumoCancelados: pedido que saiu da loja (status entregue)
    * mas o cliente nao pagou. Fica de fora de toda conta de faturamento — nao e
    * dinheiro que entrou — e aparece separado aqui, como prejuizo. */
-  async resumoCalote(filtro) {
+  async resumoNaoPago(filtro) {
     const f = filtroRelatorio(filtro);
     return await um(`
       SELECT COUNT(*)::int AS pedidos,
              COALESCE(SUM(total), 0) AS valor
         FROM pedidos
-       WHERE ${f.sql} AND status = 'entregue' AND pagamento = 'Calote'
+       WHERE ${f.sql} AND status = 'entregue' AND pagamento = 'Não pago'
     `, f.params);
   },
 
@@ -419,7 +419,7 @@ export const pedidosRepo = {
              COUNT(*)::int AS pedidos,
              COALESCE(SUM(total), 0) AS faturamento
         FROM pedidos
-       WHERE ${f.sql} AND status = 'entregue' AND pagamento IS DISTINCT FROM 'Calote'
+       WHERE ${f.sql} AND status = 'entregue' AND pagamento IS DISTINCT FROM 'Não pago'
        GROUP BY hora ORDER BY hora
     `, f.params);
   },
@@ -432,7 +432,7 @@ export const pedidosRepo = {
              COUNT(*)::int AS pedidos,
              COALESCE(SUM(total), 0) AS faturamento
         FROM pedidos
-       WHERE ${f.sql} AND status = 'entregue' AND pagamento IS DISTINCT FROM 'Calote'
+       WHERE ${f.sql} AND status = 'entregue' AND pagamento IS DISTINCT FROM 'Não pago'
        GROUP BY rotulo
        ORDER BY data_ordem
     `, f.params);
@@ -449,7 +449,7 @@ export const pedidosRepo = {
              COUNT(*)::int AS pedidos,
              COALESCE(SUM(total), 0) AS faturamento
         FROM pedidos
-       WHERE ${f.sql} AND status = 'entregue' AND pagamento IS DISTINCT FROM 'Calote'
+       WHERE ${f.sql} AND status = 'entregue' AND pagamento IS DISTINCT FROM 'Não pago'
        GROUP BY rotulo
        ORDER BY mes_ordem
     `, f.params);
@@ -467,7 +467,7 @@ export const pedidosRepo = {
     return await todos(`
       SELECT ${campo} AS rotulo, COUNT(*)::int AS pedidos, COALESCE(SUM(total), 0) AS faturamento
         FROM pedidos
-       WHERE ${f.sql} AND status = 'entregue' AND pagamento IS DISTINCT FROM 'Calote'
+       WHERE ${f.sql} AND status = 'entregue' AND pagamento IS DISTINCT FROM 'Não pago'
        GROUP BY ${campo} ORDER BY faturamento DESC
     `, f.params);
   },
@@ -489,7 +489,7 @@ export const pedidosRepo = {
         JOIN pedidos ped ON ped.id = i.pedido_id
         LEFT JOIN produtos p ON p.id = i.produto_id
        WHERE ped.criado_em >= ?::timestamptz AND ped.criado_em <= ?::timestamptz AND ped.status = 'entregue'
-         AND ped.pagamento IS DISTINCT FROM 'Calote'
+         AND ped.pagamento IS DISTINCT FROM 'Não pago'
          AND (?::text IS NULL OR ped.canal = ?::text)
          AND (?::text IS NULL OR ped.pagamento = ?::text)
          AND (?::text IS NULL OR COALESCE(p.categoria, CASE WHEN i.combo_id IS NOT NULL THEN 'combos' ELSE 'outros' END) = ?::text)
@@ -508,7 +508,7 @@ export const pedidosRepo = {
         FROM pedidos
        WHERE ${f.sql}
          AND status = 'entregue'
-         AND pagamento IS DISTINCT FROM 'Calote'
+         AND pagamento IS DISTINCT FROM 'Não pago'
          AND modalidade = 'entrega'
          AND btrim(COALESCE(motoboy, '')) <> ''
        GROUP BY btrim(motoboy)
@@ -525,7 +525,7 @@ export const pedidosRepo = {
         JOIN pedidos p ON p.id = i.pedido_id
         LEFT JOIN produtos pr ON pr.id = i.produto_id
        WHERE p.criado_em >= ?::timestamptz AND p.criado_em <= ?::timestamptz AND p.status = 'entregue'
-         AND p.pagamento IS DISTINCT FROM 'Calote'
+         AND p.pagamento IS DISTINCT FROM 'Não pago'
          AND (?::text IS NULL OR p.canal = ?::text)
          AND (?::text IS NULL OR p.pagamento = ?::text)
          AND (?::text IS NULL OR COALESCE(pr.categoria, CASE WHEN i.combo_id IS NOT NULL THEN 'combos' ELSE 'outros' END) = ?::text)
@@ -544,7 +544,7 @@ export const pedidosRepo = {
         JOIN pedidos p ON p.id = i.pedido_id
         LEFT JOIN produtos pr ON pr.id = i.produto_id
        WHERE p.criado_em >= ?::timestamptz AND p.criado_em <= ?::timestamptz AND p.status = 'entregue'
-         AND p.pagamento IS DISTINCT FROM 'Calote'
+         AND p.pagamento IS DISTINCT FROM 'Não pago'
          AND (?::text IS NULL OR p.canal = ?::text)
          AND (?::text IS NULL OR p.pagamento = ?::text)
          AND (?::text IS NULL OR COALESCE(pr.categoria, CASE WHEN i.combo_id IS NOT NULL THEN 'combos' ELSE 'outros' END) = ?::text)

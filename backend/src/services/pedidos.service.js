@@ -530,7 +530,21 @@ export const pedidosService = {
       }
     }
 
-    if (atual.status === status) return atual;
+    /* Marcar como entregue e o momento natural de saber se o dinheiro entrou
+     * de verdade — nesta casa o pagamento (dinheiro, cartao na maquininha,
+     * Pix) acontece na entrega/retirada, nao no cardapio. Quem esta lancando
+     * a entrega pode avisar aqui, na hora, em vez de precisar lembrar de
+     * corrigir depois pelo dashboard. */
+    let pagamentoNaoRecebido = false;
+    if (status === "entregue" && typeof dados !== "string" && dados.pagamentoNaoRecebido) {
+      const motivo = String(dados.motivoNaoPago || "").trim();
+      if (!motivo) throw new ErroApp("Informe o motivo do não pagamento.", 400, "motivo_obrigatorio");
+      await pedidosRepo.definirPagamentoEmLote([id], "Não pago");
+      await pedidosRepo.definirMotivoNaoPago(id, motivo);
+      pagamentoNaoRecebido = true;
+    }
+
+    if (atual.status === status) return this.buscar(id);
 
     const pedido = await pedidosRepo.atualizarStatus(id, status);
     await auditoriaRepo.registrar({
@@ -539,7 +553,8 @@ export const pedidosService = {
       detalhes: {
         de: atual.status,
         para: status,
-        motoboy: pedido.motoboy || atual.motoboy || ""
+        motoboy: pedido.motoboy || atual.motoboy || "",
+        pagamentoNaoRecebido
       },
       ip
     });
@@ -630,26 +645,28 @@ export const pedidosService = {
   },
 
   /* Corrige o pagamento de um pedido ja lancado — o caso real e marcar como
-   * "Calote" quando o produto ja saiu (entrega feita, mesa liberada) e o
-   * cliente nao pagou. Nao mexe em estoque nem em status: o produto foi
+   * "Não pago" quando o produto ja saiu (entrega feita, mesa liberada) e o
+   * dinheiro nao chegou, seja porque o cliente sumiu, o cartao recusou ou
+   * qualquer outro motivo. Nao mexe em estoque nem em status: o produto foi
    * embora de verdade, so o dinheiro que nao chegou.
    *
-   * Motivo e obrigatorio so pra Calote — e o que fica registrado pra conferir
-   * depois, igual ja acontece com o motivo de cancelamento. */
+   * Motivo e obrigatorio so pra "Não pago" — e o que fica registrado pra
+   * conferir depois (o que exatamente aconteceu), igual ja acontece com o
+   * motivo de cancelamento. */
   async definirPagamento(id, pagamento, motivo, { usuario, ip }) {
     const valor = String(pagamento || "").trim();
     if (!valor) throw new ErroApp("Informe a forma de pagamento.", 400, "pagamento_obrigatorio");
 
     const motivoLimpo = String(motivo || "").trim();
-    if (valor === "Calote" && !motivoLimpo) {
-      throw new ErroApp("Informe o motivo do calote.", 400, "motivo_obrigatorio");
+    if (valor === "Não pago" && !motivoLimpo) {
+      throw new ErroApp("Informe o motivo do não pagamento.", 400, "motivo_obrigatorio");
     }
 
     const atual = await this.buscar(id);
     if (atual.status === "cancelado") throw conflito("Pedido cancelado não tem pagamento pra marcar.");
 
     await pedidosRepo.definirPagamentoEmLote([id], valor);
-    await pedidosRepo.definirMotivoNaoPago(id, valor === "Calote" ? motivoLimpo : "");
+    await pedidosRepo.definirMotivoNaoPago(id, valor === "Não pago" ? motivoLimpo : "");
 
     await auditoriaRepo.registrar({
       usuarioId: usuario.id, usuario: usuario.usuario, acao: "pedido_pagamento_alterado",

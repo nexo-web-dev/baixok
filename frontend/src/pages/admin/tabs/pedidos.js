@@ -122,16 +122,41 @@ function botaoDetalhe(pedido) {
   return el("button.secondary.small", { type: "button", dataset: { acao: "detalhe", id: pedido.id } }, "Ver pedido");
 }
 
+/* Marcar como entregue e o momento em que o dinheiro deveria ter entrado
+ * (nesta casa nao ha pagamento online — Dinheiro/Cartao/Pix acontecem na
+ * entrega ou retirada). Perguntar aqui, na hora, evita depender de alguem
+ * lembrar de corrigir depois pelo dashboard. Cancelar na pergunta NAO cancela
+ * a entrega — so avisa que o dinheiro nao veio; a entrega segue normal. */
 function dadosParaStatus(pedido, status) {
-  if (status !== "entregue" || pedido?.fulfillment !== "entrega") return {};
-  if (pedido.motoboy) return { motoboy: pedido.motoboy };
+  if (status !== "entregue") return {};
 
-  const nome = (prompt("Nome do motoboy que fez a entrega (obrigatório):", "") || "").trim();
-  if (!nome) {
-    toastFalha(new Error("Informe o motoboy antes de marcar a entrega como entregue."), "Entrega");
-    return null;
+  const extras = {};
+  if (pedido?.fulfillment === "entrega") {
+    if (pedido.motoboy) {
+      extras.motoboy = pedido.motoboy;
+    } else {
+      const nome = (prompt("Nome do motoboy que fez a entrega (obrigatório):", "") || "").trim();
+      if (!nome) {
+        toastFalha(new Error("Informe o motoboy antes de marcar a entrega como entregue."), "Entrega");
+        return null;
+      }
+      extras.motoboy = nome;
+    }
   }
-  return { motoboy: nome };
+
+  if (pedido?.payment !== "Não pago" && !confirm(
+    "O pagamento foi recebido normalmente?\n\nClique em Cancelar se o dinheiro NÃO chegou (cliente saiu sem pagar, cartão recusado, etc.)."
+  )) {
+    const motivo = (prompt("O que aconteceu? (obrigatório e fica registrado):", "") || "").trim();
+    if (!motivo) {
+      toastFalha(new Error("Informe o que aconteceu para marcar como não pago."), "Pagamento");
+      return null;
+    }
+    extras.pagamentoNaoRecebido = true;
+    extras.motivoNaoPago = motivo;
+  }
+
+  return extras;
 }
 
 /* A cozinha ve a fila e avanca o preparo, mas nao recusa nem reimprime nota do
@@ -334,7 +359,7 @@ function abrirDetalhePedido(id) {
   render(corpo,
     el("div.order-detail-summary", {},
       el("div", {}, el("span", {}, "Pagamento"),
-        el("strong", { class: pedido.payment === "Calote" ? "danger-text" : "" }, pedido.payment || "-")),
+        el("strong", { class: pedido.payment === "Não pago" ? "danger-text" : "" }, pedido.payment || "-")),
       el("div", {}, el("span", {}, "Total"), el("strong", {}, reais(pedido.total))),
       el("div", {}, el("span", {}, "Tempo"), el("strong", {}, esperaLegivel(minutosDesde(pedido.createdAt)))),
       pedido.tableNumber ? el("div", {}, el("span", {}, "Mesa"), el("strong", {}, `Mesa ${pedido.tableNumber}`)) : null
@@ -346,12 +371,15 @@ function abrirDetalhePedido(id) {
     pedido.phone ? el("p.order-place", {}, el("strong", {}, "Telefone: "), pedido.phone) : null,
     pedido.place ? el("p.order-place", {}, el("strong", {}, "Local: "), pedido.place) : null,
     pedido.motoboy ? el("p.order-note", {}, el("strong", {}, "Motoboy: "), pedido.motoboy) : null,
+    pedido.payment === "Não pago" && pedido.naoPagoReason
+      ? el("p.order-note.danger-text", {}, el("strong", {}, "Motivo do não pagamento: "), pedido.naoPagoReason)
+      : null,
     el("div.order-detail-actions", {},
-      pedido.status === "entregue" && pedido.payment !== "Calote"
+      pedido.status === "entregue" && pedido.payment !== "Não pago"
         ? el("button.danger", {
-            type: "button", title: "O produto já saiu e o cliente não pagou",
-            dataset: { acao: "marcar-calote-pedido", id: pedido.id }
-          }, "Marcar como calote")
+            type: "button", title: "O produto já saiu e o dinheiro não chegou",
+            dataset: { acao: "marcar-nao-pago-pedido", id: pedido.id }
+          }, "Marcar como não pago")
         : null,
       el("button.secondary", { type: "button", dataset: { acao: "reimprimir-detalhe", id: pedido.id } }, "Reimprimir nota")
     )
@@ -412,7 +440,10 @@ async function mudarStatus(id, status) {
     if (status === "entregue") {
       const nomeMotoboy = pedido.motoboy || extras?.motoboy || atual?.motoboy || "";
       if (nomeMotoboy) registrarMotoboyLocal(nomeMotoboy);
-      toast(`Pedido ${senha(pedido)} entregue${nomeMotoboy ? ` por ${nomeMotoboy}` : ""}.`);
+      toast(extras?.pagamentoNaoRecebido
+        ? `Pedido ${senha(pedido)} entregue — marcado como NÃO PAGO.`
+        : `Pedido ${senha(pedido)} entregue${nomeMotoboy ? ` por ${nomeMotoboy}` : ""}.`,
+        extras?.pagamentoNaoRecebido ? { tipo: "alerta", duracao: 6000 } : undefined);
     } else if (status === "preparo") {
       toast(`Pedido ${senha(pedido)} aprovado e impresso.`);
     } else if (status === "pronto") {
@@ -493,14 +524,14 @@ export function ligarPedidos() {
     const pedido = estado.pedidos.find(item => item.id === botao.dataset.id);
     if (pedido) imprimirAmbas(pedido);
   });
-  delegar($("#order-detail-body"), "click", "[data-acao='marcar-calote-pedido']", async (_e, botao) => {
-    const motivo = (prompt("Motivo do calote (obrigatório e fica registrado):", "") ?? "").trim();
-    if (!motivo) return toastFalha(new Error("Informe o motivo para marcar como calote."), "Calote");
+  delegar($("#order-detail-body"), "click", "[data-acao='marcar-nao-pago-pedido']", async (_e, botao) => {
+    const motivo = (prompt("O que aconteceu? (obrigatório e fica registrado):", "") ?? "").trim();
+    if (!motivo) return toastFalha(new Error("Informe o motivo para marcar como não pago."), "Pagamento");
     try {
-      await apiPedidos.definirPagamento(botao.dataset.id, "Calote", motivo);
+      await apiPedidos.definirPagamento(botao.dataset.id, "Não pago", motivo);
       await carregar("pedidos");
       abrirDetalhePedido(botao.dataset.id);
-      toast("Pedido marcado como calote.");
+      toast("Pedido marcado como não pago.");
     } catch (erro) {
       toastFalha(erro);
     }

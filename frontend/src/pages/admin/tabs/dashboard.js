@@ -73,7 +73,7 @@ function renderizarListasVendas() {
   renderizarLista("dashboard-sales", "dashboard-sales-empty", vendas, vendaLinha, "Nenhuma venda neste período.");
   renderizarLista("dashboard-canceled", "dashboard-canceled-empty", cancelados, canceladoLinha, "Nenhum pedido cancelado neste período.");
   renderizarLista("dashboard-unpaid", "dashboard-unpaid-empty",
-    vendas.filter(pedido => pedido.payment === "Calote"), vendaLinha, "Nenhum calote neste período.");
+    vendas.filter(pedido => pedido.payment === "Não pago"), vendaLinha, "Nenhuma venda não paga neste período.");
 }
 
 function metrica(rotulo, valor, nota, tom = "") {
@@ -237,13 +237,13 @@ function vendaLinha(pedido) {
       ),
       pedido.fulfillment === "entrega" && pedido.motoboy ? el("span", {}, `Motoboy: ${pedido.motoboy}`) : null,
       cancelado && pedido.cancelReason ? el("span.danger-text", {}, `Motivo: ${pedido.cancelReason}`) : null,
-      pedido.payment === "Calote" && pedido.naoPagoReason ? el("span.danger-text", {}, `Motivo do calote: ${pedido.naoPagoReason}`) : null,
+      pedido.payment === "Não pago" && pedido.naoPagoReason ? el("span.danger-text", {}, `Motivo do não pagamento: ${pedido.naoPagoReason}`) : null,
       troco ? el("span.money-text", {}, `Troco: ${troco}`) : null,
       el("div.sale-items", {}, pedido.items.length ? pedido.items.map(itemVenda) : el("em", {}, "Sem itens"))
     ),
     el("div.sale-side", {},
       el("strong", {}, reais(pedido.total || 0)),
-      el("span", { class: cancelado || pedido.payment === "Calote" ? "danger-text" : "" },
+      el("span", { class: cancelado || pedido.payment === "Não pago" ? "danger-text" : "" },
         cancelado ? "Cancelado" : pedido.payment || "Pagamento não informado"),
       el("button.secondary.small", { type: "button", dataset: { action: "details-sale" } }, "Detalhes"),
       !cancelado
@@ -252,7 +252,7 @@ function vendaLinha(pedido) {
       cancelado
         ? null
         : el("button.secondary.small", { type: "button", dataset: { action: "cancel-sale" } }, "Cancelar"),
-      !cancelado && pedido.status === "entregue" && pedido.payment !== "Calote"
+      !cancelado && pedido.status === "entregue" && pedido.payment !== "Não pago"
         ? el("button.danger.small", { type: "button", dataset: { action: "mark-unpaid-sale" } }, "Marcar não paga")
         : null,
       estado.usuario?.papel === "admin"
@@ -265,7 +265,7 @@ function vendaLinha(pedido) {
       el("span", {}, `Endereço/local: ${pedido.place || "-"}`),
       pedido.note ? el("span", {}, `Obs.: ${pedido.note}`) : null,
       pedido.cancelReason ? el("span.danger-text", {}, `Motivo do cancelamento: ${pedido.cancelReason}`) : null,
-      pedido.naoPagoReason ? el("span.danger-text", {}, `Motivo do calote: ${pedido.naoPagoReason}`) : null,
+      pedido.naoPagoReason ? el("span.danger-text", {}, `Motivo do não pagamento: ${pedido.naoPagoReason}`) : null,
       pedido.motoboy ? el("span", {}, `Motoboy: ${pedido.motoboy}`) : null
     )
   );
@@ -313,9 +313,9 @@ export async function desenharDashboard() {
       taxaServico.contasSemCobranca ? "alert-copper" : ""),
     metrica("Cancelados", String(resumo.cancelados || 0), (resumo.valorCancelado || 0) ? `valor ${reais(resumo.valorCancelado)}` : "nenhum no período",
       (resumo.cancelados || 0) ? "alert-danger" : ""),
-    metrica("Prejuízo com calote", reais(resumo.valorCalote || 0),
-      (resumo.calotes || 0) ? `${resumo.calotes} pedido(s) · fora do faturamento` : "nenhum no período",
-      (resumo.valorCalote || 0) ? "alert-danger" : ""),
+    metrica("Prejuízo sem pagamento", reais(resumo.valorNaoPago || 0),
+      (resumo.naoPagos || 0) ? `${resumo.naoPagos} pedido(s) · fora do faturamento` : "nenhum no período",
+      (resumo.valorNaoPago || 0) ? "alert-danger" : ""),
     metrica("Descontos", reais(resumo.descontos), resumo.taxasEntrega ? `taxas entrega ${reais(resumo.taxasEntrega)}` : null),
     metrica("Estoque crítico", String(estoqueBaixo.length), estoqueBaixo.length ? "itens no mínimo" : "tudo certo",
       estoqueBaixo.length ? "alert-copper" : "")
@@ -532,12 +532,12 @@ export function ligarDashboard() {
   const marcarVendaNaoPaga = async (_evento, botao) => {
     const linha = botao.closest(".sale-row");
     if (!linha) return;
-    const motivo = (prompt("Motivo do calote (obrigatório e fica registrado):", "") ?? "").trim();
-    if (!motivo) return toastFalha(new Error("Informe o motivo para marcar como calote."), "Venda");
+    const motivo = (prompt("Motivo do não pagamento (obrigatório e fica registrado):", "") ?? "").trim();
+    if (!motivo) return toastFalha(new Error("Informe o motivo para marcar como não paga."), "Venda");
     botao.disabled = true;
     try {
-      await apiPedidos.definirPagamento(linha.dataset.id, "Calote", motivo);
-      toastOk("Venda marcada como calote.");
+      await apiPedidos.definirPagamento(linha.dataset.id, "Não pago", motivo);
+      toastOk("Venda marcada como não paga.");
       await desenharDashboard();
     } catch (erro) {
       toastFalha(erro, "Venda");
