@@ -410,6 +410,21 @@ export const pedidosRepo = {
     `, f.params);
   },
 
+  /* So as 3 colunas que o relatorio de fechamento mostra na tabela de nao
+   * pagos — direto na tabela pedidos, sem o JOIN de itens/produtos que
+   * listar() sempre faz. O fechamento normalmente tem 1 ou 2 pedidos nao
+   * pagos no meio de centenas; buscar tudo com foto e item so pra descartar
+   * quase todos em JS era o gargalo real aqui. */
+  async listarNaoPagos(filtro) {
+    const f = filtroRelatorio(filtro);
+    return await todos(`
+      SELECT cliente, total, motivo_nao_pago AS motivo
+        FROM pedidos
+       WHERE ${f.sql} AND status = 'entregue' AND pagamento = 'Não pago'
+       ORDER BY criado_em DESC
+    `, f.params);
+  },
+
   /* to_char no lugar do strftime, que so existe no SQLite. Roda no fuso da
    * sessao (UTC no Supabase), igual ao que o codigo ja assumia. */
   async porHora(filtro) {

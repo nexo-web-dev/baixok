@@ -36,23 +36,19 @@ function contarModalidades(linhas) {
  * (igual faturamento, cancelados etc.), marcar um pedido como nao pago depois
  * nunca apareceria no relatorio de quando ele realmente aconteceu. */
 async function calcularNaoPagos(desde, ate) {
-  const filtro = { desde, ate };
-  const [naoPago, entregues] = await Promise.all([
-    pedidosRepo.resumoNaoPago(filtro),
-    /* pedidosRepo.listar nao filtra por pagamento — separa os "Não pago" na
-     * propria memoria, igual o dashboard ja faz pra lista de vendas. */
-    pedidosRepo.listar({ desde, ate, status: "entregue", limite: 1000 })
-  ]);
+  /* Direto na coluna certa (pedidosRepo.listarNaoPagos), sem buscar todo
+   * pedido entregue do periodo com item e foto so pra descartar quase tudo
+   * em JS — um fechamento tem centenas de pedidos e normalmente 1 ou 2 nao
+   * pagos, entao o custo de listar() inteiro era puro desperdicio aqui. */
+  const lista = await pedidosRepo.listarNaoPagos({ desde, ate });
   return {
-    calotes: Number(naoPago?.pedidos || 0),
-    valorCalote: arredondar(naoPago?.valor),
-    naoPagosLista: entregues
-      .filter(pedido => pedido.payment === "Não pago")
-      .map(pedido => ({
-        cliente: pedido.customer || "Cliente",
-        total: arredondar(pedido.total),
-        motivo: pedido.naoPagoReason || ""
-      }))
+    calotes: lista.length,
+    valorCalote: arredondar(lista.reduce((soma, pedido) => soma + Number(pedido.total || 0), 0)),
+    naoPagosLista: lista.map(pedido => ({
+      cliente: pedido.cliente || "Cliente",
+      total: arredondar(pedido.total),
+      motivo: pedido.motivo || ""
+    }))
   };
 }
 
