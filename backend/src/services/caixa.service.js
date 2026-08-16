@@ -29,43 +29,60 @@ function contarModalidades(linhas) {
   };
 }
 
+/* Separado de resumoFechamento porque e recalculado toda vez que o relatorio
+ * e ABERTO, nao so na hora de fechar o caixa: um cartao que volta recusado ou
+ * um cliente que nunca aparece costuma ser descoberto DEPOIS do fechamento,
+ * as vezes so no dia seguinte. Se isso ficasse preso na foto do fechamento
+ * (igual faturamento, cancelados etc.), marcar um pedido como nao pago depois
+ * nunca apareceria no relatorio de quando ele realmente aconteceu. */
+async function calcularNaoPagos(desde, ate) {
+  const filtro = { desde, ate };
+  const [naoPago, entregues] = await Promise.all([
+    pedidosRepo.resumoNaoPago(filtro),
+    /* pedidosRepo.listar nao filtra por pagamento — separa os "Não pago" na
+     * propria memoria, igual o dashboard ja faz pra lista de vendas. */
+    pedidosRepo.listar({ desde, ate, status: "entregue", limite: 1000 })
+  ]);
+  return {
+    calotes: Number(naoPago?.pedidos || 0),
+    valorCalote: arredondar(naoPago?.valor),
+    naoPagosLista: entregues
+      .filter(pedido => pedido.payment === "Não pago")
+      .map(pedido => ({
+        cliente: pedido.customer || "Cliente",
+        total: arredondar(pedido.total),
+        motivo: pedido.naoPagoReason || ""
+      }))
+  };
+}
+
 async function resumoFechamento(caixa, fechadoEm = new Date()) {
   const filtro = { desde: paraSql(new Date(caixa.abertoEm)), ate: paraSql(fechadoEm) };
-  const [resumo, cancelados, naoPago, pagamentos, canais, modalidades, motoboys, entregues] = await Promise.all([
+  const [resumo, cancelados, naoPago, pagamentos, canais, modalidades, motoboys] = await Promise.all([
     pedidosRepo.resumoPeriodo(filtro),
     pedidosRepo.resumoCancelados(filtro),
-    pedidosRepo.resumoNaoPago(filtro),
+    calcularNaoPagos(filtro.desde, filtro.ate),
     pedidosRepo.agruparPor("pagamento", filtro),
     pedidosRepo.agruparPor("canal", filtro),
     pedidosRepo.agruparPor("modalidade", filtro),
-    pedidosRepo.porMotoboy(filtro),
-    /* pedidosRepo.listar nao filtra por pagamento — separa os "Não pago" na
-     * propria memoria, igual o dashboard ja faz pra lista de vendas. */
-    pedidosRepo.listar({ desde: filtro.desde, ate: filtro.ate, status: "entregue", limite: 1000 })
+    pedidosRepo.porMotoboy(filtro)
   ]);
   const contagem = contarModalidades(modalidades);
-  const naoPagosLista = entregues
-    .filter(pedido => pedido.payment === "Não pago")
-    .map(pedido => ({
-      cliente: pedido.customer || "Cliente",
-      total: arredondar(pedido.total),
-      motivo: pedido.naoPagoReason || ""
-    }));
 
   return {
     fechadoEm: fechadoEm.toISOString(),
     /* Total de pedidos que saiu da loja no periodo — pago ou nao. Faturamento
      * continua so com o que pagou; aqui e volume de operacao, nao dinheiro. */
-    pedidos: Number(resumo.pedidos || 0) + Number(naoPago?.pedidos || 0),
+    pedidos: Number(resumo.pedidos || 0) + naoPago.calotes,
     faturamento: arredondar(resumo.faturamento),
     descontos: arredondar(resumo.descontos),
     taxasEntrega: arredondar(resumo.taxas_entrega),
     ticketMedio: arredondar(resumo.ticket_medio),
     cancelados: Number(cancelados?.pedidos || 0),
     valorCancelado: arredondar(cancelados?.valor),
-    calotes: Number(naoPago?.pedidos || 0),
-    valorCalote: arredondar(naoPago?.valor),
-    naoPagosLista,
+    calotes: naoPago.calotes,
+    valorCalote: naoPago.valorCalote,
+    naoPagosLista: naoPago.naoPagosLista,
     entregas: contagem.entregas,
     retiradas: contagem.retiradas,
     mesas: contagem.mesas,
@@ -459,7 +476,21 @@ export const caixaService = {
   async relatorioHtml(id) {
     const caixa = await this.buscar(id);
     if (caixa.status !== "fechado") throw conflito("Feche o caixa antes de gerar o relatório.");
-    return htmlRelatorio(caixa);
+
+    /* Recalcula os nao-pagos na hora de abrir o relatorio (ver comentario em
+     * calcularNaoPagos) — o resto do fechamento continua sendo a foto de
+     * quando o caixa fechou. "pedidos" e reconstituido pra bater: paga a
+     * parte que ja estava paga (congelada) mais os nao-pagos de agora. */
+    const naoPago = await calcularNaoPagos(paraSql(new Date(caixa.abertoEm)), paraSql(new Date(caixa.fechadoEm)));
+    const pedidosPagos = caixa.pedidos - caixa.calotes;
+
+    return htmlRelatorio({
+      ...caixa,
+      pedidos: pedidosPagos + naoPago.calotes,
+      calotes: naoPago.calotes,
+      valorCalote: naoPago.valorCalote,
+      naoPagosLista: naoPago.naoPagosLista
+    });
   },
 
   async remover(id, { senha } = {}, { usuario, ip }) {
