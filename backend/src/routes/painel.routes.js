@@ -18,7 +18,7 @@ import {
   listarPedidosSchema, relatorioSchema, localizacaoMotoboySchema, excluirPedidoSchema,
   adicionarItensPedidoSchema
 } from "../schemas/pedido.schema.js";
-import { abrirCaixaSchema, fecharCaixaSchema, listarFechamentosSchema } from "../schemas/caixa.schema.js";
+import { abrirCaixaSchema, fecharCaixaSchema, listarFechamentosSchema, excluirFechamentoSchema } from "../schemas/caixa.schema.js";
 import {
   produtoSchema, ajusteEstoqueSchema, reordenarProdutoSchema, reordenarProdutosSchema, promocaoSchema, cupomSchema,
   promocaoBrindeSchema, comboSchema, combinacaoSaborSchema
@@ -70,6 +70,8 @@ rotasPainel.post("/caixa/fechar", EDIT_PEDIDOS, validarCorpo(fecharCaixaSchema),
 rotasPainel.get("/caixa/fechamentos", VER_FECHAMENTOS, validarQuery(listarFechamentosSchema), caixaController.listar);
 rotasPainel.get("/caixa/fechamentos/:id", VER_FECHAMENTOS, validarParams(paramsId), caixaController.buscar);
 rotasPainel.get("/caixa/fechamentos/:id/pdf", VER_FECHAMENTOS, validarParams(paramsId), caixaController.pdf);
+/* Mesma regra da exclusao de pedido: so admin, com senha de novo no corpo. */
+rotasPainel.delete("/caixa/fechamentos/:id", ADMIN, validarParams(paramsId), validarCorpo(excluirFechamentoSchema), caixaController.remover);
 
 // ----------------------------------------------------------------- produtos ---
 rotasPainel.get("/produtos", produtosController.listar);

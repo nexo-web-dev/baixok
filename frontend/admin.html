@@ -668,14 +668,14 @@
     <form class="modal-card" id="cash-password-form">
       <div>
         <h2 id="cash-password-title">Abrir caixa</h2>
-        <p>Digite sua senha para confirmar a abertura do movimento.</p>
+        <p id="cash-password-hint">Digite sua senha para confirmar a abertura do movimento.</p>
       </div>
       <label>
         Senha
         <input id="cash-password" type="password" autocomplete="off" placeholder="Sua senha de acesso">
       </label>
       <div class="field-row">
-        <button class="primary wide" type="submit">Confirmar abertura</button>
+        <button class="primary wide" type="submit" id="cash-password-submit">Confirmar abertura</button>
         <button class="secondary" type="button" id="cash-password-cancel">Cancelar</button>
       </div>
     </form>

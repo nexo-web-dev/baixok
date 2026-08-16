@@ -82,6 +82,12 @@ function cartaoInsumo(insumo) {
   );
 }
 
+/* Rotulo fixo em cima do campo — o placeholder some assim que a pessoa
+ * digita, e ai nao da mais pra saber qual campo e qual so de olhar. */
+function campoRotulado(rotulo, input) {
+  return el("label.field-col", {}, el("span.field-label", {}, rotulo), input);
+}
+
 function formularioInsumo() {
   const insumo = insumoEmEdicao || {};
 
@@ -93,14 +99,14 @@ function formularioInsumo() {
       ),
       insumoEmEdicao ? el("button.secondary.small", { type: "button", dataset: { acao: "novo-insumo" } }, "Novo") : null
     ),
-    el("input", { id: "insumo-name", required: true, maxlength: 80, placeholder: "Nome do insumo", value: insumo.name || "" }),
+    campoRotulado("Nome", el("input", { id: "insumo-name", required: true, maxlength: 80, placeholder: "Nome do insumo", value: insumo.name || "" })),
     el("div.field-row", {},
-      el("input", { id: "insumo-category", maxlength: 60, placeholder: "Categoria (ex: Bebidas, Embalagens)", value: insumo.category || "" }),
-      el("input", { id: "insumo-unit", maxlength: 20, placeholder: "Unidade (un, kg, L)", value: insumo.unit || "" })
+      campoRotulado("Categoria", el("input", { id: "insumo-category", maxlength: 60, placeholder: "Bebidas, Embalagens...", value: insumo.category || "" })),
+      campoRotulado("Unidade", el("input", { id: "insumo-unit", maxlength: 20, placeholder: "un, kg, L", value: insumo.unit || "" }))
     ),
     el("div.field-row", {},
-      el("input", { id: "insumo-qty", type: "number", min: "0", step: "0.001", required: true, placeholder: "Quantidade atual", value: insumo.qty ?? "" }),
-      el("input", { id: "insumo-min", type: "number", min: "0", step: "0.001", required: true, placeholder: "Minimo de alerta", value: insumo.minQty ?? "" })
+      campoRotulado("Quantidade atual", el("input", { id: "insumo-qty", type: "number", min: "0", step: "0.001", required: true, placeholder: "0", value: insumo.qty ?? "" })),
+      campoRotulado("Mínimo de alerta", el("input", { id: "insumo-min", type: "number", min: "0", step: "0.001", required: true, placeholder: "0", value: insumo.minQty ?? "" }))
     ),
     el("label.check-field", {},
       el("input", { id: "insumo-active", type: "checkbox", checked: insumo.active ?? true }),

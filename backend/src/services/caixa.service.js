@@ -427,5 +427,22 @@ export const caixaService = {
     const caixa = await this.buscar(id);
     if (caixa.status !== "fechado") throw conflito("Feche o caixa antes de gerar o relatório.");
     return htmlRelatorio(caixa);
+  },
+
+  async remover(id, { senha } = {}, { usuario, ip }) {
+    await authService.confirmarSenha({ usuarioAtual: usuario, senha });
+
+    const caixa = await this.buscar(id);
+    if (caixa.status === "aberto") throw conflito("Feche o caixa antes de apagar o registro.");
+
+    const removido = await caixaRepo.remover(id);
+    if (!removido) throw naoEncontrado("Fechamento de caixa não encontrado.");
+
+    await auditoriaRepo.registrar({
+      usuarioId: usuario.id, usuario: usuario.usuario, acao: "fechamento_excluido",
+      entidade: "caixa", entidadeId: id,
+      detalhes: { faturamento: caixa.faturamento, pedidos: caixa.pedidos, fechadoEm: caixa.fechadoEm },
+      ip
+    });
   }
 };

@@ -272,6 +272,10 @@ export const caixaController = {
   },
   async pdf(req, res) {
     res.type("html").send(await caixaService.relatorioHtml(req.validado.params.id));
+  },
+  async remover(req, res) {
+    await caixaService.remover(req.validado.params.id, req.validado.body, contexto(req));
+    res.status(204).end();
   }
 };
 

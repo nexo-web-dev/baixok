@@ -12,3 +12,7 @@ export const fecharCaixaSchema = z.object({
 export const listarFechamentosSchema = z.object({
   limite: z.coerce.number().int().min(1).max(200).default(100)
 });
+
+export const excluirFechamentoSchema = z.object({
+  senha: texto(200, { obrigatorio: true })
+}).strict();

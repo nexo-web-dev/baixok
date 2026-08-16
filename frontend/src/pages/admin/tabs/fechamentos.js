@@ -1,4 +1,4 @@
-import { el, render, $, mostrar } from "../../../utils/dom.js";
+import { el, render, $, delegar, mostrar } from "../../../utils/dom.js";
 import { reais, dataHora } from "../../../utils/formato.js";
 import { apiCaixa } from "../../../services/api.js";
 import { estado, carregar } from "../store.js";
@@ -76,7 +76,10 @@ function fechamentoLinha(caixa) {
       el("strong", {}, reais(caixa.faturamento)),
       el("span", {}, `Entrega ${caixa.entregas} | Retirada ${caixa.retiradas} | Mesa ${caixa.mesas}`),
       caixa.status === "fechado"
-        ? el("a.secondary.small", { href: apiCaixa.relatorioUrl(caixa.id), target: "_blank", rel: "noopener" }, "Abrir PDF")
+        ? el("div.closing-actions", {},
+            el("a.secondary.small", { href: apiCaixa.relatorioUrl(caixa.id), target: "_blank", rel: "noopener" }, "Abrir PDF"),
+            el("button.danger.small", { type: "button", dataset: { acao: "apagar-fechamento", id: caixa.id } }, "Apagar")
+          )
         : null
     )
   );
@@ -145,14 +148,27 @@ function fecharModalSenhaCaixa(valor) {
   resolverSenhaCaixa = null;
 }
 
-function pedirSenhaCaixa() {
+/* Mesmo modal serve pra confirmar a abertura do caixa e pra qualquer outra
+ * acao que exija a senha de novo (ex: apagar um fechamento) — so troca o
+ * texto na hora de abrir. */
+function pedirSenhaCaixa({
+  titulo = "Abrir caixa",
+  hint = "Digite sua senha para confirmar a abertura do movimento.",
+  rotulo = "Confirmar abertura"
+} = {}) {
   return new Promise(resolve => {
     const modal = $("#cash-password-modal");
     const campo = $("#cash-password");
     if (!modal || !campo) {
-      resolve(prompt("Digite sua senha para abrir o caixa:"));
+      resolve(prompt(hint));
       return;
     }
+    const tituloEl = $("#cash-password-title");
+    const hintEl = $("#cash-password-hint");
+    const botaoEl = $("#cash-password-submit");
+    if (tituloEl) tituloEl.textContent = titulo;
+    if (hintEl) hintEl.textContent = hint;
+    if (botaoEl) botaoEl.textContent = rotulo;
     resolverSenhaCaixa = resolve;
     campo.value = "";
     mostrar(modal, true);
@@ -160,10 +176,33 @@ function pedirSenhaCaixa() {
   });
 }
 
+async function apagarFechamento(id) {
+  const caixa = estado.fechamentos.find(item => item.id === id);
+  if (!confirm(`Apagar o fechamento de ${caixa ? dataHora(caixa.fechadoEm) : "caixa"}? Essa ação não pode ser desfeita.`)) return;
+
+  const senha = await pedirSenhaCaixa({
+    titulo: "Apagar fechamento",
+    hint: "Confirme sua senha de administrador para apagar este fechamento.",
+    rotulo: "Apagar fechamento"
+  });
+  if (senha === null) return;
+  if (!senha.trim()) return toastFalha(new Error("Informe sua senha para apagar o fechamento."), "Fechamentos");
+
+  try {
+    await apiCaixa.remover(id, senha);
+    toastOk("Fechamento apagado.");
+    await desenharFechamentos();
+  } catch (erro) {
+    toastFalha(erro, "Fechamentos");
+  }
+}
+
 export function ligarFechamentos() {
   $("#open-cash")?.addEventListener("click", abrirCaixa);
   $("#close-cash")?.addEventListener("click", fecharCaixa);
   $("#refresh-closings")?.addEventListener("click", desenharFechamentos);
+  delegar($("#closing-list"), "click", "[data-acao='apagar-fechamento']", (_e, botao) =>
+    apagarFechamento(botao.dataset.id));
   $("#cash-password-form")?.addEventListener("submit", evento => {
     evento.preventDefault();
     fecharModalSenhaCaixa($("#cash-password")?.value || "");

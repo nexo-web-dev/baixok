@@ -118,7 +118,8 @@ export const apiCaixa = {
   abrir: senha => http.post("/painel/caixa/abrir", { senha }),
   fechar: observacao => http.post("/painel/caixa/fechar", { observacao }),
   fechamentos: filtros => http.get("/painel/caixa/fechamentos", filtros),
-  relatorioUrl: id => `/api/painel/caixa/fechamentos/${encodeURIComponent(id)}/pdf`
+  relatorioUrl: id => `/api/painel/caixa/fechamentos/${encodeURIComponent(id)}/pdf`,
+  remover: (id, senha) => http.delete(`/painel/caixa/fechamentos/${encodeURIComponent(id)}`, { corpo: { senha } })
 };
 
 export const apiUsuarios = {

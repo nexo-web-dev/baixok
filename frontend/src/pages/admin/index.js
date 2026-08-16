@@ -18,22 +18,41 @@ import { estado, carregar, marcarConexao } from "./store.js";
 import { ABAS, abaInicial, podeVer } from "./abas.js";
 import { ligarVendaManual } from "./venda-manual.js";
 
+/* Pedidos, motoboy e o status do caixa ficam no pacote principal: sao os que
+ * praticamente toda sessao usa assim que loga (a fila de pedidos e a aba
+ * inicial de quase todo mundo, e o rastreamento do motoboy roda sozinho em
+ * segundo plano). As outras abas so baixam o proprio codigo quando a pessoa
+ * clica nelas pela primeira vez — antes disso, nem chegam a trafegar. */
 import { desenharPedidos, ligarPedidos } from "./tabs/pedidos.js";
 import { desenharMotoboy, ligarMotoboy, iniciarRastreamentoMotoboy, garantirNomeMotoboy } from "./tabs/motoboy.js";
-import { desenharMesas, ligarMesas } from "./tabs/mesas.js";
-import { desenharProdutos, ligarProdutos } from "./tabs/produtos.js";
-import { desenharCombos, ligarCombos } from "./tabs/combos.js";
-import { desenharPromocoes, desenharCupons, ligarPromocoes } from "./tabs/promocoes.js";
-import { desenharEntrega, ligarEntrega, recarregarRascunhoEntrega } from "./tabs/entrega.js";
-import { desenharEstoque, ligarEstoque } from "./tabs/estoque.js";
-import { desenharDashboard, ligarDashboard } from "./tabs/dashboard.js";
-import { desenharEquipe as desenharUsuarios, ligarEquipe as ligarUsuarios } from "./tabs/equipe.js";
-import { desenharPlano, ligarPlano } from "./tabs/plano.js";
 import { desenharCaixaStatus, desenharFechamentos, ligarFechamentos } from "./tabs/fechamentos.js";
 
 let abaAtual = null;
 let monitorPedidosPronto = false;
 let idsPedidosConhecidos = new Set();
+
+/* Guarda o modulo depois do primeiro import() (import repetido do mesmo
+ * caminho resolve do cache do navegador/bundler, mas ainda assim evita o
+ * round-trip da promise) e se o `ligar()` da aba ja rodou — isso so pode
+ * acontecer uma vez, senao os listeners delegados duplicariam. */
+const modulosAba = {};
+const abasLigadas = new Set();
+
+async function moduloDaAba(chave, importar) {
+  if (!modulosAba[chave]) modulosAba[chave] = await importar();
+  return modulosAba[chave];
+}
+
+function abaPreguicosa(chave, importar, nomeLigar, ...nomesDesenhar) {
+  return async () => {
+    const mod = await moduloDaAba(chave, importar);
+    if (!abasLigadas.has(chave)) {
+      mod[nomeLigar]?.();
+      abasLigadas.add(chave);
+    }
+    for (const nome of nomesDesenhar) await mod[nome]?.();
+  };
+}
 
 /* Qual funcao redesenha cada aba, e o que ela precisa recarregar. */
 const DESENHO = {
@@ -42,16 +61,16 @@ const DESENHO = {
     desenharCaixaStatus().catch(() => {});
   },
   motoboy: desenharMotoboy,
-  mesas: desenharMesas,
-  produtos: desenharProdutos,
-  combos: desenharCombos,
-  promos: () => { desenharPromocoes(); desenharCupons(); },
-  entrega: desenharEntrega,
-  estoque: desenharEstoque,
-  dashboard: desenharDashboard,
+  mesas: abaPreguicosa("mesas", () => import("./tabs/mesas.js"), "ligarMesas", "desenharMesas"),
+  produtos: abaPreguicosa("produtos", () => import("./tabs/produtos.js"), "ligarProdutos", "desenharProdutos"),
+  combos: abaPreguicosa("combos", () => import("./tabs/combos.js"), "ligarCombos", "desenharCombos"),
+  promos: abaPreguicosa("promos", () => import("./tabs/promocoes.js"), "ligarPromocoes", "desenharPromocoes", "desenharCupons"),
+  entrega: abaPreguicosa("entrega", () => import("./tabs/entrega.js"), "ligarEntrega", "desenharEntrega"),
+  estoque: abaPreguicosa("estoque", () => import("./tabs/estoque.js"), "ligarEstoque", "desenharEstoque"),
+  dashboard: abaPreguicosa("dashboard", () => import("./tabs/dashboard.js"), "ligarDashboard", "desenharDashboard"),
   fechamentos: desenharFechamentos,
-  plano: desenharPlano,
-  usuarios: desenharUsuarios
+  plano: abaPreguicosa("plano", () => import("./tabs/plano.js"), "ligarPlano", "desenharPlano"),
+  usuarios: abaPreguicosa("usuarios", () => import("./tabs/equipe.js"), "ligarEquipe", "desenharEquipe")
 };
 
 /* Que abas cada assunto do SSE afeta. Sem este mapa voltariamos ao
@@ -195,15 +214,6 @@ function ligarShell() {
 
   ligarPedidos();
   ligarMotoboy();
-  ligarMesas();
-  ligarProdutos();
-  ligarCombos();
-  ligarPromocoes();
-  ligarEntrega();
-  ligarEstoque();
-  ligarDashboard();
-  ligarPlano();
-  ligarUsuarios();
   ligarFechamentos();
   ligarVendaManual();
 }
@@ -257,7 +267,9 @@ async function iniciar() {
       }[assunto];
       await carregar(...(areas || []));
       if (assunto === "pedidos") avisarPedidosNovos();
-      if (assunto === "entrega") recarregarRascunhoEntrega();
+      /* So existe rascunho pra atualizar se a aba de entrega ja foi aberta
+       * (e o modulo dela, baixado) nesta sessao. */
+      if (assunto === "entrega") modulosAba.entrega?.recarregarRascunhoEntrega?.();
       desenharMetricas();
       if (assunto === "caixa") await desenharCaixaStatus();
 

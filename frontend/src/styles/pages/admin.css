@@ -611,6 +611,8 @@
 .stock-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 14px; }
 .insumo-layout { display: grid; grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); gap: 14px; align-items: start; }
 .insumo-form { display: grid; gap: 10px; padding: 18px; border-radius: var(--radius-md); background: var(--sidebar); border: 1.5px solid rgba(217,154,104,.3); }
+.insumo-form .field-col { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+.insumo-form .field-label { color: var(--muted); font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
 .form-title-row { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
 .form-title-row h2 { font-size: 1rem; }
 .stock-headline { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
@@ -823,6 +825,7 @@
 .closing-main span, .closing-main em, .closing-side span { color: var(--muted); font-size: .76rem; font-style: normal; line-height: 1.35; }
 .closing-side { justify-items: end; }
 .closing-side strong { color: var(--gold-light); font-family: var(--font-head); font-size: 1rem; }
+.closing-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 
 @media (max-width: 1280px) {
   .products-layout { grid-template-columns: 1fr; }

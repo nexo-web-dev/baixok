@@ -93,5 +93,10 @@ export const caixaRepo = {
       JSON.stringify(resumo.motoboys), observacao, id
     ]);
     return this.buscar(id);
+  },
+
+  async remover(id) {
+    const linhas = await alteradas("DELETE FROM caixa_fechamentos WHERE id = ?", [id]);
+    return linhas > 0;
   }
 };

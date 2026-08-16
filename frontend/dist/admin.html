@@ -11,11 +11,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/admin-EYQcf9ho.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/api-DtQzBf01.js">
-  <link rel="modulepreload" crossorigin href="/assets/estoque-CX_N3V3-.js">
+  <script type="module" crossorigin src="/assets/admin-D9bH1LK_.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/api-Bxl7pHAa.js">
+  <link rel="modulepreload" crossorigin href="/assets/estoque-ChFXF0l9.js">
   <link rel="modulepreload" crossorigin href="/assets/categorias-CaaVB_Yc.js">
-  <link rel="stylesheet" crossorigin href="/assets/admin-DphwYkdf.css">
+  <link rel="stylesheet" crossorigin href="/assets/admin-VejSTqEB.css">
 </head>
 <body data-page="admin">
   <div class="aviso-offline" role="alert">Sem conexão com o servidor. As alterações não estão sendo salvas.</div>
@@ -673,14 +673,14 @@
     <form class="modal-card" id="cash-password-form">
       <div>
         <h2 id="cash-password-title">Abrir caixa</h2>
-        <p>Digite sua senha para confirmar a abertura do movimento.</p>
+        <p id="cash-password-hint">Digite sua senha para confirmar a abertura do movimento.</p>
       </div>
       <label>
         Senha
         <input id="cash-password" type="password" autocomplete="off" placeholder="Sua senha de acesso">
       </label>
       <div class="field-row">
-        <button class="primary wide" type="submit">Confirmar abertura</button>
+        <button class="primary wide" type="submit" id="cash-password-submit">Confirmar abertura</button>
         <button class="secondary" type="button" id="cash-password-cancel">Cancelar</button>
       </div>
     </form>
