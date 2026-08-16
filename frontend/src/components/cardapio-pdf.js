@@ -79,9 +79,11 @@ const css = `
     font-family: 'Bricolage Grotesque', Georgia, serif;
     font-size: 11px; font-weight: 800; color: #fff6ea; text-transform: uppercase; letter-spacing: .06em;
   }
-  /* 3 colunas, sem descricao: e o que faz o cardapio inteiro caber numa
-   * pagina — descricao era o maior consumo de altura de cada item. */
-  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px 9px; }
+  /* 4 colunas, sem descricao: e o que faz o cardapio inteiro caber numa
+   * pagina — descricao era o maior consumo de altura de cada item, e 3
+   * colunas nao bastam pra um catalogo com muita bebida (a casa tem mais
+   * de 20 so em drinks). */
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px 8px; }
   .item {
     display: grid; grid-template-columns: 26px 1fr; gap: 6px; align-items: center;
     min-width: 0; padding: 4px 6px; border-radius: 6px;
@@ -300,7 +302,7 @@ export async function exportarCardapioPdf(produtos, ajustes) {
    * verdade em vez de chutar por quantidade de produto — funciona igual com
    * 20 ou 200 itens no cardapio. `zoom` (nao-padrao, mas suportado pelos
    * navegadores baseados em Chromium) encolhe fonte, foto e espacamento
-   * juntos, mantendo tudo legivel. Teto de 62%: abaixo disso a letra fica
+   * juntos, mantendo tudo legivel. Teto de 50%: abaixo disso a letra fica
    * pequena demais pra ler, e melhor deixar estourar pra segunda pagina do
    * que entregar um cardapio ilegivel. */
   function ajustarParaUmaPagina() {
@@ -308,7 +310,7 @@ export async function exportarCardapioPdf(produtos, ajustes) {
     if (!folha) return;
     const altura = folha.scrollHeight;
     if (altura <= ALTURA_UTIL_PX) return;
-    const escala = Math.max(0.62, ALTURA_UTIL_PX / altura);
+    const escala = Math.max(0.5, ALTURA_UTIL_PX / altura);
     folha.style.zoom = escala;
   }
 

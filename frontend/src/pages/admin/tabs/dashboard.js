@@ -5,7 +5,7 @@
  * somar faturamento no navegador. Alem de pesado, colocava a base de clientes
  * dentro de um tablet que fica no balcao. */
 import { el, render, $, delegar, mostrar, debounce } from "../../../utils/dom.js";
-import { reais, dinheiro } from "../../../utils/formato.js";
+import { reais } from "../../../utils/formato.js";
 import { CANAIS_ROTULO, MODALIDADES_ROTULO, rotuloCategoria } from "../../../utils/categorias.js";
 import { apiPedidos, apiRelatorios } from "../../../services/api.js";
 import { toastFalha, toastOk } from "../../../components/toast.js";
@@ -421,33 +421,25 @@ export async function desenharDashboard() {
   renderizarListasVendas();
 }
 
-/* Exportacao em CSV com separador ponto-e-virgula e BOM: e o que o Excel em
- * portugues abre com as colunas certas sem passo de importacao. */
-function exportarPlanilha() {
+/* exceljs pesa ~950KB — so baixa na hora do clique em exportar, nao junto
+ * com o resto da aba Dashboard (que a maioria abre so pra olhar numero). */
+async function exportarPlanilha() {
   if (!ultimoRelatorio) return;
+  const botao = $("#export-dashboard");
+  const rotuloOriginal = botao?.textContent;
+  if (botao) { botao.disabled = true; botao.textContent = "Gerando planilha..."; }
 
-  apiRelatorios.exportar(parametrosDashboard())
-    .then(({ linhas, periodo }) => {
-      const colunas = ["id", "data", "status", "canal", "modalidade", "cliente", "telefone", "endereco", "motivoCancelamento", "motivoNaoPago", "motoboy", "pagamento", "itens", "subtotal", "desconto", "taxaEntrega", "total"];
-      const escapar = valor => `"${String(valor ?? "").replace(/"/g, '""')}"`;
-
-      const csv = [
-        colunas.join(";"),
-        ...linhas.map(linha => colunas.map(coluna => {
-          const valor = linha[coluna];
-          return typeof valor === "number" ? escapar(dinheiro(valor)) : escapar(valor);
-        }).join(";"))
-      ].join("\r\n");
-
-      const blob = new Blob([`ï»¿${csv}`], { type: "text/csv;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `baixok-${periodo.rotulo.toLowerCase().replace(/\s+/g, "-")}.csv`;
-      link.click();
-      URL.revokeObjectURL(url);
-    })
-    .catch(erro => toastFalha(erro, "Exportação"));
+  try {
+    const [{ linhas, periodo }, { exportarPlanilhaVendas }] = await Promise.all([
+      apiRelatorios.exportar(parametrosDashboard()),
+      import("../../../components/planilha-vendas.js")
+    ]);
+    await exportarPlanilhaVendas({ periodo, linhas });
+  } catch (erro) {
+    toastFalha(erro, "Exportação");
+  } finally {
+    if (botao) { botao.disabled = false; botao.textContent = rotuloOriginal; }
+  }
 }
 
 export function ligarDashboard() {
