@@ -81,6 +81,10 @@ export const motoboyPedidoSchema = z.object({
   motoboy: texto(80, { obrigatorio: true })
 });
 
+export const definirPagamentoSchema = z.object({
+  pagamento: texto(60, { obrigatorio: true })
+}).strict();
+
 export const localizacaoMotoboySchema = z.object({
   lat: latitude,
   lng: longitude,

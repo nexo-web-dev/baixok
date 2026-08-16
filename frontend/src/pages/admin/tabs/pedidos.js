@@ -333,7 +333,8 @@ function abrirDetalhePedido(id) {
 
   render(corpo,
     el("div.order-detail-summary", {},
-      el("div", {}, el("span", {}, "Pagamento"), el("strong", {}, pedido.payment || "-")),
+      el("div", {}, el("span", {}, "Pagamento"),
+        el("strong", { class: pedido.payment === "Calote" ? "danger-text" : "" }, pedido.payment || "-")),
       el("div", {}, el("span", {}, "Total"), el("strong", {}, reais(pedido.total))),
       el("div", {}, el("span", {}, "Tempo"), el("strong", {}, esperaLegivel(minutosDesde(pedido.createdAt)))),
       pedido.tableNumber ? el("div", {}, el("span", {}, "Mesa"), el("strong", {}, `Mesa ${pedido.tableNumber}`)) : null
@@ -346,6 +347,12 @@ function abrirDetalhePedido(id) {
     pedido.place ? el("p.order-place", {}, el("strong", {}, "Local: "), pedido.place) : null,
     pedido.motoboy ? el("p.order-note", {}, el("strong", {}, "Motoboy: "), pedido.motoboy) : null,
     el("div.order-detail-actions", {},
+      pedido.status === "entregue" && pedido.payment !== "Calote"
+        ? el("button.danger", {
+            type: "button", title: "O produto já saiu e o cliente não pagou",
+            dataset: { acao: "marcar-calote-pedido", id: pedido.id }
+          }, "Marcar como calote")
+        : null,
       el("button.secondary", { type: "button", dataset: { acao: "reimprimir-detalhe", id: pedido.id } }, "Reimprimir nota")
     )
   );
@@ -485,6 +492,17 @@ export function ligarPedidos() {
   delegar($("#order-detail-body"), "click", "[data-acao='reimprimir-detalhe']", (_e, botao) => {
     const pedido = estado.pedidos.find(item => item.id === botao.dataset.id);
     if (pedido) imprimirAmbas(pedido);
+  });
+  delegar($("#order-detail-body"), "click", "[data-acao='marcar-calote-pedido']", async (_e, botao) => {
+    if (!confirm("Marcar este pedido como calote? O valor sai do faturamento e entra como prejuízo no dashboard.")) return;
+    try {
+      await apiPedidos.definirPagamento(botao.dataset.id, "Calote");
+      await carregar("pedidos");
+      abrirDetalhePedido(botao.dataset.id);
+      toast("Pedido marcado como calote.");
+    } catch (erro) {
+      toastFalha(erro);
+    }
   });
 
   delegar($("#order-detail-body"), "input", "[data-acao='buscar-item-pedido']", debounce(evento => {

@@ -240,7 +240,8 @@ function vendaLinha(pedido) {
     ),
     el("div.sale-side", {},
       el("strong", {}, reais(pedido.total || 0)),
-      el("span", { class: cancelado ? "danger-text" : "" }, cancelado ? "Cancelado" : pedido.payment || "Pagamento não informado"),
+      el("span", { class: cancelado || pedido.payment === "Calote" ? "danger-text" : "" },
+        cancelado ? "Cancelado" : pedido.payment || "Pagamento não informado"),
       el("button.secondary.small", { type: "button", dataset: { action: "details-sale" } }, "Detalhes"),
       !cancelado
         ? el("button.secondary.small", { type: "button", dataset: { action: "reprint-sale" } }, "Reimprimir")
@@ -305,6 +306,9 @@ export async function desenharDashboard() {
       taxaServico.contasSemCobranca ? "alert-copper" : ""),
     metrica("Cancelados", String(resumo.cancelados || 0), (resumo.valorCancelado || 0) ? `valor ${reais(resumo.valorCancelado)}` : "nenhum no período",
       (resumo.cancelados || 0) ? "alert-danger" : ""),
+    metrica("Prejuízo com calote", reais(resumo.valorCalote || 0),
+      (resumo.calotes || 0) ? `${resumo.calotes} pedido(s) · fora do faturamento` : "nenhum no período",
+      (resumo.valorCalote || 0) ? "alert-danger" : ""),
     metrica("Descontos", reais(resumo.descontos), resumo.taxasEntrega ? `taxas entrega ${reais(resumo.taxasEntrega)}` : null),
     metrica("Estoque crítico", String(estoqueBaixo.length), estoqueBaixo.length ? "itens no mínimo" : "tudo certo",
       estoqueBaixo.length ? "alert-copper" : "")

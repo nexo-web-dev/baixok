@@ -629,6 +629,29 @@ export const pedidosService = {
     publicar("pedidos", [CANAL.OPERACAO, CANAL.TELAO]);
   },
 
+  /* Corrige o pagamento de um pedido ja lancado — o caso real e marcar como
+   * "Calote" quando o produto ja saiu (entrega feita, mesa liberada) e o
+   * cliente nao pagou. Nao mexe em estoque nem em status: o produto foi
+   * embora de verdade, so o dinheiro que nao chegou. */
+  async definirPagamento(id, pagamento, { usuario, ip }) {
+    const valor = String(pagamento || "").trim();
+    if (!valor) throw new ErroApp("Informe a forma de pagamento.", 400, "pagamento_obrigatorio");
+
+    const atual = await this.buscar(id);
+    if (atual.status === "cancelado") throw conflito("Pedido cancelado não tem pagamento pra marcar.");
+
+    await pedidosRepo.definirPagamentoEmLote([id], valor);
+
+    await auditoriaRepo.registrar({
+      usuarioId: usuario.id, usuario: usuario.usuario, acao: "pedido_pagamento_alterado",
+      entidade: "pedido", entidadeId: id,
+      detalhes: { de: atual.payment, para: valor, total: atual.total },
+      ip
+    });
+    publicar("pedidos", [CANAL.OPERACAO, CANAL.TELAO]);
+    return this.buscar(id);
+  },
+
   async definirMotoboy(id, motoboy, { usuario, ip }) {
     const nome = String(motoboy || "").trim();
     if (!nome) throw new ErroApp("Informe o nome do motoboy.", 400, "motoboy_obrigatorio");

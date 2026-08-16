@@ -16,7 +16,7 @@ import { paramsId, paramsIdItem, paramsNumero, paramsParProdutos } from "../sche
 import {
   criarPedidoManualSchema, mudarStatusSchema, cancelarPedidoSchema, motoboyPedidoSchema,
   listarPedidosSchema, relatorioSchema, localizacaoMotoboySchema, excluirPedidoSchema,
-  adicionarItensPedidoSchema
+  adicionarItensPedidoSchema, definirPagamentoSchema
 } from "../schemas/pedido.schema.js";
 import { abrirCaixaSchema, fecharCaixaSchema, listarFechamentosSchema, excluirFechamentoSchema } from "../schemas/caixa.schema.js";
 import {
@@ -52,6 +52,7 @@ rotasPainel.patch("/pedidos/:id/status", EDIT_PEDIDOS, validarParams(paramsId), 
 rotasPainel.post("/pedidos/:id/impresso", EDIT_PEDIDOS, validarParams(paramsId), pedidosController.marcarImpresso);
 rotasPainel.post("/pedidos/:id/cancelar", EDIT_PEDIDOS, validarParams(paramsId), validarCorpo(cancelarPedidoSchema), pedidosController.cancelar);
 rotasPainel.patch("/pedidos/:id/motoboy", EDIT_PEDIDOS, validarParams(paramsId), validarCorpo(motoboyPedidoSchema), pedidosController.definirMotoboy);
+rotasPainel.patch("/pedidos/:id/pagamento", EDIT_PEDIDOS, validarParams(paramsId), validarCorpo(definirPagamentoSchema), pedidosController.definirPagamento);
 rotasPainel.post("/pedidos", EDIT_PEDIDOS, validarCorpo(criarPedidoManualSchema), pedidosController.criarManual);
 /* Apagar e diferente de cancelar: some com o registro. So o admin, e mesmo
  * logado precisa confirmar a propria senha de novo (corpo da requisicao). */

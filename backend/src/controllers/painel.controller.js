@@ -49,6 +49,10 @@ export const pedidosController = {
     const { id } = req.validado.params;
     res.json({ pedido: await pedidosService.definirMotoboy(id, req.validado.body.motoboy, contexto(req)) });
   },
+  async definirPagamento(req, res) {
+    const { id } = req.validado.params;
+    res.json({ pedido: await pedidosService.definirPagamento(id, req.validado.body.pagamento, contexto(req)) });
+  },
   async marcarImpresso(req, res) {
     await pedidosService.marcarImpresso(req.validado.params.id);
     res.json({ ok: true });
