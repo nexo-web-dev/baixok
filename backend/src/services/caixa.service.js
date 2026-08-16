@@ -334,7 +334,8 @@ function htmlRelatorio(caixa) {
   </style>
 </head>
 <body>
-  <button class="print-btn" onclick="window.print()">Imprimir ou salvar PDF</button>
+  <button class="print-btn" type="button">Imprimir ou salvar PDF</button>
+  <script src="/relatorio-caixa.js"></script>
   <div class="sheet">
     <header>
       <div class="brand">
