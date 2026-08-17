@@ -328,8 +328,16 @@ export async function exportarCardapioPdf(produtos, ajustes) {
    * via el()/importNode, nunca por string. Sem isso a aba nova nao herda o
    * <link> do Google Fonts do admin.html e cai pra Georgia/Arial. */
   doc.open();
+  /* Sem isto, foto enviada pelo painel (que vira um caminho relativo tipo
+   * "/api/publico/produtos/xxx/imagem") nao carrega aqui: a aba nova abre em
+   * branco ("about:blank") e o navegador nao sabe a partir de onde resolver
+   * um caminho relativo — so funcionava por acaso pra foto cadastrada como
+   * link http(s) direto. Com <base>, os dois caminhos passam a resolver
+   * igual a pagina que abriu a aba. */
   doc.write(
-    "<!doctype html><html><head><meta charset='utf-8'><title>Cardápio</title>" +
+    "<!doctype html><html><head><meta charset='utf-8'>" +
+    `<base href="${location.origin}/">` +
+    "<title>Cardápio</title>" +
     "<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">" +
     "<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>" +
     "<link href=\"https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Figtree:wght@400;500;600;700;800&display=swap\" rel=\"stylesheet\">" +
@@ -350,6 +358,23 @@ export async function exportarCardapioPdf(produtos, ajustes) {
   const fontesProntas = doc.fonts?.ready
     ? Promise.race([doc.fonts.ready, new Promise(resolve => setTimeout(resolve, 1500))])
     : Promise.resolve();
+
+  /* Espera toda foto (destaque e miniatura de cada item) carregar antes de
+   * medir a altura e imprimir — sem isso, com dezenas de fotos vindo do
+   * cadastro, o print disparava antes de algumas terminarem de baixar e
+   * saiam vazias no PDF. Teto de 3s: foto de produto e mais pesada que
+   * fonte, mas uma que nunca carrega nao pode travar a exportacao. */
+  function imagensProntas() {
+    const imagens = [...doc.images];
+    if (!imagens.length) return Promise.resolve();
+    const espera = imagens.map(img => img.complete
+      ? Promise.resolve()
+      : new Promise(resolve => {
+          img.addEventListener("load", resolve, { once: true });
+          img.addEventListener("error", resolve, { once: true });
+        }));
+    return Promise.race([Promise.all(espera), new Promise(resolve => setTimeout(resolve, 3000))]);
+  }
 
   /* Margem do @page e "8mm 10mm": altura util = 297mm - 2*8mm, em px a 96dpi
    * (e o que o layout na tela ja usa, entao a medida bate com a impressao). */
@@ -372,7 +397,7 @@ export async function exportarCardapioPdf(produtos, ajustes) {
   }
 
   janela.addEventListener("load", () => {
-    fontesProntas.then(() => {
+    Promise.all([fontesProntas, imagensProntas()]).then(() => {
       ajustarParaUmaPagina();
       janela.focus();
       janela.print();
