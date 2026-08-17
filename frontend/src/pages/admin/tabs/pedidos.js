@@ -273,7 +273,10 @@ function fecharDetalhePedido() {
 }
 
 function linhaDetalheItem(item, pedido, editavel) {
-  const podeRemover = editavel && pedido.items.length > 1;
+  /* Pedido em aberto nao pode zerar (nada pra cozinha preparar). Pedido ja
+   * entregue pode: e o caso de corrigir o unico item errado, tirando ele e
+   * colocando o certo logo em seguida na mesma tela. */
+  const podeRemover = editavel && (pedido.items.length > 1 || pedido.status === "entregue");
   return el("div.order-detail-item", { class: item.gift ? "gift" : "" },
     miniFotoItem(item),
     el("div", {},

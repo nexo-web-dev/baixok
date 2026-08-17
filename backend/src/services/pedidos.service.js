@@ -451,8 +451,14 @@ export const pedidosService = {
   /* Remove uma linha do pedido — pediu errado, cliente desistiu de um item.
    * Por itemId (a linha), nao por produto: mira exatamente a linha clicada,
    * mesmo que o pedido tenha duas entradas do mesmo produto. Devolve o
-   * estoque daquele item se ele tinha sido baixado, e nunca deixa o pedido
-   * zerado — sem item nenhum, o caminho certo e cancelar o pedido inteiro. */
+   * estoque daquele item se ele tinha sido baixado.
+   *
+   * Pedido ainda em aberto (na cozinha, a caminho) nunca pode zerar — nao ha
+   * o que preparar ou entregar sem item nenhum, o caminho ali e cancelar o
+   * pedido inteiro. Ja um pedido ENTREGUE e o oposto: zerar por um instante
+   * pra trocar o unico item errado (ex.: veio "Chopp 300" e era "Chopp 400")
+   * e exatamente o caso de uso — a tela ja deixa adicionar o certo logo em
+   * seguida, no mesmo lugar. */
   async removerItem(id, itemId, { usuario, ip }) {
     const atual = await this.buscar(id);
     if (atual.status === "cancelado") {
@@ -460,7 +466,7 @@ export const pedidosService = {
     }
     const item = atual.items.find(item => item.itemId === itemId);
     if (!item) throw naoEncontrado("Item não encontrado neste pedido.");
-    if (atual.items.length <= 1) {
+    if (atual.items.length <= 1 && STATUS_ABERTOS.includes(atual.status)) {
       throw new ErroApp(
         "O pedido precisa ter ao menos um item. Para tirar o último, cancele o pedido.",
         409,
