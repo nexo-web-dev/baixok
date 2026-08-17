@@ -228,6 +228,27 @@ function fotoDestaque(itens) {
   return marcados[0] || itens.find(produto => produto.image) || null;
 }
 
+/* Foto de banco (Unsplash, licenca de uso comercial livre, sem exigir
+ * atribuicao) pro efeito de "cartaz" do cardapio impresso — a foto real do
+ * produto cadastrado continua sendo a que aparece no cardapio digital e na
+ * miniatura de cada item aqui, so a foto grande de destaque por categoria
+ * que usa banco de imagem. Categoria sem foto de banco definida cai pro
+ * produto marcado como destaque, como antes. */
+const FOTO_IMPACTO_CATEGORIA = [
+  { termo: "burg", url: "https://images.unsplash.com/photo-1534790566855-4cb788d389ec?w=900&q=75&fit=crop&fm=jpg&auto=format" },
+  { termo: "pizza", url: "https://images.unsplash.com/photo-1595708684082-a173bb3a06c5?w=900&q=75&fit=crop&fm=jpg&auto=format" },
+  { termo: "porç", url: "https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?w=900&q=75&fit=crop&fm=jpg&auto=format" },
+  { termo: "porc", url: "https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?w=900&q=75&fit=crop&fm=jpg&auto=format" },
+  { termo: "batata", url: "https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?w=900&q=75&fit=crop&fm=jpg&auto=format" },
+  { termo: "bebid", url: "https://images.unsplash.com/photo-1608270586620-248524c67de9?w=900&q=75&fit=crop&fm=jpg&auto=format" },
+  { termo: "drink", url: "https://images.unsplash.com/photo-1608270586620-248524c67de9?w=900&q=75&fit=crop&fm=jpg&auto=format" }
+];
+
+function fotoImpactoCategoria(categoria) {
+  const nome = String(categoria || "").toLowerCase();
+  return FOTO_IMPACTO_CATEGORIA.find(item => nome.includes(item.termo))?.url || null;
+}
+
 /* Lista mais estreita ao lado da foto precisa de menos colunas pra nao
  * espremer o nome do produto — sem isso "Burguer Duplo Cheddar+" vira
  * ilegivel numa coluna de 4 numa caixa que perdeu um terco da largura pra
@@ -239,9 +260,9 @@ function colunasParaLista(qtdItens) {
 }
 
 function secaoCategoria(categoria, itens) {
-  const destaque = fotoDestaque(itens);
+  const fotoHero = fotoImpactoCategoria(categoria) || fotoDestaque(itens)?.image || null;
   const grid = el("div.grid", {}, ...itens.map(linhaItem));
-  if (destaque) grid.style.gridTemplateColumns = `repeat(${colunasParaLista(itens.length)}, 1fr)`;
+  if (fotoHero) grid.style.gridTemplateColumns = `repeat(${colunasParaLista(itens.length)}, 1fr)`;
 
   return el("section.category", {},
     el("h2", {},
@@ -249,7 +270,7 @@ function secaoCategoria(categoria, itens) {
       el("span.cat-label", {}, rotuloCategoria(categoria))
     ),
     el("div.category-box", {},
-      destaque ? el("div.hero-photo", {}, el("img", { src: destaque.image, alt: "" })) : null,
+      fotoHero ? el("div.hero-photo", {}, el("img", { src: fotoHero, alt: "" })) : null,
       grid
     )
   );
