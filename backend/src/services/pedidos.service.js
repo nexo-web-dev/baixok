@@ -415,8 +415,12 @@ export const pedidosService = {
    * subtotal e o total sobem pelo valor do que entrou agora. */
   async adicionarItens(id, itens, { usuario, ip }) {
     const atual = await this.buscar(id);
-    if (!STATUS_ABERTOS.includes(atual.status)) {
-      throw new ErroApp("Só é possível adicionar item a pedidos em aberto.", 409, "pedido_fechado");
+    /* Pedido entregue tambem pode ganhar item: e a correcao de "esqueceu de
+     * lancar" ou "trocou o produto" depois que o cliente ja levou. So
+     * cancelado fica de fora — cancelado nao e pedido em andamento, e um
+     * registro morto. */
+    if (atual.status === "cancelado") {
+      throw new ErroApp("Pedido cancelado não recebe item novo.", 409, "pedido_fechado");
     }
 
     let precificados = [];
@@ -451,8 +455,8 @@ export const pedidosService = {
    * zerado — sem item nenhum, o caminho certo e cancelar o pedido inteiro. */
   async removerItem(id, itemId, { usuario, ip }) {
     const atual = await this.buscar(id);
-    if (!STATUS_ABERTOS.includes(atual.status)) {
-      throw new ErroApp("Só é possível remover item de pedidos em aberto.", 409, "pedido_fechado");
+    if (atual.status === "cancelado") {
+      throw new ErroApp("Pedido cancelado não tem item pra remover.", 409, "pedido_fechado");
     }
     const item = atual.items.find(item => item.itemId === itemId);
     if (!item) throw naoEncontrado("Item não encontrado neste pedido.");

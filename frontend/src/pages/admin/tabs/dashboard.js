@@ -10,6 +10,7 @@ import { CANAIS_ROTULO, MODALIDADES_ROTULO, rotuloCategoria } from "../../../uti
 import { apiPedidos, apiRelatorios } from "../../../services/api.js";
 import { toastFalha, toastOk } from "../../../components/toast.js";
 import { imprimirAmbas } from "../../../components/impressao.js";
+import { abrirDetalhePedido } from "./pedidos.js";
 import { estado } from "../store.js";
 
 const filtros = { periodo: "hoje", canal: "", pagamento: "", categoria: "", desde: "", ate: "" };
@@ -246,6 +247,9 @@ function vendaLinha(pedido) {
       el("span", { class: cancelado || pedido.payment === "Não pago" ? "danger-text" : "" },
         cancelado ? "Cancelado" : pedido.payment || "Pagamento não informado"),
       el("button.secondary.small", { type: "button", dataset: { action: "details-sale" } }, "Detalhes"),
+      !cancelado
+        ? el("button.secondary.small", { type: "button", dataset: { action: "edit-sale" } }, "Editar itens")
+        : null,
       !cancelado
         ? el("button.secondary.small", { type: "button", dataset: { action: "reprint-sale" } }, "Reimprimir")
         : null,
@@ -537,6 +541,18 @@ export function ligarDashboard() {
     }
   };
   delegar($("#dashboard-sales"), "click", "[data-action='mark-unpaid-sale']", marcarVendaNaoPaga);
+
+  /* Mesmo modal "Ver pedido" da aba Pedidos — trocar/adicionar produto numa
+   * venda que ja saiu (ou ate ja foi entregue) sem precisar trocar de aba.
+   * Reaproveita o pub/sub em tempo real que ja existe: adicionarItens() e
+   * removerItem() publicam evento "pedidos", e o Dashboard esta na lista do
+   * que redesenha nesse evento — a lista de vendas atualiza sozinha. */
+  const editarVenda = (_evento, botao) => {
+    const linha = botao.closest(".sale-row");
+    if (linha) abrirDetalhePedido(linha.dataset.id);
+  };
+  delegar($("#dashboard-sales"), "click", "[data-action='edit-sale']", editarVenda);
+  delegar($("#dashboard-unpaid"), "click", "[data-action='edit-sale']", editarVenda);
 
   const reimprimirVenda = async (_evento, botao) => {
     const linha = botao.closest(".sale-row");

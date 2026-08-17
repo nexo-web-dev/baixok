@@ -14,9 +14,6 @@ import { imprimirAmbas, imprimirTeste } from "../../../components/impressao.js";
 import { registrarMotoboyLocal } from "./motoboy.js";
 
 const MINUTOS_ATRASO = 15;
-/* So pedido aberto pode ganhar ou perder item — entregue/cancelado ja fechou
- * a conta, mexer no que foi vendido ali seria reescrever historico. */
-const STATUS_ABERTOS = ["novo", "preparo", "pronto"];
 let relogioPedidosTimer = null;
 let pedidoDetalheAtualId = null;
 let buscaAdicionarItem = "";
@@ -334,15 +331,30 @@ function blocoAdicionarItem() {
   );
 }
 
-function abrirDetalhePedido(id) {
-  const pedido = estado.pedidos.find(item => item.id === id);
+/* Exportada porque o Dashboard tambem abre este mesmo modal a partir da
+ * lista "Todas as vendas" — uma venda de dias atras pode nao estar em
+ * estado.pedidos (o painel so mantem os pedidos recentes em memoria), entao
+ * busca na API quando nao acha localmente, em vez de simplesmente falhar. */
+export async function abrirDetalhePedido(id) {
+  let pedido = estado.pedidos.find(item => item.id === id);
+  if (!pedido) {
+    try {
+      pedido = (await apiPedidos.buscar(id)).pedido;
+    } catch (erro) {
+      toastFalha(erro);
+      return;
+    }
+  }
   const modal = $("#order-detail-modal");
   const corpo = $("#order-detail-body");
   if (!pedido || !modal || !corpo) return;
 
   pedidoDetalheAtualId = id;
   buscaAdicionarItem = "";
-  const editavel = STATUS_ABERTOS.includes(pedido.status);
+  /* So cancelado fica travado — pedido entregue tambem pode ganhar ou perder
+   * item, e a correcao de "esqueceu de lancar" ou "trocou o produto" depois
+   * que o cliente ja levou. */
+  const editavel = pedido.status !== "cancelado";
 
   const titulo = $("#order-detail-title");
   const subtitulo = $("#order-detail-subtitle");
