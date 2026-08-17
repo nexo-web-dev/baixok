@@ -73,7 +73,7 @@ const css = `
    * e o que da aquele efeito de "cartaz" da referencia sem precisar de arte
    * nenhuma alem da propria foto ja cadastrada no catalogo. */
   .category-box {
-    display: flex; gap: 8px; padding: 6px; border-radius: 12px; min-height: 92px;
+    display: flex; gap: 8px; padding: 6px; border-radius: 12px; min-height: 130px;
     border: 1.5px solid rgba(217,154,104,.32);
     background: linear-gradient(180deg, rgba(36,29,21,.55), transparent 65%);
   }
@@ -87,7 +87,15 @@ const css = `
     position: relative; flex: 0 0 33%; min-width: 64px; border-radius: 9px; overflow: hidden;
     background: ${SOFT}; border: 1px solid rgba(217,154,104,.4);
   }
-  .hero-photo img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
+  /* object-fit "contain", nao "cover": a foto e a que o dono da loja ja tinha
+   * cadastrada pro produto, sem ser cortada especialmente pra essa caixa —
+   * cover cortava pedaco de burguer, pizza etc. dependendo da proporcao de
+   * cada foto. Mostra inteira, com uma folga por dentro pra nao colar na
+   * borda. */
+  .hero-photo img {
+    position: absolute; inset: 6px; display: block; width: calc(100% - 12px); height: calc(100% - 12px);
+    object-fit: contain;
+  }
   .cat-icon {
     flex: none; z-index: 1; display: grid; place-items: center;
     width: 19px; height: 19px; margin-right: -9px; border-radius: 50%;
