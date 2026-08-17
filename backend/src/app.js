@@ -41,7 +41,12 @@ export function criarApp() {
          * 'unsafe-inline' aqui e para o atributo style que o widget injeta. */
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://api.mapbox.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
-        imgSrc: ["'self'", "data:", "blob:", "https://api.mapbox.com"],
+        /* images.unsplash.com: foto de banco de imagem usada so no cardapio
+         * exportado em PDF (destaque por categoria) — ver components/
+         * cardapio-pdf.js. A aba que gera o PDF abre em branco e herda esta
+         * mesma politica, entao sem isso a foto e bloqueada em silencio, sem
+         * erro nenhum visivel pra quem esta exportando. */
+        imgSrc: ["'self'", "data:", "blob:", "https://api.mapbox.com", "https://images.unsplash.com"],
         connectSrc: ["'self'", "https://api.mapbox.com", "https://events.mapbox.com"],
         workerSrc: ["'self'", "blob:"],
         frameAncestors: ["'self'"],

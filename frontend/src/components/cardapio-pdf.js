@@ -73,7 +73,7 @@ const css = `
    * e o que da aquele efeito de "cartaz" da referencia sem precisar de arte
    * nenhuma alem da propria foto ja cadastrada no catalogo. */
   .category-box {
-    display: flex; gap: 8px; padding: 6px; border-radius: 12px; min-height: 130px;
+    display: flex; gap: 8px; padding: 6px; border-radius: 12px; min-height: 140px;
     border: 1.5px solid rgba(217,154,104,.32);
     background: linear-gradient(180deg, rgba(36,29,21,.55), transparent 65%);
   }
@@ -82,9 +82,14 @@ const css = `
    * sem altura fixa vira refem da proporcao original da foto (photo grande
    * fazia a caixa inteira da categoria crescer pra acompanhar). Tirando o
    * <img> do fluxo, quem decide a altura da caixa volta a ser o texto da
-   * lista (ou o min-height acima, se a lista for curta). */
+   * lista (ou o min-height acima, se a lista for curta).
+   *
+   * Caixa quase quadrada (140x150) de proposito: foto de produto cadastrada
+   * no catalogo costuma vir proxima de quadrada, entao "contain" sobra bem
+   * pouca margem — numa caixa bem mais larga que alta, contain deixava faixa
+   * vazia grande dos dois lados. */
   .hero-photo {
-    position: relative; flex: 0 0 33%; min-width: 64px; border-radius: 9px; overflow: hidden;
+    position: relative; flex: 0 0 150px; min-width: 64px; border-radius: 9px; overflow: hidden;
     background: ${SOFT}; border: 1px solid rgba(217,154,104,.4);
   }
   /* object-fit "contain", nao "cover": a foto e a que o dono da loja ja tinha
@@ -260,7 +265,10 @@ function colunasParaLista(qtdItens) {
 }
 
 function secaoCategoria(categoria, itens) {
-  const fotoHero = fotoImpactoCategoria(categoria) || fotoDestaque(itens)?.image || null;
+  /* Foto do proprio produto (a mesma que ja aparece no cardapio digital) tem
+   * prioridade — e a foto de verdade da casa. Banco de imagem so entra se a
+   * categoria nao tiver nenhum produto com foto cadastrada ainda. */
+  const fotoHero = fotoDestaque(itens)?.image || fotoImpactoCategoria(categoria) || null;
   const grid = el("div.grid", {}, ...itens.map(linhaItem));
   if (fotoHero) grid.style.gridTemplateColumns = `repeat(${colunasParaLista(itens.length)}, 1fr)`;
 
@@ -390,9 +398,12 @@ export async function exportarCardapioPdf(produtos, ajustes) {
 
   /* Espera toda foto (destaque e miniatura de cada item) carregar antes de
    * medir a altura e imprimir — sem isso, com dezenas de fotos vindo do
-   * cadastro, o print disparava antes de algumas terminarem de baixar e
-   * saiam vazias no PDF. Teto de 3s: foto de produto e mais pesada que
-   * fonte, mas uma que nunca carrega nao pode travar a exportacao. */
+   * cadastro (e agora tambem a foto de banco de imagem, externa), o print
+   * disparava antes de algumas terminarem de baixar e saiam vazias no PDF.
+   * Teto de 8s: um cardapio grande facilmente passa de 20 fotos, e cada uma
+   * e uma ida a rede — 3s bastava pra poucas fotos locais, mas nao pra isso.
+   * Ainda assim precisa de teto: uma foto que nunca carrega (rede caiu no
+   * meio) nao pode travar a exportacao pra sempre. */
   function imagensProntas() {
     const imagens = [...doc.images];
     if (!imagens.length) return Promise.resolve();
@@ -402,7 +413,7 @@ export async function exportarCardapioPdf(produtos, ajustes) {
           img.addEventListener("load", resolve, { once: true });
           img.addEventListener("error", resolve, { once: true });
         }));
-    return Promise.race([Promise.all(espera), new Promise(resolve => setTimeout(resolve, 3000))]);
+    return Promise.race([Promise.all(espera), new Promise(resolve => setTimeout(resolve, 8000))]);
   }
 
   /* Margem do @page e "8mm 10mm": altura util = 297mm - 2*8mm, em px a 96dpi
