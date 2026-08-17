@@ -16,7 +16,7 @@ import { paramsId, paramsIdItem, paramsNumero, paramsParProdutos } from "../sche
 import {
   criarPedidoManualSchema, mudarStatusSchema, cancelarPedidoSchema, motoboyPedidoSchema,
   listarPedidosSchema, relatorioSchema, localizacaoMotoboySchema, excluirPedidoSchema,
-  adicionarItensPedidoSchema, definirPagamentoSchema
+  adicionarItensPedidoSchema, definirPagamentoSchema, ajustarQuantidadeItemSchema
 } from "../schemas/pedido.schema.js";
 import { abrirCaixaSchema, fecharCaixaSchema, listarFechamentosSchema, excluirFechamentoSchema } from "../schemas/caixa.schema.js";
 import {
@@ -59,6 +59,7 @@ rotasPainel.post("/pedidos", EDIT_PEDIDOS, validarCorpo(criarPedidoManualSchema)
 rotasPainel.delete("/pedidos/:id", ADMIN, validarParams(paramsId), validarCorpo(excluirPedidoSchema), pedidosController.remover);
 rotasPainel.post("/pedidos/:id/itens", EDIT_PEDIDOS, validarParams(paramsId), validarCorpo(adicionarItensPedidoSchema), pedidosController.adicionarItens);
 rotasPainel.delete("/pedidos/:id/itens/:itemId", EDIT_PEDIDOS, validarParams(paramsIdItem), pedidosController.removerItem);
+rotasPainel.patch("/pedidos/:id/itens/:itemId", EDIT_PEDIDOS, validarParams(paramsIdItem), validarCorpo(ajustarQuantidadeItemSchema), pedidosController.ajustarQuantidadeItem);
 
 // ----------------------------------------------------------------- motoboy ---
 rotasPainel.get("/motoboys/localizacoes", exigirPapel("admin", "caixa"), motoboysController.localizacoes);

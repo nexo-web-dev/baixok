@@ -9,17 +9,38 @@ const normalizarBusca = valor => String(valor || "")
   .replace(/\p{Diacritic}/gu, "")
   .toLowerCase();
 
-/* "promocoes" nao e categoria de verdade: e um filtro por cima de qualquer
+/* Ordem fixa pedida pela casa, por trecho do nome (o cadastro e texto livre —
+ * "Pizzas Salgadas", "Bebidas" — entao comparar chave exata perderia
+ * variacao de grafia). Categoria fora dessa lista fica no meio, antes de
+ * Promoções/Combos, que sempre vao por ultimo. */
+const ORDEM_CATEGORIA = ["burg", "pizza", "por", "bebid", "drink"];
+const ORDEM_ULTIMOS = ["promo", "combo"];
+
+function pesoCategoria(chave, rotulo) {
+  const alvo = normalizarBusca(`${chave} ${rotulo}`);
+  if (ORDEM_ULTIMOS.some(termo => alvo.includes(termo))) return 100;
+  const indice = ORDEM_CATEGORIA.findIndex(termo => alvo.includes(termo));
+  return indice === -1 ? 50 : indice;
+}
+
+/* Sem "Todos": o filtro comeca sem nada selecionado (mostra tudo, ver
+ * estado.categoria em index.js) e cada botao so filtra pra sua categoria.
+ * "promocoes" nao e categoria de verdade: e um filtro por cima de qualquer
  * categoria, entao so aparece quando ha pelo menos um item promocional no
- * momento — nao faz sentido oferecer um filtro que sempre daria vazio. */
+ * momento — nao faz sentido oferecer um filtro que sempre daria vazio. Sem
+ * produto cadastrado numa categoria, ela nem entra no mapa — nunca aparece
+ * um botao vazio. */
 function categoriasFiltro(produtos) {
-  const categorias = new Map([["todos", "Todos"]]);
+  const categorias = new Map();
   if ((produtos || []).some(produto => produto.emPromocao)) categorias.set("promocoes", "Promoções");
   for (const produto of produtos || []) {
     const categoria = String(produto.category || "").trim();
     if (categoria && !categorias.has(categoria)) categorias.set(categoria, rotuloCategoria(categoria));
   }
-  return categorias;
+  return new Map(
+    [...categorias.entries()].sort(([chaveA, rotuloA], [chaveB, rotuloB]) =>
+      pesoCategoria(chaveA, rotuloA) - pesoCategoria(chaveB, rotuloB))
+  );
 }
 
 function semFoto() {

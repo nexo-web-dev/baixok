@@ -240,9 +240,17 @@
 }
 .order-detail-items { display: grid; gap: 8px; }
 .order-detail-item {
-  display: grid; grid-template-columns: 70px minmax(0, 1fr) auto auto; gap: 12px; align-items: center;
+  display: grid; grid-template-columns: 70px minmax(0, 1fr) auto auto auto; gap: 12px; align-items: center;
   padding: 10px; border-radius: var(--radius-sm); background: var(--sidebar); border: 1px solid var(--line-soft);
 }
+.qty-stepper { display: flex; align-items: center; gap: 8px; }
+.qty-btn {
+  display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
+  background: var(--soft); color: var(--gold); font-size: 1rem; font-weight: 800; line-height: 1;
+}
+.qty-btn:hover { background: rgba(217,154,104,.2); }
+.qty-valor { min-width: 18px; text-align: center; font-weight: 800; color: var(--ink); }
+.qty-fixa { color: var(--muted); font-size: .82rem; white-space: nowrap; }
 .order-item-remove {
   display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
   color: var(--danger); background: var(--danger-bg); font-size: 1.1rem; line-height: 1;

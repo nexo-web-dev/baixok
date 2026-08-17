@@ -85,6 +85,12 @@ export const motoboyPedidoSchema = z.object({
   motoboy: texto(80, { obrigatorio: true })
 });
 
+/* "+"/"-" no detalhe do pedido. Zero e valido de proposito — zerar reaproveita
+ * a mesma regra de remover item (ver pedidos.service.js). */
+export const ajustarQuantidadeItemSchema = z.object({
+  qty: z.coerce.number().int().min(0).max(LIMITES.QTD_ITEM_MAX)
+}).strict();
+
 export const definirPagamentoSchema = z.object({
   pagamento: texto(60, { obrigatorio: true }),
   /* Obrigatorio so quando pagamento = "Não pago" — checado no service, nao

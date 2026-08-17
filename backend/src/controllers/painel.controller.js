@@ -69,6 +69,10 @@ export const pedidosController = {
   async removerItem(req, res) {
     const { id, itemId } = req.validado.params;
     res.json({ pedido: await pedidosService.removerItem(id, itemId, contexto(req)) });
+  },
+  async ajustarQuantidadeItem(req, res) {
+    const { id, itemId } = req.validado.params;
+    res.json({ pedido: await pedidosService.ajustarQuantidadeItem(id, itemId, req.validado.body.qty, contexto(req)) });
   }
 };
 

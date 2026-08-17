@@ -277,14 +277,30 @@ function linhaDetalheItem(item, pedido, editavel) {
    * entregue pode: e o caso de corrigir o unico item errado, tirando ele e
    * colocando o certo logo em seguida na mesma tela. */
   const podeRemover = editavel && (pedido.items.length > 1 || pedido.status === "entregue");
+  /* Brinde nao tem +/- proprio: a quantidade dele e calculada pela promocao
+   * ("leve e ganhe"), nao e algo que a pessoa escolhe na tela. */
+  const podeAjustarQtd = editavel && !item.gift;
   return el("div.order-detail-item", { class: item.gift ? "gift" : "" },
     miniFotoItem(item),
     el("div", {},
-      el("strong", {}, `${item.qty}x ${item.name}`),
+      el("strong", {}, item.gift ? `${item.qty}x ${item.name}` : item.name),
       item.gift
         ? el("span.gift-tag", {}, "Brinde · Leve e ganhe")
         : el("span", {}, `${reais(item.price)} cada`)
     ),
+    podeAjustarQtd
+      ? el("div.qty-stepper", {},
+          el("button.qty-btn", {
+            type: "button", title: "Diminuir",
+            dataset: { acao: "diminuir-item-pedido", id: pedido.id, itemId: String(item.itemId) }
+          }, "−"),
+          el("span.qty-valor", {}, String(item.qty)),
+          el("button.qty-btn", {
+            type: "button", title: "Aumentar",
+            dataset: { acao: "aumentar-item-pedido", id: pedido.id, itemId: String(item.itemId) }
+          }, "+")
+        )
+      : el("span.qty-fixa", {}, `${item.qty}x`),
     el("strong", {}, item.gift ? "Grátis" : reais(Number(item.price || 0) * Number(item.qty || 0))),
     podeRemover
       ? el("button.order-item-remove", {
@@ -583,4 +599,33 @@ export function ligarPedidos() {
       botao.disabled = false;
     }
   });
+
+  /* "+"/"-" leem a quantidade direto do numero mostrado na tela, em vez de
+   * ir atras do pedido em estado.pedidos — funciona igual mesmo se o pedido
+   * foi aberto vindo de fora da lista local (ver abrirDetalhePedido). */
+  delegar(
+    $("#order-detail-body"), "click",
+    "[data-acao='aumentar-item-pedido'], [data-acao='diminuir-item-pedido']",
+    async (_e, botao) => {
+      const linha = botao.closest(".order-detail-item");
+      const valorEl = linha?.querySelector(".qty-valor");
+      if (!valorEl) return;
+      const atual = Number(valorEl.textContent) || 0;
+      const nova = atual + (botao.dataset.acao === "aumentar-item-pedido" ? 1 : -1);
+      if (nova < 0) return;
+      if (nova === 0 && !confirm("Isso remove o item do pedido. Continuar?")) return;
+
+      botao.disabled = true;
+      try {
+        await apiPedidos.ajustarQuantidadeItem(botao.dataset.id, Number(botao.dataset.itemId), nova);
+        await carregar("pedidos");
+        abrirDetalhePedido(botao.dataset.id);
+        toast(nova === 0 ? "Item removido do pedido." : "Quantidade atualizada.");
+      } catch (erro) {
+        toastFalha(erro, "Quantidade");
+      } finally {
+        botao.disabled = false;
+      }
+    }
+  );
 }
