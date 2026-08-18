@@ -161,13 +161,27 @@ function dadosParaStatus(pedido, status) {
   if (pedido?.payment !== "Não pago" && !confirm(
     "O pagamento foi recebido normalmente?\n\nClique em Cancelar se o dinheiro NÃO chegou (cliente saiu sem pagar, cartão recusado, etc.)."
   )) {
-    const motivo = (prompt("O que aconteceu? (obrigatório e fica registrado):", "") || "").trim();
+    /* Mesma distincao do formulario "Pedido não pago" no detalhe: prejuizo
+     * (calote) entra no pagamento como "Não pago"; cortesia (a casa que
+     * decidiu nao cobrar) e uma chamada a parte, depois do status mudar —
+     * ver mudarStatus(). Arrastar pro kanban so cobre "pedido todo": pra
+     * cortesia de so alguns itens, o formulario completo fica no detalhe. */
+    const ehCortesia = !confirm(
+      "Foi PREJUÍZO — o cliente não pagou (calote, cartão recusado)?\n\nClique em Cancelar se foi CORTESIA — a própria casa decidiu não cobrar."
+    );
+    const motivo = (prompt(
+      ehCortesia ? "Motivo da cortesia (obrigatório e fica registrado):" : "O que aconteceu? (obrigatório e fica registrado):",
+      ""
+    ) || "").trim();
     if (!motivo) {
-      toastFalha(new Error("Informe o que aconteceu para marcar como não pago."), "Pagamento");
+      toastFalha(new Error("Informe o motivo."), "Pagamento");
       return null;
     }
-    extras.pagamentoNaoRecebido = true;
-    extras.motivoNaoPago = motivo;
+    if (ehCortesia) extras.cortesiaMotivo = motivo;
+    else {
+      extras.pagamentoNaoRecebido = true;
+      extras.motivoNaoPago = motivo;
+    }
   }
 
   return extras;
@@ -603,12 +617,22 @@ async function mudarStatus(id, status) {
   const extras = dadosParaStatus(atual, status);
   if (extras === null) return;
 
+  /* Cortesia nao e campo do endpoint de status (mexe em pedido_itens, nao em
+   * pagamento) — sai do corpo antes de mandar e vira uma segunda chamada
+   * depois que o status mudar de verdade. */
+  const cortesiaMotivo = extras.cortesiaMotivo;
+  delete extras.cortesiaMotivo;
+
   try {
     const { pedido } = await apiPedidos.mudarStatus(id, status, extras);
     /* Aprovar imprime as duas vias, como antes: cozinha monta, balcao entrega. */
     if (status === "preparo") {
       imprimirAmbas(pedido);
       await apiPedidos.marcarImpresso(id).catch(() => {});
+    }
+    if (cortesiaMotivo) {
+      await apiPedidos.definirCortesia(id, { todoPedido: true, itemIds: [], motivo: cortesiaMotivo })
+        .catch(erro => toastFalha(erro, "Cortesia"));
     }
     await carregar("pedidos", "produtos");
     desenharPedidos();
@@ -617,8 +641,10 @@ async function mudarStatus(id, status) {
       if (nomeMotoboy) registrarMotoboyLocal(nomeMotoboy);
       toast(extras?.pagamentoNaoRecebido
         ? `Pedido ${senha(pedido)} entregue — marcado como NÃO PAGO.`
-        : `Pedido ${senha(pedido)} entregue${nomeMotoboy ? ` por ${nomeMotoboy}` : ""}.`,
-        extras?.pagamentoNaoRecebido ? { tipo: "alerta", duracao: 6000 } : undefined);
+        : cortesiaMotivo
+          ? `Pedido ${senha(pedido)} entregue — marcado como CORTESIA.`
+          : `Pedido ${senha(pedido)} entregue${nomeMotoboy ? ` por ${nomeMotoboy}` : ""}.`,
+        (extras?.pagamentoNaoRecebido || cortesiaMotivo) ? { tipo: "alerta", duracao: 6000 } : undefined);
     } else if (status === "preparo") {
       toast(`Pedido ${senha(pedido)} aprovado e impresso.`);
     } else if (status === "pronto") {
