@@ -55,7 +55,8 @@ export const apiProdutos = {
   alternarAtivo: id => http.post(`/painel/produtos/${id}/alternar`),
   ajustarEstoque: (id, ajuste) => http.patch(`/painel/produtos/${id}/estoque`, ajuste),
   moverOrdem: (id, direction) => http.patch(`/painel/produtos/${id}/ordem`, { direction }),
-  reordenar: ids => http.patch("/painel/produtos/ordem", { ids })
+  reordenar: ids => http.patch("/painel/produtos/ordem", { ids }),
+  definirFichaTecnica: (id, itens) => http.put(`/painel/produtos/${id}/ficha-tecnica`, { itens })
 };
 
 export const apiInsumos = {

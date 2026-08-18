@@ -63,6 +63,7 @@ const DESENHO = {
   motoboy: desenharMotoboy,
   mesas: abaPreguicosa("mesas", () => import("./tabs/mesas.js"), "ligarMesas", "desenharMesas"),
   produtos: abaPreguicosa("produtos", () => import("./tabs/produtos.js"), "ligarProdutos", "desenharProdutos"),
+  cmv: abaPreguicosa("cmv", () => import("./tabs/cmv.js"), "ligarCmv", "desenharCmv"),
   combos: abaPreguicosa("combos", () => import("./tabs/combos.js"), "ligarCombos", "desenharCombos"),
   promos: abaPreguicosa("promos", () => import("./tabs/promocoes.js"), "ligarPromocoes", "desenharPromocoes", "desenharCupons"),
   entrega: abaPreguicosa("entrega", () => import("./tabs/entrega.js"), "ligarEntrega", "desenharEntrega"),
@@ -77,8 +78,8 @@ const DESENHO = {
  * comportamento antigo: qualquer alteracao redesenhava o sistema inteiro. */
 const AFETADAS = {
   pedidos: ["pedidos", "motoboy", "mesas", "dashboard"],
-  produtos: ["produtos", "estoque", "promos", "combos", "dashboard"],
-  insumos: ["estoque"],
+  produtos: ["produtos", "estoque", "promos", "combos", "dashboard", "cmv"],
+  insumos: ["estoque", "cmv"],
   promocoes: ["promos", "produtos"],
   cupons: ["promos"],
   mesas: ["mesas"],
@@ -91,7 +92,10 @@ const DEPENDENCIAS_ABA = {
   pedidos: ["pedidos", "caixa", "ajustes"],
   motoboy: [],
   mesas: ["mesas", "produtos", "ajustes"],
+  /* insumos entra aqui (e nao so em estoque) porque a ficha tecnica do
+   * produto — de onde sai o CMV — escolhe insumo num select nesta tela. */
   produtos: ["produtos", "promocoes"],
+  cmv: ["produtos", "insumos"],
   combos: ["produtos", "combos", "combinacoesSabores"],
   promos: ["produtos", "promocoes", "cupons"],
   entrega: ["entrega"],

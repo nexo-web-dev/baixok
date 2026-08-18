@@ -7,6 +7,12 @@ export const insumoSchema = z.object({
   unit: texto(20).default("un"),
   qty: z.coerce.number().finite("Quantidade invalida.").min(0).max(999999).default(0),
   minQty: z.coerce.number().finite("Minimo invalido.").min(0).max(999999).default(0),
+  /* Pra achar o CMV sozinho: quanto pagou no pacote comprado (ex.: R$20) e
+   * quanto ele rende na mesma unidade do insumo (ex.: 2000, se `unit` = "g").
+   * Custo por unidade e derivado (packageCost / packageQty), nunca gravado —
+   * assim nao ha valor desatualizado se um dos dois mudar sozinho depois. */
+  packageCost: z.coerce.number().finite("Custo invalido.").min(0).max(999999).default(0),
+  packageQty: z.coerce.number().finite("Rendimento invalido.").min(0).max(999999).default(0),
   active: z.boolean().default(true)
 }).strict();
 

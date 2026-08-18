@@ -243,7 +243,10 @@
   display: grid; grid-template-columns: 70px minmax(0, 1fr) auto auto auto; gap: 12px; align-items: center;
   padding: 10px; border-radius: var(--radius-sm); background: var(--sidebar); border: 1px solid var(--line-soft);
 }
-.qty-stepper { display: flex; align-items: center; gap: 8px; }
+/* Selector precisa de 2 classes: ".order-detail-item div" (linha acima) e mais
+ * especifico que ".qty-stepper" sozinho e vencia o display:flex com grid,
+ * empilhando os botoes -/+ e o numero um embaixo do outro. */
+.order-detail-item .qty-stepper { display: flex; align-items: center; gap: 8px; }
 .qty-btn {
   display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
   background: var(--soft); color: var(--gold); font-size: 1rem; font-weight: 800; line-height: 1;
@@ -321,6 +324,24 @@
 }
 .split-row-remove:hover { background: rgba(212,127,110,.28); }
 .split-payment-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+
+/* â€” ficha tecnica / CMV â€” */
+.recipe-rows { display: grid; gap: 8px; }
+.recipe-row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, .8fr) auto auto; gap: 8px; align-items: center; }
+.recipe-row span { color: var(--muted); font-size: .78rem; text-align: right; white-space: nowrap; }
+.recipe-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.cmv-pill { border-color: rgba(217,154,104,.42); color: var(--gold-light); background: rgba(217,154,104,.14); }
+
+/* â€” aba CMV: uma linha por produto â€” */
+.cmv-toolbar { margin-bottom: 14px; }
+.cmv-toolbar input { max-width: 420px; }
+.cmv-table { display: grid; gap: 10px; }
+.cmv-row { display: grid; gap: 10px; padding: 14px 16px; border-radius: var(--radius-md); background: var(--sidebar); border: 1px solid var(--line-soft); }
+.cmv-row-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.cmv-row-head > div { display: grid; gap: 2px; flex: 1; min-width: 160px; }
+.cmv-row-head > div span { color: var(--muted); font-size: .74rem; }
+.cmv-row .recipe-rows { gap: 8px; }
+.cmv-row .recipe-actions { padding-top: 2px; }
 
 /* â€” cozinha (KDS) â€” */
 .kds-board { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
@@ -860,9 +881,21 @@
 @media (max-width: 720px) {
   .order-detail-card { padding: 16px; }
   .order-detail-summary { grid-template-columns: 1fr 1fr; }
-  .order-detail-item { grid-template-columns: 62px minmax(0, 1fr); align-items: start; }
+  /* Areas nomeadas em vez de auto-flow: com 5 filhos possiveis (foto, info,
+   * qty, preco, remover) e nem sempre os 5 presentes (brinde nao tem qty
+   * stepper, item unico nao tem botao de remover), o posicionamento implicito
+   * do grid virava loteria — o qty-stepper e o preco colavam um no outro. */
+  .order-detail-item {
+    grid-template-columns: 62px minmax(0, 1fr) auto auto;
+    grid-template-areas: "thumb info info info" "thumb qty price remove";
+    row-gap: 8px; align-items: center;
+  }
   .order-detail-thumb { width: 62px; height: 62px; min-height: 62px; }
-  .order-detail-item > strong { grid-column: 2; justify-self: start; }
+  .order-detail-item .order-detail-thumb { grid-area: thumb; }
+  .order-detail-item .order-item-info { grid-area: info; }
+  .order-detail-item .qty-stepper, .order-detail-item .qty-fixa { grid-area: qty; justify-self: start; }
+  .order-detail-item > strong { grid-area: price; justify-self: end; }
+  .order-detail-item .order-item-remove { grid-area: remove; justify-self: end; }
   .filter-bar { align-items: stretch; }
   .period-group, .custom-period, .filter-bar select, .export-btn { width: 100%; }
   .period-group { overflow-x: auto; padding-bottom: 2px; }

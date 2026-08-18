@@ -21,6 +21,13 @@ const quantidade = valor => new Intl.NumberFormat("pt-BR", {
   maximumFractionDigits: 3
 }).format(Number(valor || 0));
 
+/* Custo por unidade costuma ser fracao de centavo (ex.: R$ 0,01 o grama) —
+ * `reais()` (2 casas) arredondaria pra R$ 0,00 e pareceria que nao tem custo
+ * cadastrado. Mostra com mais casas so aqui. */
+const custoPorUnidade = valor => new Intl.NumberFormat("pt-BR", {
+  style: "currency", currency: "BRL", minimumFractionDigits: 2, maximumFractionDigits: 4
+}).format(Number(valor || 0));
+
 function cartaoProduto(produto) {
   const estoqueAtual = Number(produto.stock || 0);
   const estoqueMinimo = Number(produto.minStock || 0);
@@ -66,6 +73,9 @@ function cartaoInsumo(insumo) {
     el("span.small", {}, `${insumo.category || "Geral"} | ${insumo.unit || "un"}`),
     el("span.stock-value", { class: critico ? "danger-text" : "" }, `${quantidade(qtdAtual)} ${insumo.unit || ""}`.trim()),
     el("span.small", {}, `minimo ${quantidade(qtdMinima)} ${insumo.unit || ""}`.trim()),
+    insumo.unitCost > 0
+      ? el("span.small.money-text", {}, `custo: ${custoPorUnidade(insumo.unitCost)}/${insumo.unit || "un"}`)
+      : el("span.small.faint", {}, "custo do pacote não cadastrado"),
     el("div.counter", {},
       el("button", { type: "button", dataset: { acao: "insumo-estoque", id: String(insumo.id), delta: "-1" }, "aria-label": `Tirar uma unidade de ${insumo.name}` }, "-"),
       el("input", {
@@ -107,6 +117,11 @@ function formularioInsumo() {
     el("div.field-row", {},
       campoRotulado("Quantidade atual", el("input", { id: "insumo-qty", type: "number", min: "0", step: "0.001", required: true, placeholder: "0", value: insumo.qty ?? "" })),
       campoRotulado("Mínimo de alerta", el("input", { id: "insumo-min", type: "number", min: "0", step: "0.001", required: true, placeholder: "0", value: insumo.minQty ?? "" }))
+    ),
+    el("p.small.faint", {}, "Pra calcular o CMV sozinho: quanto pagou no pacote e quanto ele rende, na unidade acima. Ex.: saco de 2 kg = 2000, se a unidade for \"g\"."),
+    el("div.field-row", {},
+      campoRotulado("Preço pago no pacote", el("input", { id: "insumo-package-cost", type: "number", min: "0", step: "0.01", placeholder: "0,00", value: insumo.packageCost ?? "" })),
+      campoRotulado("Pacote rende quanto", el("input", { id: "insumo-package-qty", type: "number", min: "0", step: "0.001", placeholder: "0", value: insumo.packageQty ?? "" }))
     ),
     el("label.check-field", {},
       el("input", { id: "insumo-active", type: "checkbox", checked: insumo.active ?? true }),
@@ -188,6 +203,8 @@ async function salvarInsumo() {
     unit: $("#insumo-unit")?.value.trim() || "un",
     qty: numero($("#insumo-qty")?.value),
     minQty: numero($("#insumo-min")?.value),
+    packageCost: numero($("#insumo-package-cost")?.value),
+    packageQty: numero($("#insumo-package-qty")?.value),
     active: $("#insumo-active")?.checked ?? true
   };
 

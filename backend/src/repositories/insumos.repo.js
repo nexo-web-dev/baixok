@@ -7,6 +7,11 @@ const paraApi = linha => linha && ({
   unit: linha.unidade,
   qty: Number(linha.quantidade),
   minQty: Number(linha.minimo),
+  packageCost: Number(linha.custo_pacote || 0),
+  packageQty: Number(linha.qtd_pacote || 0),
+  /* Custo por unidade (R$/g, R$/ml, R$/un...) — o que a ficha tecnica do
+   * produto usa pra chegar no CMV. Zero enquanto o pacote nao foi cadastrado. */
+  unitCost: linha.qtd_pacote > 0 ? Math.round((linha.custo_pacote / linha.qtd_pacote) * 10000) / 10000 : 0,
   active: doBanco(linha.ativo),
   createdAt: linha.criado_em,
   updatedAt: linha.atualizado_em
@@ -26,8 +31,8 @@ export const insumosRepo = {
 
   async criar(insumo) {
     return paraApi(await um(`
-      INSERT INTO insumos (nome, categoria, unidade, quantidade, minimo, ativo)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO insumos (nome, categoria, unidade, quantidade, minimo, custo_pacote, qtd_pacote, ativo)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       RETURNING *
     `, [
       insumo.name,
@@ -35,6 +40,8 @@ export const insumosRepo = {
       insumo.unit || "un",
       insumo.qty,
       insumo.minQty,
+      insumo.packageCost || 0,
+      insumo.packageQty || 0,
       paraBanco(insumo.active)
     ]));
   },
@@ -43,7 +50,7 @@ export const insumosRepo = {
     return paraApi(await um(`
       UPDATE insumos
          SET nome = ?, categoria = ?, unidade = ?, quantidade = ?, minimo = ?,
-             ativo = ?, atualizado_em = now()
+             custo_pacote = ?, qtd_pacote = ?, ativo = ?, atualizado_em = now()
        WHERE id = ?
       RETURNING *
     `, [
@@ -52,6 +59,8 @@ export const insumosRepo = {
       insumo.unit || "un",
       insumo.qty,
       insumo.minQty,
+      insumo.packageCost || 0,
+      insumo.packageQty || 0,
       paraBanco(insumo.active),
       id
     ]));

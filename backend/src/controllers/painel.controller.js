@@ -136,6 +136,10 @@ export const produtosController = {
   },
   async emFalta(_req, res) {
     res.json({ produtos: await produtosService.emFalta() });
+  },
+  async definirFichaTecnica(req, res) {
+    const { id } = req.validado.params;
+    res.json({ produto: await produtosService.definirFichaTecnica(id, req.validado.body.itens, contexto(req)) });
   }
 };
 

@@ -56,6 +56,57 @@ function manterImagemAtual(id, imagem) {
   return valor.includes(simples) || valor.includes(cru);
 }
 
+function custoUnitarioInsumo(linha) {
+  return linha.qtd_pacote > 0 ? Number(linha.custo_pacote) / Number(linha.qtd_pacote) : 0;
+}
+
+function paraItemFicha(linha) {
+  const unitCost = custoUnitarioInsumo(linha);
+  const qty = Number(linha.quantidade);
+  return {
+    insumoId: linha.insumo_id,
+    insumoName: linha.insumo_nome,
+    unit: linha.insumo_unidade,
+    qty,
+    unitCost: Math.round(unitCost * 10000) / 10000,
+    cost: Math.round(unitCost * qty * 100) / 100
+  };
+}
+
+/* CMV do produto = soma do custo de cada linha da ficha tecnica. Sem ficha
+ * tecnica cadastrada, cmv fica 0 — nao e erro, e "ainda nao calculado". */
+function comCmv(produto, recipe) {
+  const cmv = Math.round(recipe.reduce((total, item) => total + item.cost, 0) * 100) / 100;
+  return {
+    ...produto,
+    recipe,
+    cmv,
+    cmvPct: produto.price > 0 ? Math.round((cmv / produto.price) * 10000) / 100 : 0
+  };
+}
+
+const SELECT_FICHA = `
+  SELECT pi.produto_id, pi.insumo_id, pi.quantidade, i.nome AS insumo_nome, i.unidade AS insumo_unidade,
+         i.custo_pacote, i.qtd_pacote
+    FROM produto_insumos pi
+    JOIN insumos i ON i.id = pi.insumo_id
+`;
+
+/* Uma consulta so para a ficha tecnica de todos os produtos da lista, em vez
+ * de uma por produto — mesmo padrao de pedidosRepo.anexarItens. */
+async function anexarFichaTecnica(produtos) {
+  if (!produtos.length) return produtos;
+  const marcadores = produtos.map(() => "?").join(",");
+  const linhas = await todos(`${SELECT_FICHA} WHERE pi.produto_id IN (${marcadores}) ORDER BY pi.id`, produtos.map(p => p.id));
+
+  const porProduto = new Map();
+  for (const linha of linhas) {
+    if (!porProduto.has(linha.produto_id)) porProduto.set(linha.produto_id, []);
+    porProduto.get(linha.produto_id).push(paraItemFicha(linha));
+  }
+  return produtos.map(produto => comCmv(produto, porProduto.get(produto.id) || []));
+}
+
 let suporteDestaque = null;
 
 async function temDestaqueOrdem() {
@@ -94,7 +145,7 @@ const paraApi = linha => linha && ({
 export const produtosRepo = {
   async listar() {
     const destaque = await temDestaqueOrdem();
-    return (await todos(`
+    const produtos = (await todos(`
       SELECT id, nome, categoria, preco, estoque, estoque_min, ordem, ${destaque ? "destaque_ordem" : "0 AS destaque_ordem"},
              ativo, sabor_pizza,
              CASE
@@ -106,6 +157,7 @@ export const produtosRepo = {
         FROM produtos
        ORDER BY ordem ASC, categoria, nome
     `)).map(paraApi);
+    return anexarFichaTecnica(produtos);
   },
 
   /* Cardapio publico: so o que esta a venda, e sem estoque_min nem custo —
@@ -141,7 +193,21 @@ export const produtosRepo = {
   },
 
   async buscar(id) {
-    return paraApi(await um("SELECT * FROM produtos WHERE id = ?", [id]));
+    const produto = paraApi(await um("SELECT * FROM produtos WHERE id = ?", [id]));
+    if (!produto) return null;
+    const linhas = await todos(`${SELECT_FICHA} WHERE pi.produto_id = ? ORDER BY pi.id`, [id]);
+    return comCmv(produto, linhas.map(paraItemFicha));
+  },
+
+  async definirFichaTecnica(produtoId, itens) {
+    await alteradas("DELETE FROM produto_insumos WHERE produto_id = ?", [produtoId]);
+    if (!itens.length) return;
+    const valores = [];
+    const marcadores = itens.map(item => {
+      valores.push(produtoId, item.insumoId, item.qty);
+      return "(?, ?, ?)";
+    }).join(", ");
+    await alteradas(`INSERT INTO produto_insumos (produto_id, insumo_id, quantidade) VALUES ${marcadores}`, valores);
   },
 
   async imagemPublica(id) {

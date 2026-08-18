@@ -6,14 +6,14 @@
  */
 
 const PAPEL_PADRAO_VER = Object.freeze({
-  admin: ["pedidos", "motoboy", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "fechamentos", "plano", "usuarios"],
+  admin: ["pedidos", "motoboy", "mesas", "produtos", "cmv", "promos", "entrega", "estoque", "dashboard", "fechamentos", "plano", "usuarios"],
   caixa: ["pedidos", "motoboy", "mesas", "estoque", "dashboard", "fechamentos"],
   cozinha: ["pedidos"],
   entregador: ["pedidos", "motoboy"]
 });
 
 const PAPEL_PADRAO_EDITAR = Object.freeze({
-  admin: ["pedidos", "motoboy", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "fechamentos", "plano", "usuarios"],
+  admin: ["pedidos", "motoboy", "mesas", "produtos", "cmv", "promos", "entrega", "estoque", "dashboard", "fechamentos", "plano", "usuarios"],
   caixa: ["pedidos", "motoboy", "mesas", "estoque", "dashboard", "fechamentos"],
   cozinha: [],
   entregador: ["pedidos", "motoboy"]
@@ -46,6 +46,13 @@ export const ABAS = Object.freeze({
     subtitulo: "Cardápio que o cliente vê. Pausar tira do ar sem apagar o cadastro.",
     icone: "◱",
     rotulo: "Produtos",
+    papeis: ["admin"]
+  },
+  cmv: {
+    titulo: "CMV",
+    subtitulo: "Uma linha por produto: escolha o insumo e a quantidade por porção, o custo sai sozinho.",
+    icone: "$",
+    rotulo: "CMV",
     papeis: ["admin"]
   },
   promos: {

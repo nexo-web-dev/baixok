@@ -289,7 +289,7 @@ function linhaDetalheItem(item, pedido, editavel) {
   const podeAjustarQtd = editavel && !item.gift;
   return el("div.order-detail-item", { class: item.gift ? "gift" : "" },
     miniFotoItem(item),
-    el("div", {},
+    el("div.order-item-info", {},
       el("strong", {}, item.gift ? `${item.qty}x ${item.name}` : item.name),
       item.gift
         ? el("span.gift-tag", {}, "Brinde · Leve e ganhe")

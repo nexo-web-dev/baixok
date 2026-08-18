@@ -65,6 +65,16 @@ export const combinacaoSaborSchema = z.object({
   { message: "Escolha dois sabores diferentes.", path: ["produtoBId"] }
 );
 
+/* Ficha tecnica do produto: quais insumos e quanto de cada um uma porcao
+ * vendida consome. Lista vazia e valida — e como se zera a ficha tecnica de
+ * um produto (volta a nao ter CMV calculado). */
+export const fichaTecnicaSchema = z.object({
+  itens: z.array(z.object({
+    insumoId: z.coerce.number().int().positive(),
+    qty: z.coerce.number().finite("Quantidade invalida.").positive().max(999999)
+  }).strict()).max(20)
+}).strict();
+
 export const reordenarProdutoSchema = z.object({
   direction: z.enum(["up", "down"], { message: "Direcao invalida." })
 }).strict();

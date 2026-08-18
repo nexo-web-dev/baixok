@@ -29,6 +29,7 @@
       <button class="nav-item" type="button" data-tab="motoboy" title="Entregas prontas e entregues, quem levou cada pedido e a localização do entregador."><span class="nav-icon" aria-hidden="true">MB</span>Motoboy</button>
       <button class="nav-item" type="button" data-tab="mesas" title="Comandas do salão por mesa, abertas via QR code, com fechamento de conta."><span class="nav-icon" aria-hidden="true">▢</span>Mesas (salão)</button>
       <button class="nav-item" type="button" data-tab="produtos" title="Cadastro de produtos: fotos, categoria, preço e ordem do cardápio."><span class="nav-icon" aria-hidden="true">◱</span>Produtos</button>
+      <button class="nav-item" type="button" data-tab="cmv" title="Custo de cada produto a partir do insumo usado e quanto uma porção consome."><span class="nav-icon" aria-hidden="true">$</span>CMV</button>
       <button class="nav-item" type="button" data-tab="promos" title="Preço promocional com validade e cupons de desconto."><span class="nav-icon" aria-hidden="true">✦</span>Promoções</button>
       <button class="nav-item" type="button" data-tab="combos" title="Pizza de 2 sabores e combos: itens novos compostos por produtos existentes."><span class="nav-icon" aria-hidden="true">◆</span>Combos</button>
       <button class="nav-item" type="button" data-tab="entrega" title="Faixas de raio e taxa de entrega a partir do endereço da loja."><span class="nav-icon" aria-hidden="true">◈</span>Área de entrega</button>
@@ -222,6 +223,18 @@
           </div>
         </form>
       </div>
+    </section>
+
+    <!-- --------------------------------------------------------------- cmv -->
+    <section class="admin-tab hidden" id="tab-cmv">
+      <div class="tab-guide">
+        <strong>Como usar esta aba</strong>
+        <p>Uma linha por produto. Escolha o insumo e quanto uma porção consome — o custo por unidade vem do preço do pacote cadastrado em Estoque, e o CMV é calculado sozinho. Clique em Salvar em cada linha para gravar.</p>
+      </div>
+      <div class="cmv-toolbar">
+        <input type="search" id="cmv-search" placeholder="Buscar produto por nome ou categoria...">
+      </div>
+      <div class="cmv-table" id="cmv-table"></div>
     </section>
 
     <!-- ------------------------------------------------- promocoes e cupons -->

@@ -220,7 +220,10 @@ function cardProduto(produto) {
         ),
         controlaEstoque
           ? el("span", { class: produto.stock <= produto.minStock ? "danger-text" : "" }, `${produto.stock} em estoque`)
-          : el("span", {}, "sem controle de estoque")
+          : el("span", {}, "sem controle de estoque"),
+        produto.cmv > 0
+          ? el("span.pill.cmv-pill", { title: `Custo estimado: ${reais(produto.cmv)}. Editar na aba CMV.` }, `CMV ${produto.cmvPct.toFixed(1)}%`)
+          : null
       )
     ),
     el("div.row-actions", { class: "right" },
