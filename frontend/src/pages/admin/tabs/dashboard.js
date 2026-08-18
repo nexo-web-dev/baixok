@@ -190,6 +190,15 @@ function vendaTag(texto) {
   return texto ? el("span.sale-tag", {}, texto) : null;
 }
 
+/* "Dividido" sozinho nao diz nada pra quem esta olhando a lista — mostra
+ * a quebra real (ex.: "Cartão: R$ 20,00 + Pix: R$ 18,00"). */
+function rotuloPagamento(pedido) {
+  if (pedido.payment === "Dividido" && pedido.paymentSplit?.length) {
+    return pedido.paymentSplit.map(parte => `${parte.forma}: ${reais(Number(parte.valor))}`).join(" + ");
+  }
+  return pedido.payment || "Pagamento não informado";
+}
+
 function fotoVenda(item) {
   if (!item?.image) return el("div.sale-item-thumb.no-photo", {}, "Sem foto");
   return el("span.fit-media.sale-item-thumb", {},
@@ -234,7 +243,7 @@ function vendaLinha(pedido) {
       el("div.sale-tags", {},
         vendaTag(CANAIS_ROTULO[pedido.channel] || pedido.channel || "-"),
         vendaTag(MODALIDADES_ROTULO[pedido.fulfillment] || pedido.fulfillment || "-"),
-        vendaTag(pedido.payment || "Pagamento nao informado")
+        vendaTag(rotuloPagamento(pedido))
       ),
       pedido.fulfillment === "entrega" && pedido.motoboy ? el("span", {}, `Motoboy: ${pedido.motoboy}`) : null,
       cancelado && pedido.cancelReason ? el("span.danger-text", {}, `Motivo: ${pedido.cancelReason}`) : null,
@@ -245,7 +254,7 @@ function vendaLinha(pedido) {
     el("div.sale-side", {},
       el("strong", {}, reais(pedido.total || 0)),
       el("span", { class: cancelado || pedido.payment === "Não pago" ? "danger-text" : "" },
-        cancelado ? "Cancelado" : pedido.payment || "Pagamento não informado"),
+        cancelado ? "Cancelado" : rotuloPagamento(pedido)),
       el("button.secondary.small", { type: "button", dataset: { action: "details-sale" } }, "Detalhes"),
       !cancelado
         ? el("button.secondary.small", { type: "button", dataset: { action: "edit-sale" } }, "Editar itens")

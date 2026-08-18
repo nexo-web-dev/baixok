@@ -688,6 +688,49 @@ export const pedidosService = {
     return this.buscar(id);
   },
 
+  /* Pedido pago em mais de uma forma (parte cartao, parte Pix etc.) — grava
+   * cada parcela em pedido_pagamentos e marca pedidos.pagamento = "Dividido",
+   * pro resto do sistema saber que precisa ir atras da quebra por forma em
+   * vez de tratar como pagamento de um valor so. A soma das parcelas precisa
+   * bater com o total do pedido: aceitar menos silenciosamente faria o
+   * faturamento por forma nao bater com o faturamento total do periodo. */
+  async definirPagamentoDividido(id, componentes, { usuario, ip }) {
+    const lista = (Array.isArray(componentes) ? componentes : [])
+      .map(item => ({
+        forma: String(item?.forma || "").trim(),
+        valor: Math.round(Number(item?.valor || 0) * 100) / 100
+      }))
+      .filter(item => item.forma && item.valor > 0);
+
+    if (lista.length < 2) {
+      throw new ErroApp("Informe pelo menos duas formas de pagamento.", 400, "divisao_invalida");
+    }
+
+    const atual = await this.buscar(id);
+    if (atual.status === "cancelado") throw conflito("Pedido cancelado não tem pagamento pra dividir.");
+
+    const soma = Math.round(lista.reduce((total, item) => total + item.valor, 0) * 100) / 100;
+    if (Math.abs(soma - atual.total) > 0.01) {
+      throw new ErroApp(
+        `A soma das formas (${soma.toFixed(2)}) precisa bater com o total do pedido (${atual.total.toFixed(2)}).`,
+        400,
+        "divisao_nao_bate"
+      );
+    }
+
+    await pedidosRepo.definirPagamentoDividido(id, lista);
+    await pedidosRepo.definirMotivoNaoPago(id, "");
+
+    await auditoriaRepo.registrar({
+      usuarioId: usuario.id, usuario: usuario.usuario, acao: "pedido_pagamento_dividido",
+      entidade: "pedido", entidadeId: id,
+      detalhes: { de: atual.payment, formas: lista, total: atual.total },
+      ip
+    });
+    publicar("pedidos", [CANAL.OPERACAO, CANAL.TELAO]);
+    return this.buscar(id);
+  },
+
   async definirMotoboy(id, motoboy, { usuario, ip }) {
     const nome = String(motoboy || "").trim();
     if (!nome) throw new ErroApp("Informe o nome do motoboy.", 400, "motoboy_obrigatorio");

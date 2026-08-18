@@ -310,6 +310,17 @@
 .order-detail-item.gift > strong { color: var(--gold); }
 .gift-tag { color: var(--gold) !important; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; }
 .order-detail-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; padding-top: 4px; }
+.split-payment-block:empty { display: none; }
+.split-payment-form { display: grid; gap: 10px; padding: 14px; border-radius: var(--radius-sm); background: var(--soft); border: 1px dashed var(--line-soft); }
+.split-payment-form > strong { color: var(--gold); font-size: .8rem; text-transform: uppercase; letter-spacing: .03em; }
+.split-payment-rows { display: grid; gap: 8px; }
+.split-payment-row { display: grid; grid-template-columns: minmax(0, 1fr) 130px auto; gap: 8px; align-items: center; }
+.split-row-remove {
+  display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
+  color: var(--danger); background: var(--danger-bg); font-size: 1.1rem; line-height: 1;
+}
+.split-row-remove:hover { background: rgba(212,127,110,.28); }
+.split-payment-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 
 /* â€” cozinha (KDS) â€” */
 .kds-board { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }

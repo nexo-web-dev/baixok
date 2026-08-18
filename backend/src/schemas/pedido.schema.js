@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { CANAIS, MODALIDADES, STATUS_PEDIDO, LIMITES } from "../config/constants.js";
-import { texto, idTexto, quantidade, dataIso, latitude, longitude } from "./comum.schema.js";
+import { texto, idTexto, quantidade, dataIso, latitude, longitude, dinheiro } from "./comum.schema.js";
 
 /* O item que o cliente manda diz O QUE foi pedido, nunca QUANTO custa.
  *
@@ -89,6 +89,13 @@ export const motoboyPedidoSchema = z.object({
  * a mesma regra de remover item (ver pedidos.service.js). */
 export const ajustarQuantidadeItemSchema = z.object({
   qty: z.coerce.number().int().min(0).max(LIMITES.QTD_ITEM_MAX)
+}).strict();
+
+export const dividirPagamentoSchema = z.object({
+  componentes: z.array(z.object({
+    forma: texto(30, { obrigatorio: true }),
+    valor: dinheiro
+  }).strict()).min(2, "Informe pelo menos duas formas de pagamento.").max(6)
 }).strict();
 
 export const definirPagamentoSchema = z.object({

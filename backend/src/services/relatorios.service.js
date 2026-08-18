@@ -163,7 +163,11 @@ export const relatoriosService = {
           motivoCancelamento: pedido.cancelReason,
           motivoNaoPago: pedido.naoPagoReason,
           motoboy: pedido.motoboy,
-          pagamento: pedido.payment,
+          /* "Dividido" sozinho na planilha nao ajuda quem confere caixa —
+           * escreve a quebra por extenso (ver definirPagamentoDividido). */
+          pagamento: pedido.payment === "Dividido" && pedido.paymentSplit?.length
+            ? pedido.paymentSplit.map(parte => `${parte.forma}: ${Number(parte.valor).toFixed(2)}`).join(" + ")
+            : pedido.payment,
           itens: pedido.items.map(item => `${item.qty}x ${item.name}`).join("; "),
           subtotal: pedido.subtotal,
           desconto: pedido.discount,

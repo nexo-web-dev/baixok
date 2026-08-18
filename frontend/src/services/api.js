@@ -33,6 +33,7 @@ export const apiPedidos = {
   cancelar: (id, motivo) => http.post(`/painel/pedidos/${id}/cancelar`, { motivo }),
   definirMotoboy: (id, motoboy) => http.patch(`/painel/pedidos/${id}/motoboy`, { motoboy }),
   definirPagamento: (id, pagamento, motivo = "") => http.patch(`/painel/pedidos/${id}/pagamento`, { pagamento, motivo }),
+  dividirPagamento: (id, componentes) => http.post(`/painel/pedidos/${id}/pagamento/dividir`, { componentes }),
   marcarImpresso: id => http.post(`/painel/pedidos/${id}/impresso`),
   remover: (id, senha) => http.delete(`/painel/pedidos/${id}`, { corpo: { senha } }),
   adicionarItens: (id, items) => http.post(`/painel/pedidos/${id}/itens`, { items }),

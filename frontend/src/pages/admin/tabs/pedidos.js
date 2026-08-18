@@ -16,7 +16,10 @@ import { registrarMotoboyLocal } from "./motoboy.js";
 const MINUTOS_ATRASO = 15;
 let relogioPedidosTimer = null;
 let pedidoDetalheAtualId = null;
+let pedidoDetalheAtualCache = null;
 let buscaAdicionarItem = "";
+let divisaoPagamentoAberta = false;
+let divisaoPagamentoLinhas = [];
 
 const normalizarBuscaItem = valor => String(valor || "")
   .normalize("NFD")
@@ -350,6 +353,47 @@ function blocoAdicionarItem() {
   );
 }
 
+/* So redesenha esse bloco sozinho (abrir/fechar, +forma, remover linha) —
+ * abrir de novo o pedido inteiro via API a cada clique seria desperdicio e
+ * ainda reseta o formulario no meio do preenchimento. */
+function redesenharDivisaoPagamento() {
+  const bloco = $("#split-payment-block");
+  if (!bloco || !pedidoDetalheAtualCache) return;
+  render(bloco, divisaoPagamentoAberta ? conteudoDivisaoPagamento(pedidoDetalheAtualCache) : null);
+}
+
+function conteudoDivisaoPagamento(pedido) {
+  return el("div.split-payment-form", {},
+    el("strong", {}, "Dividir pagamento"),
+    el("p.faint.small", {}, `A soma das formas precisa bater com o total do pedido (${reais(pedido.total)}).`),
+    el("div.split-payment-rows", {},
+      divisaoPagamentoLinhas.map((linha, indice) =>
+        el("div.split-payment-row", {},
+          el("input", {
+            type: "text", placeholder: "Forma (ex: Cartão)", value: linha.forma,
+            dataset: { acao: "split-forma", indice: String(indice) }
+          }),
+          el("input", {
+            type: "number", step: "0.01", min: "0", placeholder: "Valor", value: linha.valor,
+            dataset: { acao: "split-valor", indice: String(indice) }
+          }),
+          divisaoPagamentoLinhas.length > 2
+            ? el("button.split-row-remove", {
+                type: "button", title: "Remover esta forma",
+                dataset: { acao: "split-remover-linha", indice: String(indice) }
+              }, "×")
+            : null
+        )
+      )
+    ),
+    el("div.split-payment-actions", {},
+      el("button.secondary", { type: "button", dataset: { acao: "split-adicionar-linha" } }, "+ forma"),
+      el("button.primary", { type: "button", dataset: { acao: "split-confirmar", id: pedido.id } }, "Confirmar divisão"),
+      el("button.secondary", { type: "button", dataset: { acao: "split-cancelar" } }, "Cancelar")
+    )
+  );
+}
+
 /* Exportada porque o Dashboard tambem abre este mesmo modal a partir da
  * lista "Todas as vendas" — uma venda de dias atras pode nao estar em
  * estado.pedidos (o painel so mantem os pedidos recentes em memoria), entao
@@ -369,7 +413,10 @@ export async function abrirDetalhePedido(id) {
   if (!pedido || !modal || !corpo) return;
 
   pedidoDetalheAtualId = id;
+  pedidoDetalheAtualCache = pedido;
   buscaAdicionarItem = "";
+  divisaoPagamentoAberta = false;
+  divisaoPagamentoLinhas = [];
   /* So cancelado fica travado — pedido entregue tambem pode ganhar ou perder
    * item, e a correcao de "esqueceu de lancar" ou "trocou o produto" depois
    * que o cliente ja levou. */
@@ -390,7 +437,9 @@ export async function abrirDetalhePedido(id) {
   render(corpo,
     el("div.order-detail-summary", {},
       el("div", {}, el("span", {}, "Pagamento"),
-        el("strong", { class: pedido.payment === "Não pago" ? "danger-text" : "" }, pedido.payment || "-")),
+        pedido.payment === "Dividido" && pedido.paymentSplit?.length
+          ? el("strong", {}, pedido.paymentSplit.map(parte => `${parte.forma}: ${reais(Number(parte.valor))}`).join(" + "))
+          : el("strong", { class: pedido.payment === "Não pago" ? "danger-text" : "" }, pedido.payment || "-")),
       el("div", {}, el("span", {}, "Total"), el("strong", {}, reais(pedido.total))),
       el("div", {}, el("span", {}, "Tempo"), el("strong", {}, esperaLegivel(minutosDesde(pedido.createdAt)))),
       pedido.tableNumber ? el("div", {}, el("span", {}, "Mesa"), el("strong", {}, `Mesa ${pedido.tableNumber}`)) : null
@@ -412,8 +461,15 @@ export async function abrirDetalhePedido(id) {
             dataset: { acao: "marcar-nao-pago-pedido", id: pedido.id }
           }, "Marcar como não pago")
         : null,
+      editavel && pedido.payment !== "Não pago"
+        ? el("button.secondary", {
+            type: "button", title: "Ex.: parte no cartão, parte no Pix",
+            dataset: { acao: "abrir-divisao-pagamento", id: pedido.id }
+          }, pedido.payment === "Dividido" ? "Editar divisão" : "Dividir pagamento")
+        : null,
       el("button.secondary", { type: "button", dataset: { acao: "reimprimir-detalhe", id: pedido.id } }, "Reimprimir nota")
-    )
+    ),
+    el("div.split-payment-block", { id: "split-payment-block" })
   );
   if (editavel) atualizarListaAdicionarItem();
   mostrar(modal, true);
@@ -628,4 +684,61 @@ export function ligarPedidos() {
       }
     }
   );
+
+  delegar($("#order-detail-body"), "click", "[data-acao='abrir-divisao-pagamento']", (_e, botao) => {
+    const pedido = pedidoDetalheAtualCache;
+    divisaoPagamentoAberta = true;
+    /* Ja divido antes: reabre com as formas que estao la, pra editar em cima
+     * em vez de comecar do zero. Senao, duas linhas em branco pra preencher. */
+    divisaoPagamentoLinhas = pedido?.payment === "Dividido" && pedido.paymentSplit?.length
+      ? pedido.paymentSplit.map(parte => ({ forma: parte.forma, valor: String(parte.valor) }))
+      : [{ forma: "", valor: "" }, { forma: "", valor: "" }];
+    redesenharDivisaoPagamento();
+  });
+
+  delegar($("#order-detail-body"), "click", "[data-acao='split-cancelar']", () => {
+    divisaoPagamentoAberta = false;
+    redesenharDivisaoPagamento();
+  });
+
+  delegar($("#order-detail-body"), "click", "[data-acao='split-adicionar-linha']", () => {
+    divisaoPagamentoLinhas.push({ forma: "", valor: "" });
+    redesenharDivisaoPagamento();
+  });
+
+  delegar($("#order-detail-body"), "click", "[data-acao='split-remover-linha']", (_e, botao) => {
+    divisaoPagamentoLinhas.splice(Number(botao.dataset.indice), 1);
+    redesenharDivisaoPagamento();
+  });
+
+  delegar($("#order-detail-body"), "input", "[data-acao='split-forma']", (_e, campo) => {
+    const linha = divisaoPagamentoLinhas[Number(campo.dataset.indice)];
+    if (linha) linha.forma = campo.value;
+  });
+
+  delegar($("#order-detail-body"), "input", "[data-acao='split-valor']", (_e, campo) => {
+    const linha = divisaoPagamentoLinhas[Number(campo.dataset.indice)];
+    if (linha) linha.valor = campo.value;
+  });
+
+  delegar($("#order-detail-body"), "click", "[data-acao='split-confirmar']", async (_e, botao) => {
+    const componentes = divisaoPagamentoLinhas
+      .map(linha => ({ forma: String(linha.forma || "").trim(), valor: Math.round((Number(linha.valor) || 0) * 100) / 100 }))
+      .filter(linha => linha.forma && linha.valor > 0);
+    if (componentes.length < 2) {
+      return toastFalha(new Error("Informe pelo menos duas formas de pagamento, com valor."), "Dividir pagamento");
+    }
+    botao.disabled = true;
+    try {
+      await apiPedidos.dividirPagamento(botao.dataset.id, componentes);
+      divisaoPagamentoAberta = false;
+      await carregar("pedidos");
+      abrirDetalhePedido(botao.dataset.id);
+      toast("Pagamento dividido registrado.");
+    } catch (erro) {
+      toastFalha(erro, "Dividir pagamento");
+    } finally {
+      botao.disabled = false;
+    }
+  });
 }

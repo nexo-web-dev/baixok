@@ -31,7 +31,7 @@ function imagemProduto(linha) {
   return imagem;
 }
 
-const paraApi = (linha, itens = []) => linha && ({
+const paraApi = (linha, itens = [], pagamentos = []) => linha && ({
   id: linha.id,
   createdAt: linha.criado_em,
   status: linha.status,
@@ -44,6 +44,9 @@ const paraApi = (linha, itens = []) => linha && ({
   cancelReason: linha.motivo_cancelamento || "",
   naoPagoReason: linha.motivo_nao_pago || "",
   payment: linha.pagamento,
+  /* So preenchido quando pagamento = "Dividido" — cada parte com sua forma
+   * e valor (ver pedidosService.definirPagamentoDividido). */
+  paymentSplit: pagamentos,
   trocoPara: linha.troco_para,
   tableNumber: linha.mesa_n,
   subtotal: linha.subtotal,
@@ -82,28 +85,44 @@ const itemParaApi = linha => ({
   image: linha.combo_id ? imagemCombo(linha) : imagemProduto(linha)
 });
 
-/* Uma consulta para os pedidos e uma para todos os itens desses pedidos.
- * Buscar os itens dentro de um `.map()` faria N+1 consultas — com o movimento
- * de um sabado, o painel abriria centenas delas a cada atualizacao. */
+/* Uma consulta para os pedidos, uma para todos os itens e uma para os
+ * pagamentos divididos desses pedidos. Buscar dentro de um `.map()` faria
+ * N+1 consultas — com o movimento de um sabado, o painel abriria centenas
+ * delas a cada atualizacao. */
 async function anexarItens(linhas) {
   if (!linhas.length) return [];
   const marcadores = linhas.map(() => "?").join(",");
-  const itens = await todos(
-    `SELECT i.*, p.imagem AS produto_imagem, p.atualizado_em AS produto_atualizado_em, c.imagem AS combo_imagem
-       FROM pedido_itens i
-       LEFT JOIN produtos p ON p.id = i.produto_id
-       LEFT JOIN combos c ON c.id = i.combo_id
-      WHERE i.pedido_id IN (${marcadores})
-      ORDER BY i.id`,
-    linhas.map(linha => linha.id)
-  );
+  const ids = linhas.map(linha => linha.id);
 
-  const porPedido = new Map();
+  const [itens, pagamentos] = await Promise.all([
+    todos(
+      `SELECT i.*, p.imagem AS produto_imagem, p.atualizado_em AS produto_atualizado_em, c.imagem AS combo_imagem
+         FROM pedido_itens i
+         LEFT JOIN produtos p ON p.id = i.produto_id
+         LEFT JOIN combos c ON c.id = i.combo_id
+        WHERE i.pedido_id IN (${marcadores})
+        ORDER BY i.id`,
+      ids
+    ),
+    todos(
+      `SELECT pedido_id, forma, valor FROM pedido_pagamentos WHERE pedido_id IN (${marcadores}) ORDER BY id`,
+      ids
+    )
+  ]);
+
+  const itensPorPedido = new Map();
   for (const item of itens) {
-    if (!porPedido.has(item.pedido_id)) porPedido.set(item.pedido_id, []);
-    porPedido.get(item.pedido_id).push(itemParaApi(item));
+    if (!itensPorPedido.has(item.pedido_id)) itensPorPedido.set(item.pedido_id, []);
+    itensPorPedido.get(item.pedido_id).push(itemParaApi(item));
   }
-  return linhas.map(linha => paraApi(linha, porPedido.get(linha.id) || []));
+
+  const pagamentosPorPedido = new Map();
+  for (const pagamento of pagamentos) {
+    if (!pagamentosPorPedido.has(pagamento.pedido_id)) pagamentosPorPedido.set(pagamento.pedido_id, []);
+    pagamentosPorPedido.get(pagamento.pedido_id).push({ forma: pagamento.forma, valor: pagamento.valor });
+  }
+
+  return linhas.map(linha => paraApi(linha, itensPorPedido.get(linha.id) || [], pagamentosPorPedido.get(linha.id) || []));
 }
 
 const SELECT_BASE = `
@@ -239,6 +258,30 @@ export const pedidosRepo = {
     await alteradas(
       "UPDATE pedidos SET motivo_nao_pago = ?, atualizado_em = now() WHERE id = ?",
       [motivo, id]
+    );
+  },
+
+  /* Grava as parcelas do pagamento dividido (substitui qualquer divisao
+   * anterior do mesmo pedido) e marca pedidos.pagamento como "Dividido" —
+   * mesmo marcador especial que "Não pago" ja usa, pra todo relatorio que
+   * olha essa coluna direto saber que precisa ir atras da quebra por forma
+   * em pedido_pagamentos em vez de somar aqui. */
+  async definirPagamentoDividido(pedidoId, componentes) {
+    await alteradas("DELETE FROM pedido_pagamentos WHERE pedido_id = ?", [pedidoId]);
+    if (componentes.length) {
+      const valores = [];
+      const marcadores = componentes.map(componente => {
+        valores.push(pedidoId, componente.forma, componente.valor);
+        return "(?, ?, ?)";
+      }).join(", ");
+      await alteradas(
+        `INSERT INTO pedido_pagamentos (pedido_id, forma, valor) VALUES ${marcadores}`,
+        valores
+      );
+    }
+    await alteradas(
+      "UPDATE pedidos SET pagamento = 'Dividido', atualizado_em = now() WHERE id = ?",
+      [pedidoId]
     );
   },
 
@@ -479,6 +522,31 @@ export const pedidosRepo = {
     if (!campo) throw new Error(`agrupamento nao permitido: ${coluna}`);
 
     const f = filtroRelatorio(filtro);
+
+    /* "pagamento" e especial: pedido "Dividido" nao tem UM total pra somar
+     * nessa coluna — a quebra de verdade (quanto foi cartao, quanto foi Pix)
+     * mora em pedido_pagamentos, uma linha por forma. Junta as duas fontes
+     * antes de agrupar, senao "Dividido" aparecia como se fosse uma forma de
+     * pagamento de verdade, e o valor de cada forma real ficava errado. So
+     * pedido ja marcado "Dividido" tem linha em pedido_pagamentos, entao o
+     * JOIN sozinho ja restringe ao que interessa aqui. */
+    if (coluna === "pagamento") {
+      return await todos(`
+        SELECT forma AS rotulo, COUNT(*)::int AS pedidos, COALESCE(SUM(valor), 0) AS faturamento
+          FROM (
+            SELECT pagamento AS forma, total AS valor
+              FROM pedidos
+             WHERE ${f.sql} AND status = 'entregue' AND pagamento IS DISTINCT FROM 'Não pago' AND pagamento <> 'Dividido'
+            UNION ALL
+            SELECT pp.forma, pp.valor
+              FROM pedido_pagamentos pp
+              JOIN pedidos ON pedidos.id = pp.pedido_id
+             WHERE ${f.sql} AND pedidos.status = 'entregue'
+          ) combinado
+         GROUP BY forma ORDER BY faturamento DESC
+      `, [...f.params, ...f.params]);
+    }
+
     return await todos(`
       SELECT ${campo} AS rotulo, COUNT(*)::int AS pedidos, COALESCE(SUM(total), 0) AS faturamento
         FROM pedidos
