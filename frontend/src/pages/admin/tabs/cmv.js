@@ -4,7 +4,7 @@
  * numa porção vendida, quanto pesa o saco/pacote comprado e quanto custou. O
  * resto (rendimento, faturamento possível, custo da porção, CMV%) sai sozinho,
  * com o mesmo cálculo de "custo do saco / peso do saco * porção". */
-import { el, render, $, delegar } from "../../../utils/dom.js";
+import { el, render, $, delegar, debounce } from "../../../utils/dom.js";
 import { reais } from "../../../utils/formato.js";
 import { rotuloCategoria } from "../../../utils/categorias.js";
 import { apiProdutos } from "../../../services/api.js";
@@ -193,10 +193,10 @@ export function ligarCmv() {
   const alvo = $("#cmv-table");
   if (!alvo) return;
 
-  $("#cmv-search")?.addEventListener("input", evento => {
+  $("#cmv-search")?.addEventListener("input", debounce(evento => {
     busca = evento.target.value;
     desenharCmv();
-  });
+  }));
 
   delegar(alvo, "input", "[data-acao='cmv-porcao']", (_e, campo) => {
     const rascunho = rascunhos.get(campo.dataset.produto);

@@ -56,8 +56,14 @@ function classeFoto(produto) {
   return "";
 }
 
-/* Sem foto cadastrada mostramos um espaco marcado, nao uma imagem quebrada. */
-export function foto(produto, alt = "") {
+/* Sem foto cadastrada mostramos um espaco marcado, nao uma imagem quebrada.
+ *
+ * `prioridade` e so pras fotos que aparecem na hora que a pagina abre
+ * (destaques e as primeiras da grade) — carregam eager/sync pra nao dar
+ * flash de espaco vazio. O resto da grade e lazy/async: com o cardapio
+ * crescendo, forcar toda foto a baixar e decodificar na hora travava a
+ * pagina num catalogo grande, mesmo com a maioria fora da tela. */
+export function foto(produto, alt = "", { prioridade = false } = {}) {
   if (!produto?.image) {
     return semFoto();
   }
@@ -66,9 +72,9 @@ export function foto(produto, alt = "") {
       onload: marcarProporcaoImagem,
       src: produto.image,
       alt: alt || produto.name || "",
-      loading: "eager",
-      fetchpriority: "high",
-      decoding: "sync",
+      loading: prioridade ? "eager" : "lazy",
+      fetchpriority: prioridade ? "high" : "auto",
+      decoding: prioridade ? "sync" : "async",
       onerror: evento => evento.target.closest(".photo-frame")?.replaceWith(semFoto())
     })
   );
@@ -91,7 +97,7 @@ export function blocoBrindes(produto) {
   ));
 }
 
-function cartaoProduto(produto, { lojaAberta = true } = {}) {
+function cartaoProduto(produto, { lojaAberta = true, prioridade = false } = {}) {
   const promocional = produto.emPromocao && produto.precoOriginal > produto.price;
 
   return el("article.product", {
@@ -101,7 +107,7 @@ function cartaoProduto(produto, { lojaAberta = true } = {}) {
     tabIndex: 0
   },
     el("span.badge", {}, promocional ? "Promoção" : (produto.badge || rotuloCategoria(produto.category) || "Item")),
-    foto(produto),
+    foto(produto, "", { prioridade }),
     el("div.product-body", {},
       el("strong", {}, produto.name),
       el("p", {}, produto.description || ""),
@@ -140,7 +146,7 @@ export function desenharDestaques(produtos) {
 
   render(alvo, ...destaques(produtos).map(produto =>
     el("article", { dataset: { acao: "detalhes-produto", id: produto.id }, role: "button", tabIndex: 0 },
-      foto(produto),
+      foto(produto, "", { prioridade: true }),
       el("div", {},
         el("span", {}, produto.badge || rotuloCategoria(produto.category) || "Destaque"),
         el("strong", {}, produto.name),
@@ -164,6 +170,10 @@ export function desenharFiltros(produtos, categoriaAtual) {
   ));
 }
 
+/* So as primeiras da grade carregam com prioridade — sao as que aparecem na
+ * hora que a pagina abre, antes de rolar. */
+const CARDS_PRIORITARIOS = 6;
+
 export function desenharGrade(produtos, { categoria, busca, lojaAberta = true }) {
   const alvo = $("#menu");
   if (!alvo) return;
@@ -178,6 +188,6 @@ export function desenharGrade(produtos, { categoria, busca, lojaAberta = true })
   });
 
   render(alvo, lista.length
-    ? lista.map(produto => cartaoProduto(produto, { lojaAberta }))
+    ? lista.map((produto, indice) => cartaoProduto(produto, { lojaAberta, prioridade: indice < CARDS_PRIORITARIOS }))
     : el("p.faint", {}, "Nenhum item disponível nesse filtro."));
 }

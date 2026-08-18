@@ -34,7 +34,8 @@ const COLUNAS = [
   { chave: "total", titulo: "Total", largura: 13, moeda: true },
   { chave: "motoboy", titulo: "Motoboy", largura: 16 },
   { chave: "motivoCancelamento", titulo: "Motivo cancelamento", largura: 26 },
-  { chave: "motivoNaoPago", titulo: "Motivo não pago", largura: 26 }
+  { chave: "motivoNaoPago", titulo: "Motivo não pago", largura: 26 },
+  { chave: "cortesia", titulo: "Cortesia", largura: 26 }
 ];
 
 function valorLinha(linha, coluna) {

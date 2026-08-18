@@ -43,6 +43,12 @@ const paraApi = (linha, itens = [], pagamentos = []) => linha && ({
   note: linha.observacao,
   cancelReason: linha.motivo_cancelamento || "",
   naoPagoReason: linha.motivo_nao_pago || "",
+  /* Cortesia e diferente de "Não pago": e a casa que decide de proposito nao
+   * cobrar (presente), nao um calote. Pode ser so alguns itens — por isso o
+   * valor fica somado aqui, e nao vira o `payment` inteiro como "Não pago"
+   * vira (ver pedidosRepo.definirCortesia). */
+  cortesiaValue: Number(linha.valor_cortesia || 0),
+  cortesiaReason: linha.motivo_cortesia || "",
   payment: linha.pagamento,
   /* So preenchido quando pagamento = "Dividido" — cada parte com sua forma
    * e valor (ver pedidosService.definirPagamentoDividido). */
@@ -82,6 +88,7 @@ const itemParaApi = linha => ({
   qty: linha.quantidade,
   price: linha.preco_unit,
   gift: doBanco(linha.brinde),
+  cortesia: doBanco(linha.cortesia),
   image: linha.combo_id ? imagemCombo(linha) : imagemProduto(linha)
 });
 
@@ -404,6 +411,26 @@ export const pedidosRepo = {
     `, f.params);
   },
 
+  /* Marca os itens escolhidos (ou o pedido inteiro, se o service resolver
+   * todos os itemIds) como cortesia e recalcula o valor de uma vez —
+   * `valor_cortesia` fica denormalizado em `pedidos` de proposito, igual
+   * `total` ja e: as consultas de faturamento so fazem `total - valor_cortesia`
+   * em vez de recalcular via JOIN em pedido_itens a cada relatorio. */
+  async definirCortesia(pedidoId, itemIds, motivo) {
+    const marcadores = itemIds.map(() => "?").join(",");
+    await alteradas(
+      `UPDATE pedido_itens SET cortesia = 1 WHERE pedido_id = ? AND id IN (${marcadores})`,
+      [pedidoId, ...itemIds]
+    );
+    await alteradas(`
+      UPDATE pedidos
+         SET valor_cortesia = (SELECT COALESCE(SUM(quantidade * preco_unit), 0) FROM pedido_itens WHERE pedido_id = ? AND cortesia = 1),
+             motivo_cortesia = ?, atualizado_em = now()
+       WHERE id = ?
+    `, [pedidoId, motivo, pedidoId]);
+    return this.buscar(pedidoId);
+  },
+
   async definirMotoboy(id, motoboy) {
     await alteradas("UPDATE pedidos SET motoboy = ?, atualizado_em = now() WHERE id = ?", [motoboy, id]);
     return this.buscar(id);
@@ -431,8 +458,8 @@ export const pedidosRepo = {
     const f = filtroRelatorio(filtro);
     return await um(`
       SELECT COUNT(*)::int AS pedidos,
-             COALESCE(SUM(total), 0) AS faturamento,
-             COALESCE(AVG(total), 0) AS ticket_medio,
+             COALESCE(SUM(total - valor_cortesia), 0) AS faturamento,
+             COALESCE(AVG(total - valor_cortesia), 0) AS ticket_medio,
              COALESCE(SUM(desconto), 0) AS descontos,
              COALESCE(SUM(taxa_entrega), 0) AS taxas_entrega
         FROM pedidos
@@ -468,6 +495,28 @@ export const pedidosRepo = {
     `, f.params);
   },
 
+  /* Cortesia nao e prejuizo (a casa deu de proposito), entao fica separada
+   * de resumoNaoPago — mesma ideia, numero diferente. */
+  async resumoCortesia(filtro) {
+    const f = filtroRelatorio(filtro);
+    return await um(`
+      SELECT COUNT(*) FILTER (WHERE valor_cortesia > 0)::int AS pedidos,
+             COALESCE(SUM(valor_cortesia), 0) AS valor
+        FROM pedidos
+       WHERE ${f.sql} AND status = 'entregue'
+    `, f.params);
+  },
+
+  async listarCortesias(filtro) {
+    const f = filtroRelatorio(filtro);
+    return await todos(`
+      SELECT cliente, valor_cortesia AS valor, motivo_cortesia AS motivo
+        FROM pedidos
+       WHERE ${f.sql} AND status = 'entregue' AND valor_cortesia > 0
+       ORDER BY criado_em DESC
+    `, f.params);
+  },
+
   /* to_char no lugar do strftime, que so existe no SQLite. Roda no fuso da
    * sessao (UTC no Supabase), igual ao que o codigo ja assumia. */
   async porHora(filtro) {
@@ -475,7 +524,7 @@ export const pedidosRepo = {
     return await todos(`
       SELECT to_char(criado_em AT TIME ZONE 'America/Sao_Paulo', 'HH24') AS hora,
              COUNT(*)::int AS pedidos,
-             COALESCE(SUM(total), 0) AS faturamento
+             COALESCE(SUM(total - valor_cortesia), 0) AS faturamento
         FROM pedidos
        WHERE ${f.sql} AND status = 'entregue' AND pagamento IS DISTINCT FROM 'Não pago'
        GROUP BY hora ORDER BY hora
@@ -488,7 +537,7 @@ export const pedidosRepo = {
       SELECT to_char(criado_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM') AS rotulo,
              MIN((criado_em AT TIME ZONE 'America/Sao_Paulo')::date) AS data_ordem,
              COUNT(*)::int AS pedidos,
-             COALESCE(SUM(total), 0) AS faturamento
+             COALESCE(SUM(total - valor_cortesia), 0) AS faturamento
         FROM pedidos
        WHERE ${f.sql} AND status = 'entregue' AND pagamento IS DISTINCT FROM 'Não pago'
        GROUP BY rotulo
@@ -505,7 +554,7 @@ export const pedidosRepo = {
       SELECT to_char(criado_em AT TIME ZONE 'America/Sao_Paulo', 'MM/YYYY') AS rotulo,
              MIN(date_trunc('month', criado_em AT TIME ZONE 'America/Sao_Paulo')) AS mes_ordem,
              COUNT(*)::int AS pedidos,
-             COALESCE(SUM(total), 0) AS faturamento
+             COALESCE(SUM(total - valor_cortesia), 0) AS faturamento
         FROM pedidos
        WHERE ${f.sql} AND status = 'entregue' AND pagamento IS DISTINCT FROM 'Não pago'
        GROUP BY rotulo
@@ -534,7 +583,7 @@ export const pedidosRepo = {
       return await todos(`
         SELECT forma AS rotulo, COUNT(*)::int AS pedidos, COALESCE(SUM(valor), 0) AS faturamento
           FROM (
-            SELECT pagamento AS forma, total AS valor
+            SELECT pagamento AS forma, (total - valor_cortesia) AS valor
               FROM pedidos
              WHERE ${f.sql} AND status = 'entregue' AND pagamento IS DISTINCT FROM 'Não pago' AND pagamento <> 'Dividido'
             UNION ALL
@@ -548,7 +597,7 @@ export const pedidosRepo = {
     }
 
     return await todos(`
-      SELECT ${campo} AS rotulo, COUNT(*)::int AS pedidos, COALESCE(SUM(total), 0) AS faturamento
+      SELECT ${campo} AS rotulo, COUNT(*)::int AS pedidos, COALESCE(SUM(total - valor_cortesia), 0) AS faturamento
         FROM pedidos
        WHERE ${f.sql} AND status = 'entregue' AND pagamento IS DISTINCT FROM 'Não pago'
        GROUP BY ${campo} ORDER BY faturamento DESC
@@ -566,7 +615,7 @@ export const pedidosRepo = {
     return await todos(`
       SELECT
         COALESCE(p.categoria, CASE WHEN i.combo_id IS NOT NULL THEN 'combos' ELSE 'outros' END) AS rotulo,
-        COALESCE(SUM(i.quantidade * i.preco_unit), 0) AS faturamento,
+        COALESCE(SUM(CASE WHEN i.cortesia = 1 THEN 0 ELSE i.quantidade * i.preco_unit END), 0) AS faturamento,
         COALESCE(SUM(i.quantidade), 0)::int AS unidades
         FROM pedido_itens i
         JOIN pedidos ped ON ped.id = i.pedido_id
@@ -586,7 +635,7 @@ export const pedidosRepo = {
     return await todos(`
       SELECT btrim(motoboy) AS rotulo,
              COUNT(*)::int AS pedidos,
-             COALESCE(SUM(total), 0) AS faturamento,
+             COALESCE(SUM(total - valor_cortesia), 0) AS faturamento,
              COALESCE(SUM(taxa_entrega), 0) AS taxas_entrega
         FROM pedidos
        WHERE ${f.sql}
@@ -603,7 +652,7 @@ export const pedidosRepo = {
     return await todos(`
       SELECT i.nome AS rotulo,
              SUM(i.quantidade)::int AS quantidade,
-             SUM(i.quantidade * i.preco_unit) AS faturamento
+             SUM(CASE WHEN i.cortesia = 1 THEN 0 ELSE i.quantidade * i.preco_unit END) AS faturamento
         FROM pedido_itens i
         JOIN pedidos p ON p.id = i.pedido_id
         LEFT JOIN produtos pr ON pr.id = i.produto_id
@@ -622,7 +671,7 @@ export const pedidosRepo = {
     return await todos(`
       SELECT i.nome AS rotulo,
              SUM(i.quantidade)::int AS quantidade,
-             SUM(i.quantidade * i.preco_unit) AS faturamento
+             SUM(CASE WHEN i.cortesia = 1 THEN 0 ELSE i.quantidade * i.preco_unit END) AS faturamento
         FROM pedido_itens i
         JOIN pedidos p ON p.id = i.pedido_id
         LEFT JOIN produtos pr ON pr.id = i.produto_id

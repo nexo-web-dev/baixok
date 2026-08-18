@@ -21,6 +21,16 @@ let buscaAdicionarItem = "";
 let divisaoPagamentoAberta = false;
 let divisaoPagamentoLinhas = [];
 
+/* Mesmo botao pra "pedido nao pago" e "cortesia" — a diferenca e so o tipo
+ * escolhido dentro do formulario: prejuizo (calote, cliente sumiu) ou
+ * cortesia (a casa que decidiu de proposito nao cobrar, pode ser so parte
+ * dos itens). */
+let naoPagoAberto = false;
+let naoPagoTipo = "prejuizo";
+let naoPagoMotivo = "";
+let naoPagoTodoPedido = true;
+let naoPagoItens = new Set();
+
 /* Mesma lista usada na venda manual e no filtro do dashboard — a divisao nao
  * inventa forma nova, so reparte entre as que a casa ja usa no dia a dia. */
 const FORMAS_PAGAMENTO_DIVISAO = ["Dinheiro", "Pix", "Cartão"];
@@ -293,7 +303,9 @@ function linhaDetalheItem(item, pedido, editavel) {
       el("strong", {}, item.gift ? `${item.qty}x ${item.name}` : item.name),
       item.gift
         ? el("span.gift-tag", {}, "Brinde · Leve e ganhe")
-        : el("span", {}, `${reais(item.price)} cada`)
+        : item.cortesia
+          ? el("span.gift-tag", {}, "Cortesia")
+          : el("span", {}, `${reais(item.price)} cada`)
     ),
     podeAjustarQtd
       ? el("div.qty-stepper", {},
@@ -308,7 +320,7 @@ function linhaDetalheItem(item, pedido, editavel) {
           }, "+")
         )
       : el("span.qty-fixa", {}, `${item.qty}x`),
-    el("strong", {}, item.gift ? "Grátis" : reais(Number(item.price || 0) * Number(item.qty || 0))),
+    el("strong", {}, item.gift ? "Grátis" : item.cortesia ? "Cortesia" : reais(Number(item.price || 0) * Number(item.qty || 0))),
     podeRemover
       ? el("button.order-item-remove", {
           type: "button", title: "Remover este item do pedido",
@@ -400,6 +412,60 @@ function conteudoDivisaoPagamento(pedido) {
   );
 }
 
+/* So redesenha esse bloco sozinho, mesma ideia de redesenharDivisaoPagamento. */
+function redesenharNaoPago() {
+  const bloco = $("#nao-pago-block");
+  if (!bloco || !pedidoDetalheAtualCache) return;
+  render(bloco, naoPagoAberto ? conteudoNaoPagoForm(pedidoDetalheAtualCache) : null);
+}
+
+function conteudoNaoPagoForm(pedido) {
+  return el("div.split-payment-form", {},
+    el("strong", {}, "Pedido não pago"),
+    el("div.nao-pago-tipo", {},
+      el("label.check-field", {},
+        el("input", {
+          type: "radio", name: "nao-pago-tipo", value: "prejuizo", checked: naoPagoTipo === "prejuizo",
+          dataset: { acao: "nao-pago-tipo" }
+        }),
+        "Prejuízo — cliente não pagou"
+      ),
+      el("label.check-field", {},
+        el("input", {
+          type: "radio", name: "nao-pago-tipo", value: "cortesia", checked: naoPagoTipo === "cortesia",
+          dataset: { acao: "nao-pago-tipo" }
+        }),
+        "Cortesia — a casa decidiu não cobrar"
+      )
+    ),
+    naoPagoTipo === "cortesia"
+      ? el("label.check-field", {},
+          el("input", { type: "checkbox", checked: naoPagoTodoPedido, dataset: { acao: "nao-pago-todo-pedido" } }),
+          "Pedido todo"
+        )
+      : null,
+    naoPagoTipo === "cortesia" && !naoPagoTodoPedido
+      ? el("div.cortesia-itens", {}, pedido.items.filter(item => !item.gift).map(item =>
+          el("label.check-field", {},
+            el("input", {
+              type: "checkbox", checked: naoPagoItens.has(item.itemId),
+              dataset: { acao: "nao-pago-item", itemId: String(item.itemId) }
+            }),
+            `${item.qty}x ${item.name} — ${reais(item.price * item.qty)}`
+          )
+        ))
+      : null,
+    el("textarea", {
+      placeholder: "Motivo (obrigatório e fica registrado)...", value: naoPagoMotivo,
+      dataset: { acao: "nao-pago-motivo" }
+    }),
+    el("div.split-payment-actions", {},
+      el("button.primary", { type: "button", dataset: { acao: "nao-pago-confirmar", id: pedido.id } }, "Confirmar"),
+      el("button.secondary", { type: "button", dataset: { acao: "nao-pago-cancelar" } }, "Cancelar")
+    )
+  );
+}
+
 /* Exportada porque o Dashboard tambem abre este mesmo modal a partir da
  * lista "Todas as vendas" — uma venda de dias atras pode nao estar em
  * estado.pedidos (o painel so mantem os pedidos recentes em memoria), entao
@@ -423,6 +489,11 @@ export async function abrirDetalhePedido(id) {
   buscaAdicionarItem = "";
   divisaoPagamentoAberta = false;
   divisaoPagamentoLinhas = [];
+  naoPagoAberto = false;
+  naoPagoTipo = "prejuizo";
+  naoPagoMotivo = "";
+  naoPagoTodoPedido = true;
+  naoPagoItens = new Set();
   /* So cancelado fica travado — pedido entregue tambem pode ganhar ou perder
    * item, e a correcao de "esqueceu de lancar" ou "trocou o produto" depois
    * que o cliente ja levou. */
@@ -460,12 +531,15 @@ export async function abrirDetalhePedido(id) {
     pedido.payment === "Não pago" && pedido.naoPagoReason
       ? el("p.order-note.danger-text", {}, el("strong", {}, "Motivo do não pagamento: "), pedido.naoPagoReason)
       : null,
+    pedido.cortesiaValue > 0
+      ? el("p.order-note", {}, el("strong", {}, `Cortesia (${reais(pedido.cortesiaValue)}): `), pedido.cortesiaReason)
+      : null,
     el("div.order-detail-actions", {},
       pedido.status === "entregue" && pedido.payment !== "Não pago"
         ? el("button.danger", {
-            type: "button", title: "O produto já saiu e o dinheiro não chegou",
-            dataset: { acao: "marcar-nao-pago-pedido", id: pedido.id }
-          }, "Marcar como não pago")
+            type: "button", title: "O produto já saiu e o dinheiro não chegou, ou foi cortesia da casa",
+            dataset: { acao: "abrir-nao-pago-form", id: pedido.id }
+          }, pedido.cortesiaValue > 0 ? "Editar não pago / cortesia" : "Pedido não pago")
         : null,
       editavel && pedido.payment !== "Não pago"
         ? el("button.secondary", {
@@ -475,6 +549,7 @@ export async function abrirDetalhePedido(id) {
         : null,
       el("button.secondary", { type: "button", dataset: { acao: "reimprimir-detalhe", id: pedido.id } }, "Reimprimir nota")
     ),
+    el("div.split-payment-block", { id: "nao-pago-block" }),
     el("div.split-payment-block", { id: "split-payment-block" })
   );
   if (editavel) atualizarListaAdicionarItem();
@@ -617,16 +692,66 @@ export function ligarPedidos() {
     const pedido = estado.pedidos.find(item => item.id === botao.dataset.id);
     if (pedido) imprimirAmbas(pedido);
   });
-  delegar($("#order-detail-body"), "click", "[data-acao='marcar-nao-pago-pedido']", async (_e, botao) => {
-    const motivo = (prompt("O que aconteceu? (obrigatório e fica registrado):", "") ?? "").trim();
-    if (!motivo) return toastFalha(new Error("Informe o motivo para marcar como não pago."), "Pagamento");
+  delegar($("#order-detail-body"), "click", "[data-acao='abrir-nao-pago-form']", () => {
+    naoPagoAberto = true;
+    naoPagoTipo = "prejuizo";
+    naoPagoMotivo = "";
+    naoPagoTodoPedido = true;
+    naoPagoItens = new Set();
+    redesenharNaoPago();
+  });
+
+  delegar($("#order-detail-body"), "click", "[data-acao='nao-pago-cancelar']", () => {
+    naoPagoAberto = false;
+    redesenharNaoPago();
+  });
+
+  delegar($("#order-detail-body"), "change", "[data-acao='nao-pago-tipo']", (_e, campo) => {
+    naoPagoTipo = campo.value;
+    redesenharNaoPago();
+  });
+
+  delegar($("#order-detail-body"), "change", "[data-acao='nao-pago-todo-pedido']", (_e, campo) => {
+    naoPagoTodoPedido = campo.checked;
+    redesenharNaoPago();
+  });
+
+  delegar($("#order-detail-body"), "change", "[data-acao='nao-pago-item']", (_e, campo) => {
+    const itemId = Number(campo.dataset.itemId);
+    if (campo.checked) naoPagoItens.add(itemId);
+    else naoPagoItens.delete(itemId);
+  });
+
+  delegar($("#order-detail-body"), "input", "[data-acao='nao-pago-motivo']", (_e, campo) => {
+    naoPagoMotivo = campo.value;
+  });
+
+  delegar($("#order-detail-body"), "click", "[data-acao='nao-pago-confirmar']", async (_e, botao) => {
+    const motivo = naoPagoMotivo.trim();
+    if (!motivo) return toastFalha(new Error("Informe o motivo."), "Pagamento");
+    if (naoPagoTipo === "cortesia" && !naoPagoTodoPedido && naoPagoItens.size === 0) {
+      return toastFalha(new Error("Selecione o pedido todo ou ao menos um item."), "Cortesia");
+    }
+
+    botao.disabled = true;
     try {
-      await apiPedidos.definirPagamento(botao.dataset.id, "Não pago", motivo);
+      if (naoPagoTipo === "prejuizo") {
+        await apiPedidos.definirPagamento(botao.dataset.id, "Não pago", motivo);
+      } else {
+        await apiPedidos.definirCortesia(botao.dataset.id, {
+          todoPedido: naoPagoTodoPedido,
+          itemIds: naoPagoTodoPedido ? [] : [...naoPagoItens],
+          motivo
+        });
+      }
+      naoPagoAberto = false;
       await carregar("pedidos");
       abrirDetalhePedido(botao.dataset.id);
-      toast("Pedido marcado como não pago.");
+      toast(naoPagoTipo === "prejuizo" ? "Pedido marcado como não pago." : "Cortesia registrada.");
     } catch (erro) {
-      toastFalha(erro);
+      toastFalha(erro, naoPagoTipo === "prejuizo" ? "Pagamento" : "Cortesia");
+    } finally {
+      botao.disabled = false;
     }
   });
 

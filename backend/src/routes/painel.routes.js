@@ -16,7 +16,8 @@ import { paramsId, paramsIdItem, paramsNumero, paramsParProdutos } from "../sche
 import {
   criarPedidoManualSchema, mudarStatusSchema, cancelarPedidoSchema, motoboyPedidoSchema,
   listarPedidosSchema, relatorioSchema, localizacaoMotoboySchema, excluirPedidoSchema,
-  adicionarItensPedidoSchema, definirPagamentoSchema, ajustarQuantidadeItemSchema, dividirPagamentoSchema
+  adicionarItensPedidoSchema, definirPagamentoSchema, ajustarQuantidadeItemSchema, dividirPagamentoSchema,
+  definirCortesiaSchema
 } from "../schemas/pedido.schema.js";
 import { abrirCaixaSchema, fecharCaixaSchema, listarFechamentosSchema, excluirFechamentoSchema } from "../schemas/caixa.schema.js";
 import {
@@ -54,6 +55,7 @@ rotasPainel.post("/pedidos/:id/cancelar", EDIT_PEDIDOS, validarParams(paramsId),
 rotasPainel.patch("/pedidos/:id/motoboy", EDIT_PEDIDOS, validarParams(paramsId), validarCorpo(motoboyPedidoSchema), pedidosController.definirMotoboy);
 rotasPainel.patch("/pedidos/:id/pagamento", EDIT_PEDIDOS, validarParams(paramsId), validarCorpo(definirPagamentoSchema), pedidosController.definirPagamento);
 rotasPainel.post("/pedidos/:id/pagamento/dividir", EDIT_PEDIDOS, validarParams(paramsId), validarCorpo(dividirPagamentoSchema), pedidosController.dividirPagamento);
+rotasPainel.post("/pedidos/:id/cortesia", EDIT_PEDIDOS, validarParams(paramsId), validarCorpo(definirCortesiaSchema), pedidosController.definirCortesia);
 rotasPainel.post("/pedidos", EDIT_PEDIDOS, validarCorpo(criarPedidoManualSchema), pedidosController.criarManual);
 /* Apagar e diferente de cancelar: some com o registro. So o admin, e mesmo
  * logado precisa confirmar a propria senha de novo (corpo da requisicao). */

@@ -79,12 +79,13 @@ export const relatoriosService = {
     const agrupadoPorMes = periodo === "tudo";
 
     const [
-      resumo, canceladosResumo, naoPagoResumo, emFalta, porHora, porDia, porCanal, porPagamento, porModalidade, porCategoria,
+      resumo, canceladosResumo, naoPagoResumo, cortesiaResumo, emFalta, porHora, porDia, porCanal, porPagamento, porModalidade, porCategoria,
       porMotoboy, maisVendidos, menosVendidos, vendas, cancelados, taxaServico
     ] = await Promise.all([
       pedidosRepo.resumoPeriodo(filtro),
       pedidosRepo.resumoCancelados(filtro),
       pedidosRepo.resumoNaoPago(filtro),
+      pedidosRepo.resumoCortesia(filtro),
       produtosRepo.emFalta(),
       pedidosRepo.porHora(filtro),
       agrupadoPorMes ? pedidosRepo.porMes(filtro) : pedidosRepo.porDia(filtro),
@@ -111,7 +112,9 @@ export const relatoriosService = {
         cancelados: canceladosResumo.pedidos,
         valorCancelado: Math.round(canceladosResumo.valor * 100) / 100,
         naoPagos: naoPagoResumo.pedidos,
-        valorNaoPago: Math.round(naoPagoResumo.valor * 100) / 100
+        valorNaoPago: Math.round(naoPagoResumo.valor * 100) / 100,
+        cortesias: cortesiaResumo.pedidos,
+        valorCortesia: Math.round(cortesiaResumo.valor * 100) / 100
       },
       taxaServico: {
         total: Math.round(taxaServico.total * 100) / 100,
@@ -169,6 +172,10 @@ export const relatoriosService = {
             ? pedido.paymentSplit.map(parte => `${parte.forma}: ${Number(parte.valor).toFixed(2)}`).join(" + ")
             : pedido.payment,
           itens: pedido.items.map(item => `${item.qty}x ${item.name}`).join("; "),
+          /* Total continua o valor cheio do pedido (o que saiu da cozinha) —
+           * cortesia fica numa coluna a parte pra quem confere ver quanto
+           * daquele total nao virou dinheiro de verdade, e por que. */
+          cortesia: pedido.cortesiaValue > 0 ? `${pedido.cortesiaReason} (${pedido.cortesiaValue.toFixed(2)})` : "",
           subtotal: pedido.subtotal,
           desconto: pedido.discount,
           taxaEntrega: pedido.deliveryFee,

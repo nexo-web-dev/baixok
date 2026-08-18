@@ -98,6 +98,18 @@ export const dividirPagamentoSchema = z.object({
   }).strict()).min(2, "Informe pelo menos duas formas de pagamento.").max(6)
 }).strict();
 
+/* Cortesia: pedido todo ou so alguns itens (itemId de pedido_itens), sempre
+ * com motivo — e o que fica na auditoria do "por que" esse dinheiro nao
+ * entrou. Lista vazia so e valida quando todoPedido = true. */
+export const definirCortesiaSchema = z.object({
+  itemIds: z.array(z.coerce.number().int().positive()).max(LIMITES.ITENS_POR_PEDIDO).default([]),
+  todoPedido: z.boolean().default(false),
+  motivo: texto(200, { obrigatorio: true })
+}).strict().refine(
+  dados => dados.todoPedido || dados.itemIds.length > 0,
+  { message: "Selecione o pedido todo ou ao menos um item.", path: ["itemIds"] }
+);
+
 export const definirPagamentoSchema = z.object({
   pagamento: texto(60, { obrigatorio: true }),
   /* Obrigatorio so quando pagamento = "Não pago" — checado no service, nao

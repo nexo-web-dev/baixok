@@ -58,6 +58,10 @@ export const pedidosController = {
     const { id } = req.validado.params;
     res.json({ pedido: await pedidosService.definirPagamentoDividido(id, req.validado.body.componentes, contexto(req)) });
   },
+  async definirCortesia(req, res) {
+    const { id } = req.validado.params;
+    res.json({ pedido: await pedidosService.definirCortesia(id, req.validado.body, contexto(req)) });
+  },
   async marcarImpresso(req, res) {
     await pedidosService.marcarImpresso(req.validado.params.id);
     res.json({ ok: true });

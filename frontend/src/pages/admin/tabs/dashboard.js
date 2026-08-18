@@ -329,6 +329,11 @@ export async function desenharDashboard() {
     metrica("Prejuízo sem pagamento", reais(resumo.valorNaoPago || 0),
       (resumo.naoPagos || 0) ? `${resumo.naoPagos} pedido(s) · fora do faturamento` : "nenhum no período",
       (resumo.valorNaoPago || 0) ? "alert-danger" : ""),
+    /* Cortesia nao e prejuizo (a casa deu de proposito) — por isso sem o
+     * alert-danger que o "Prejuízo sem pagamento" usa ao lado. */
+    metrica("Cortesias", reais(resumo.valorCortesia || 0),
+      (resumo.cortesias || 0) ? `${resumo.cortesias} pedido(s) · fora do faturamento` : "nenhuma no período",
+      (resumo.valorCortesia || 0) ? "alert-copper" : ""),
     metrica("Descontos", reais(resumo.descontos), resumo.taxasEntrega ? `taxas entrega ${reais(resumo.taxasEntrega)}` : null),
     metrica("Estoque crítico", String(estoqueBaixo.length), estoqueBaixo.length ? "itens no mínimo" : "tudo certo",
       estoqueBaixo.length ? "alert-copper" : "")

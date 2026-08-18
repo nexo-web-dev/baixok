@@ -52,12 +52,28 @@ async function calcularNaoPagos(desde, ate) {
   };
 }
 
+/* Mesma ideia de calcularNaoPagos, mas pra cortesia: separado do que fica
+ * gravado no fechamento porque tambem pode ser descoberto/corrigido depois. */
+async function calcularCortesias(desde, ate) {
+  const lista = await pedidosRepo.listarCortesias({ desde, ate });
+  return {
+    cortesias: lista.length,
+    valorCortesia: arredondar(lista.reduce((soma, pedido) => soma + Number(pedido.valor || 0), 0)),
+    cortesiasLista: lista.map(pedido => ({
+      cliente: pedido.cliente || "Cliente",
+      valor: arredondar(pedido.valor),
+      motivo: pedido.motivo || ""
+    }))
+  };
+}
+
 async function resumoFechamento(caixa, fechadoEm = new Date()) {
   const filtro = { desde: paraSql(new Date(caixa.abertoEm)), ate: paraSql(fechadoEm) };
-  const [resumo, cancelados, naoPago, pagamentos, canais, modalidades, motoboys] = await Promise.all([
+  const [resumo, cancelados, naoPago, cortesia, pagamentos, canais, modalidades, motoboys] = await Promise.all([
     pedidosRepo.resumoPeriodo(filtro),
     pedidosRepo.resumoCancelados(filtro),
     calcularNaoPagos(filtro.desde, filtro.ate),
+    calcularCortesias(filtro.desde, filtro.ate),
     pedidosRepo.agruparPor("pagamento", filtro),
     pedidosRepo.agruparPor("canal", filtro),
     pedidosRepo.agruparPor("modalidade", filtro),
@@ -79,6 +95,9 @@ async function resumoFechamento(caixa, fechadoEm = new Date()) {
     calotes: naoPago.calotes,
     valorCalote: naoPago.valorCalote,
     naoPagosLista: naoPago.naoPagosLista,
+    cortesias: cortesia.cortesias,
+    valorCortesia: cortesia.valorCortesia,
+    cortesiasLista: cortesia.cortesiasLista,
     entregas: contagem.entregas,
     retiradas: contagem.retiradas,
     mesas: contagem.mesas,
@@ -149,6 +168,17 @@ function linhasNaoPagos(linhas) {
     <tr>
       <td>${escapar(linha.cliente)}</td>
       <td class="num money">${moeda(linha.total)}</td>
+      <td>${escapar(linha.motivo || "-")}</td>
+    </tr>
+  `).join("");
+}
+
+function linhasCortesias(linhas) {
+  if (!linhas?.length) return "<tr><td colspan=\"3\" class=\"empty-row\">Nenhuma cortesia neste caixa.</td></tr>";
+  return linhas.map(linha => `
+    <tr>
+      <td>${escapar(linha.cliente)}</td>
+      <td class="num money">${moeda(linha.valor)}</td>
       <td>${escapar(linha.motivo || "-")}</td>
     </tr>
   `).join("");
@@ -376,9 +406,10 @@ function htmlRelatorio(caixa) {
     <main>
       <p class="guide">
         <strong>Como ler este relatório:</strong> "Faturamento" é só o dinheiro que realmente entrou no período.
-        Pedidos <strong>cancelados</strong> e <strong>não pagos</strong> ficam de fora dessa conta — cancelado é o que
-        nunca chegou a sair da loja; não pago é quando o produto saiu mas o cliente não pagou (cartão recusado,
-        cliente sumiu etc.). A lista de cada um, com o motivo, está nas tabelas mais abaixo.
+        Pedidos <strong>cancelados</strong>, <strong>não pagos</strong> e <strong>cortesias</strong> ficam de fora dessa
+        conta — cancelado é o que nunca chegou a sair da loja; não pago é quando o produto saiu mas o cliente não pagou
+        (cartão recusado, cliente sumiu etc.); cortesia é quando a própria casa decidiu não cobrar, de propósito.
+        A lista de cada um, com o motivo, está nas tabelas mais abaixo.
       </p>
       <section class="grid">
         <div class="metric green"><span>Total pedidos</span><strong>${caixa.pedidos}</strong></div>
@@ -386,6 +417,7 @@ function htmlRelatorio(caixa) {
         <div class="metric money"><span>Ticket médio</span><strong>${moeda(caixa.ticketMedio)}</strong></div>
         <div class="metric danger"><span>Cancelados</span><strong>${caixa.cancelados}</strong></div>
         <div class="metric danger"><span>Não pagos</span><strong>${caixa.calotes || 0}</strong></div>
+        <div class="metric"><span>Cortesias</span><strong>${caixa.cortesias || 0}</strong></div>
         <div class="metric"><span>Entregas</span><strong>${caixa.entregas}</strong></div>
         <div class="metric"><span>Retiradas</span><strong>${caixa.retiradas}</strong></div>
         <div class="metric"><span>Mesas</span><strong>${caixa.mesas}</strong></div>
@@ -416,6 +448,11 @@ function htmlRelatorio(caixa) {
         <div class="table-card full">
           <div class="section-title"><h2>Pedidos não pagos</h2><span>prejuízo · ${moeda(caixa.valorCalote)}</span></div>
           <table><thead><tr><th>Cliente</th><th class="num">Valor</th><th>Motivo</th></tr></thead><tbody>${linhasNaoPagos(caixa.naoPagosLista)}</tbody></table>
+        </div>
+
+        <div class="table-card full">
+          <div class="section-title"><h2>Cortesias</h2><span>${moeda(caixa.valorCortesia)}</span></div>
+          <table><thead><tr><th>Cliente</th><th class="num">Valor</th><th>Motivo</th></tr></thead><tbody>${linhasCortesias(caixa.cortesiasLista)}</tbody></table>
         </div>
       </section>
 
@@ -511,6 +548,7 @@ export const caixaService = {
      * quando o caixa fechou. "pedidos" e reconstituido pra bater: paga a
      * parte que ja estava paga (congelada) mais os nao-pagos de agora. */
     const naoPago = await calcularNaoPagos(paraSql(new Date(caixa.abertoEm)), paraSql(new Date(caixa.fechadoEm)));
+    const cortesia = await calcularCortesias(paraSql(new Date(caixa.abertoEm)), paraSql(new Date(caixa.fechadoEm)));
     const pedidosPagos = caixa.pedidos - caixa.calotes;
 
     return htmlRelatorio({
@@ -518,7 +556,10 @@ export const caixaService = {
       pedidos: pedidosPagos + naoPago.calotes,
       calotes: naoPago.calotes,
       valorCalote: naoPago.valorCalote,
-      naoPagosLista: naoPago.naoPagosLista
+      naoPagosLista: naoPago.naoPagosLista,
+      cortesias: cortesia.cortesias,
+      valorCortesia: cortesia.valorCortesia,
+      cortesiasLista: cortesia.cortesiasLista
     });
   },
 

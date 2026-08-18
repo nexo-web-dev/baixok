@@ -173,7 +173,7 @@ function desenharProdutos() {
     ? lista.map(produto =>
         el("button.manual-product", { type: "button", dataset: { acao: "add-item", id: produto.id } },
           produto.image
-            ? el("img.manual-thumb", { src: produto.image, alt: "", loading: "lazy" })
+            ? el("img.manual-thumb", { src: produto.image, alt: "", loading: "lazy", decoding: "async" })
             : el("span.manual-thumb.no-photo", {}, "Sem foto"),
           el("span.manual-name", {}, produto.name),
           el("span.manual-price", {}, reais(precoEfetivo(produto))),
@@ -196,7 +196,7 @@ function desenharCarrinho() {
         ...rascunho.itens.map(item =>
           el("div.manual-line", {},
             item.image
-              ? el("img.manual-thumb", { src: item.image, alt: "", loading: "lazy" })
+              ? el("img.manual-thumb", { src: item.image, alt: "", loading: "lazy", decoding: "async" })
               : el("span.manual-thumb.no-photo", {}, "Sem foto"),
             el("span", {}, `${item.qty}x ${item.name}`),
             el("span", {}, reais(item.price * item.qty)),

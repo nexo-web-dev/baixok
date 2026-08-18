@@ -688,6 +688,39 @@ export const pedidosService = {
     return this.buscar(id);
   },
 
+  /* Cortesia e o outro lado do mesmo botao de "pedido nao pago": a diferenca
+   * e que aqui foi a CASA que decidiu nao cobrar (presente), nao o cliente que
+   * sumiu sem pagar. Por isso nao mexe em `pagamento` — o pedido continua com
+   * a forma normal — e pode ser so parte dos itens, nao o pedido inteiro. */
+  async definirCortesia(id, { itemIds, todoPedido, motivo }, { usuario, ip }) {
+    const atual = await this.buscar(id);
+    if (atual.status === "cancelado") throw conflito("Pedido cancelado não tem cortesia pra marcar.");
+
+    const idsValidos = new Set(atual.items.map(item => item.itemId));
+    const alvos = todoPedido ? [...idsValidos] : [...new Set(itemIds)];
+    for (const itemId of alvos) {
+      if (!idsValidos.has(itemId)) throw new ErroApp("Item não pertence a este pedido.", 400, "item_invalido");
+    }
+    if (!alvos.length) throw new ErroApp("Selecione o pedido todo ou ao menos um item.", 400, "cortesia_sem_item");
+
+    const motivoLimpo = String(motivo || "").trim();
+    if (!motivoLimpo) throw new ErroApp("Informe o motivo da cortesia.", 400, "motivo_obrigatorio");
+
+    const pedido = await pedidosRepo.definirCortesia(id, alvos, motivoLimpo);
+
+    await auditoriaRepo.registrar({
+      usuarioId: usuario.id, usuario: usuario.usuario, acao: "pedido_cortesia",
+      entidade: "pedido", entidadeId: id,
+      detalhes: {
+        motivo: motivoLimpo, todoPedido: Boolean(todoPedido),
+        itens: alvos.length, valorCortesia: pedido.cortesiaValue
+      },
+      ip
+    });
+    publicar("pedidos", [CANAL.OPERACAO, CANAL.TELAO]);
+    return pedido;
+  },
+
   /* Pedido pago em mais de uma forma (parte cartao, parte Pix etc.) — grava
    * cada parcela em pedido_pagamentos e marca pedidos.pagamento = "Dividido",
    * pro resto do sistema saber que precisa ir atras da quebra por forma em

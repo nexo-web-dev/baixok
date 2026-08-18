@@ -5,7 +5,7 @@
  * configuracao de entrega — nao entra neste bundle e portanto nao chega ao
  * aparelho de quem esta so pedindo uma pizza. */
 import "../../styles/index.css";
-import { $, el, render, delegar, ligarModal, mostrar } from "../../utils/dom.js";
+import { $, el, render, delegar, ligarModal, mostrar, debounce } from "../../utils/dom.js";
 import { toast, toastFalha } from "../../components/toast.js";
 import { apiPublica } from "../../services/api.js";
 import { conectarEventos } from "../../services/realtime.js";
@@ -222,14 +222,10 @@ function telaPequena() {
   return window.matchMedia?.("(max-width: 900px)").matches ?? window.innerWidth <= 900;
 }
 
-let buscaFrame = null;
-function agendarBusca() {
-  if (buscaFrame) cancelAnimationFrame(buscaFrame);
-  buscaFrame = requestAnimationFrame(() => {
-    buscaFrame = null;
-    redesenharGradeAtual();
-  });
-}
+/* Redesenhar a grade inteira a cada tecla pesa num catalogo grande — o
+ * mesmo debounce usado nas buscas do painel, so que aqui e o cliente no
+ * proprio celular quem sente. */
+const agendarBusca = debounce(() => redesenharGradeAtual(), 150);
 
 function abrirCarrinho({ forcar = false } = {}) {
   document.body.classList.add("cart-has-items");
@@ -329,7 +325,7 @@ function abrirDetalhesProduto(id) {
   const promocional = produto.emPromocao && produto.precoOriginal > produto.price;
   render(alvo,
     el("div.product-detail", {},
-      el("div.product-detail-media", {}, foto(produto, produto.name)),
+      el("div.product-detail-media", {}, foto(produto, produto.name, { prioridade: true })),
       el("div.product-detail-info", {},
         el("span.eyebrow", {}, produto.badge || rotuloCategoria(produto.category) || "Item"),
         el("h2#product-detail-title", {}, produto.name),
