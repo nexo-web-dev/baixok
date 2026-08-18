@@ -30,10 +30,17 @@ const paraSql = data => data.toISOString().replace("T", " ").slice(0, 19);
 export function resolverPeriodo({ periodo, desde, ate }) {
   const agora = new Date();
 
+  /* "-03:00" explicito e obrigatorio aqui: sem ele, "2026-08-17 00:00:00" vai
+   * pro Postgres sem fuso nenhum, e o ?::timestamptz interpreta como UTC —
+   * meia-noite em Brasilia vira 21h do dia anterior, e pedido feito depois
+   * das 21h de hoje ficava de fora do proprio dia de hoje. O restante do
+   * sistema nunca cai nessa pegadinha porque monta a data a partir de um
+   * Date() de verdade (paraSql), nao de texto digitado pela pessoa. Fixo em
+   * -03:00 porque o Brasil nao tem mais horario de verao desde 2019. */
   if (periodo === "personalizado" && desde && ate) {
     return {
-      desde: `${desde} 00:00:00`,
-      ate: `${ate} 23:59:59`,
+      desde: `${desde}T00:00:00-03:00`,
+      ate: `${ate}T23:59:59-03:00`,
       rotulo: `${desde} a ${ate}`
     };
   }
