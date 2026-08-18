@@ -21,6 +21,10 @@ let buscaAdicionarItem = "";
 let divisaoPagamentoAberta = false;
 let divisaoPagamentoLinhas = [];
 
+/* Mesma lista usada na venda manual e no filtro do dashboard — a divisao nao
+ * inventa forma nova, so reparte entre as que a casa ja usa no dia a dia. */
+const FORMAS_PAGAMENTO_DIVISAO = ["Dinheiro", "Pix", "Cartão"];
+
 const normalizarBuscaItem = valor => String(valor || "")
   .normalize("NFD")
   .replace(/\p{Diacritic}/gu, "")
@@ -369,10 +373,12 @@ function conteudoDivisaoPagamento(pedido) {
     el("div.split-payment-rows", {},
       divisaoPagamentoLinhas.map((linha, indice) =>
         el("div.split-payment-row", {},
-          el("input", {
-            type: "text", placeholder: "Forma (ex: Cartão)", value: linha.forma,
-            dataset: { acao: "split-forma", indice: String(indice) }
-          }),
+          el("select", { dataset: { acao: "split-forma", indice: String(indice) } },
+            el("option", { value: "" }, "Selecione..."),
+            ...FORMAS_PAGAMENTO_DIVISAO.map(forma =>
+              el("option", { value: forma, selected: linha.forma === forma }, forma)
+            )
+          ),
           el("input", {
             type: "number", step: "0.01", min: "0", placeholder: "Valor", value: linha.valor,
             dataset: { acao: "split-valor", indice: String(indice) }
@@ -711,7 +717,7 @@ export function ligarPedidos() {
     redesenharDivisaoPagamento();
   });
 
-  delegar($("#order-detail-body"), "input", "[data-acao='split-forma']", (_e, campo) => {
+  delegar($("#order-detail-body"), "change", "[data-acao='split-forma']", (_e, campo) => {
     const linha = divisaoPagamentoLinhas[Number(campo.dataset.indice)];
     if (linha) linha.forma = campo.value;
   });
