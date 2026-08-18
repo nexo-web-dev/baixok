@@ -470,7 +470,7 @@ function conteudoNaoPagoForm(pedido) {
  * lista "Todas as vendas" — uma venda de dias atras pode nao estar em
  * estado.pedidos (o painel so mantem os pedidos recentes em memoria), entao
  * busca na API quando nao acha localmente, em vez de simplesmente falhar. */
-export async function abrirDetalhePedido(id) {
+export async function abrirDetalhePedido(id, { abrirNaoPago = false } = {}) {
   let pedido = estado.pedidos.find(item => item.id === id);
   if (!pedido) {
     try {
@@ -553,6 +553,13 @@ export async function abrirDetalhePedido(id) {
     el("div.split-payment-block", { id: "split-payment-block" })
   );
   if (editavel) atualizarListaAdicionarItem();
+  /* Atalho pro botao "Marcar nao paga" do Dashboard: abre o pedido ja com o
+   * formulario de prejuizo/cortesia pronto, em vez de exigir um clique a
+   * mais so pra chegar nele de novo. */
+  if (abrirNaoPago && pedido.status === "entregue" && pedido.payment !== "Não pago") {
+    naoPagoAberto = true;
+    redesenharNaoPago();
+  }
   mostrar(modal, true);
 }
 

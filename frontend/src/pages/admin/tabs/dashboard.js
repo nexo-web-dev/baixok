@@ -539,20 +539,12 @@ export function ligarDashboard() {
   delegar($("#dashboard-sales"), "click", "[data-action='cancel-sale']", cancelarVenda);
   delegar($("#dashboard-unpaid"), "click", "[data-action='cancel-sale']", cancelarVenda);
 
-  const marcarVendaNaoPaga = async (_evento, botao) => {
+  /* Mesmo formulario de prejuizo/cortesia do modal "Ver pedido" — ver
+   * pedidos.js. Reaproveita em vez de duplicar aqui um segundo prompt() so
+   * de motivo, que nao dava a opcao de cortesia nem de item avulso. */
+  const marcarVendaNaoPaga = (_evento, botao) => {
     const linha = botao.closest(".sale-row");
-    if (!linha) return;
-    const motivo = (prompt("Motivo do não pagamento (obrigatório e fica registrado):", "") ?? "").trim();
-    if (!motivo) return toastFalha(new Error("Informe o motivo para marcar como não paga."), "Venda");
-    botao.disabled = true;
-    try {
-      await apiPedidos.definirPagamento(linha.dataset.id, "Não pago", motivo);
-      toastOk("Venda marcada como não paga.");
-      await desenharDashboard();
-    } catch (erro) {
-      toastFalha(erro, "Venda");
-      botao.disabled = false;
-    }
+    if (linha) abrirDetalhePedido(linha.dataset.id, { abrirNaoPago: true });
   };
   delegar($("#dashboard-sales"), "click", "[data-action='mark-unpaid-sale']", marcarVendaNaoPaga);
 
