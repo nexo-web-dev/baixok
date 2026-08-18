@@ -21,7 +21,7 @@ import {
 import { abrirCaixaSchema, fecharCaixaSchema, listarFechamentosSchema, excluirFechamentoSchema } from "../schemas/caixa.schema.js";
 import {
   produtoSchema, ajusteEstoqueSchema, reordenarProdutoSchema, reordenarProdutosSchema, promocaoSchema, cupomSchema,
-  promocaoBrindeSchema, comboSchema, combinacaoSaborSchema, fichaTecnicaSchema
+  promocaoBrindeSchema, comboSchema, combinacaoSaborSchema, ajustarCmvSchema
 } from "../schemas/catalogo.schema.js";
 import { insumoSchema, ajusteInsumoSchema } from "../schemas/insumo.schema.js";
 import { configEntregaSchema } from "../schemas/entrega.schema.js";
@@ -86,7 +86,7 @@ rotasPainel.delete("/produtos/:id", ADMIN, validarParams(paramsId), produtosCont
 rotasPainel.post("/produtos/:id/alternar", ADMIN, validarParams(paramsId), produtosController.alternarAtivo);
 rotasPainel.patch("/produtos/:id/estoque", EDIT_ESTOQUE, validarParams(paramsId), validarCorpo(ajusteEstoqueSchema), produtosController.ajustarEstoque);
 rotasPainel.patch("/produtos/:id/ordem", ADMIN, validarParams(paramsId), validarCorpo(reordenarProdutoSchema), produtosController.moverOrdem);
-rotasPainel.put("/produtos/:id/ficha-tecnica", ADMIN, validarParams(paramsId), validarCorpo(fichaTecnicaSchema), produtosController.definirFichaTecnica);
+rotasPainel.patch("/produtos/:id/cmv", ADMIN, validarParams(paramsId), validarCorpo(ajustarCmvSchema), produtosController.ajustarCmv);
 
 // -------------------------------------------------------------------- combos ---
 rotasPainel.get("/combos", combosController.listar);

@@ -56,55 +56,19 @@ function manterImagemAtual(id, imagem) {
   return valor.includes(simples) || valor.includes(cru);
 }
 
-function custoUnitarioInsumo(linha) {
-  return linha.qtd_pacote > 0 ? Number(linha.custo_pacote) / Number(linha.qtd_pacote) : 0;
-}
-
-function paraItemFicha(linha) {
-  const unitCost = custoUnitarioInsumo(linha);
-  const qty = Number(linha.quantidade);
-  return {
-    insumoId: linha.insumo_id,
-    insumoName: linha.insumo_nome,
-    unit: linha.insumo_unidade,
-    qty,
-    unitCost: Math.round(unitCost * 10000) / 10000,
-    cost: Math.round(unitCost * qty * 100) / 100
-  };
-}
-
-/* CMV do produto = soma do custo de cada linha da ficha tecnica. Sem ficha
- * tecnica cadastrada, cmv fica 0 — nao e erro, e "ainda nao calculado". */
-function comCmv(produto, recipe) {
-  const cmv = Math.round(recipe.reduce((total, item) => total + item.cost, 0) * 100) / 100;
+/* CMV direto no produto: peso do saco comprado, quanto custou e quanto uma
+ * porcao vendida usa — tudo em gramas pra dividir sem conversao. Sem os tres
+ * numeros preenchidos, fica tudo zero (ainda nao calculado, nao e erro). */
+function comCmv(produto) {
+  const rendimento = produto.cmvPortionG > 0 ? produto.cmvPackageWeightG / produto.cmvPortionG : 0;
+  const custoPorcao = rendimento > 0 ? produto.cmvPackageCost / rendimento : 0;
   return {
     ...produto,
-    recipe,
-    cmv,
-    cmvPct: produto.price > 0 ? Math.round((cmv / produto.price) * 10000) / 100 : 0
+    cmvYield: Math.round(rendimento * 10) / 10,
+    cmvRevenue: Math.round(rendimento * produto.price * 100) / 100,
+    cmv: Math.round(custoPorcao * 100) / 100,
+    cmvPct: produto.price > 0 ? Math.round((custoPorcao / produto.price) * 10000) / 100 : 0
   };
-}
-
-const SELECT_FICHA = `
-  SELECT pi.produto_id, pi.insumo_id, pi.quantidade, i.nome AS insumo_nome, i.unidade AS insumo_unidade,
-         i.custo_pacote, i.qtd_pacote
-    FROM produto_insumos pi
-    JOIN insumos i ON i.id = pi.insumo_id
-`;
-
-/* Uma consulta so para a ficha tecnica de todos os produtos da lista, em vez
- * de uma por produto — mesmo padrao de pedidosRepo.anexarItens. */
-async function anexarFichaTecnica(produtos) {
-  if (!produtos.length) return produtos;
-  const marcadores = produtos.map(() => "?").join(",");
-  const linhas = await todos(`${SELECT_FICHA} WHERE pi.produto_id IN (${marcadores}) ORDER BY pi.id`, produtos.map(p => p.id));
-
-  const porProduto = new Map();
-  for (const linha of linhas) {
-    if (!porProduto.has(linha.produto_id)) porProduto.set(linha.produto_id, []);
-    porProduto.get(linha.produto_id).push(paraItemFicha(linha));
-  }
-  return produtos.map(produto => comCmv(produto, porProduto.get(produto.id) || []));
 }
 
 let suporteDestaque = null;
@@ -138,6 +102,9 @@ const paraApi = linha => linha && ({
   saborPizza: doBanco(linha.sabor_pizza),
   badge: linha.selo,
   description: linha.descricao,
+  cmvPortionG: Number(linha.cmv_porcao_g || 0),
+  cmvPackageWeightG: Number(linha.cmv_saco_peso_g || 0),
+  cmvPackageCost: Number(linha.cmv_saco_custo || 0),
   createdAt: linha.criado_em,
   updatedAt: linha.atualizado_em
 });
@@ -145,7 +112,7 @@ const paraApi = linha => linha && ({
 export const produtosRepo = {
   async listar() {
     const destaque = await temDestaqueOrdem();
-    const produtos = (await todos(`
+    return (await todos(`
       SELECT id, nome, categoria, preco, estoque, estoque_min, ordem, ${destaque ? "destaque_ordem" : "0 AS destaque_ordem"},
              ativo, sabor_pizza,
              CASE
@@ -153,11 +120,11 @@ export const produtosRepo = {
                ELSE imagem
              END AS imagem,
              imagem LIKE 'data:image/%;base64,%' AS imagem_embutida,
-             selo, descricao, criado_em, atualizado_em
+             selo, descricao, criado_em, atualizado_em,
+             cmv_porcao_g, cmv_saco_peso_g, cmv_saco_custo
         FROM produtos
        ORDER BY ordem ASC, categoria, nome
-    `)).map(paraApi);
-    return anexarFichaTecnica(produtos);
+    `)).map(paraApi).map(comCmv);
   },
 
   /* Cardapio publico: so o que esta a venda, e sem estoque_min nem custo —
@@ -194,20 +161,16 @@ export const produtosRepo = {
 
   async buscar(id) {
     const produto = paraApi(await um("SELECT * FROM produtos WHERE id = ?", [id]));
-    if (!produto) return null;
-    const linhas = await todos(`${SELECT_FICHA} WHERE pi.produto_id = ? ORDER BY pi.id`, [id]);
-    return comCmv(produto, linhas.map(paraItemFicha));
+    return produto ? comCmv(produto) : null;
   },
 
-  async definirFichaTecnica(produtoId, itens) {
-    await alteradas("DELETE FROM produto_insumos WHERE produto_id = ?", [produtoId]);
-    if (!itens.length) return;
-    const valores = [];
-    const marcadores = itens.map(item => {
-      valores.push(produtoId, item.insumoId, item.qty);
-      return "(?, ?, ?)";
-    }).join(", ");
-    await alteradas(`INSERT INTO produto_insumos (produto_id, insumo_id, quantidade) VALUES ${marcadores}`, valores);
+  async ajustarCmv(id, dados) {
+    return comCmv(paraApi(await um(`
+      UPDATE produtos
+         SET cmv_porcao_g = ?, cmv_saco_peso_g = ?, cmv_saco_custo = ?, atualizado_em = now()
+       WHERE id = ?
+      RETURNING *
+    `, [dados.portionG, dados.packageWeightG, dados.packageCost, id])));
   },
 
   async imagemPublica(id) {
@@ -225,7 +188,7 @@ export const produtosRepo = {
     const ordem = produto.order || (await um("SELECT COALESCE(MAX(ordem), 0) + 1 AS proxima FROM produtos"))?.proxima || 1;
     const destaque = await temDestaqueOrdem();
     if (!destaque) {
-      return paraApi(await um(`
+      return comCmv(paraApi(await um(`
         INSERT INTO produtos (id, nome, categoria, preco, estoque, estoque_min, ordem, ativo, imagem, selo, descricao, sabor_pizza)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         RETURNING *
@@ -233,9 +196,9 @@ export const produtosRepo = {
         produto.id, produto.name, produto.category, produto.price,
         produto.stock, produto.minStock, ordem, paraBanco(produto.active),
         produto.image, produto.badge, produto.description, paraBanco(produto.saborPizza)
-      ]));
+      ])));
     }
-    return paraApi(await um(`
+    return comCmv(paraApi(await um(`
       INSERT INTO produtos (id, nome, categoria, preco, estoque, estoque_min, ordem, destaque_ordem, ativo, imagem, selo, descricao, sabor_pizza)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       RETURNING *
@@ -243,14 +206,14 @@ export const produtosRepo = {
       produto.id, produto.name, produto.category, produto.price,
       produto.stock, produto.minStock, ordem, produto.featuredOrder || 0, paraBanco(produto.active),
       produto.image, produto.badge, produto.description, paraBanco(produto.saborPizza)
-    ]));
+    ])));
   },
 
   async atualizar(id, produto) {
     const destaque = await temDestaqueOrdem();
     const preservarImagem = manterImagemAtual(id, produto.image);
     if (!destaque) {
-      return paraApi(await um(`
+      return comCmv(paraApi(await um(`
         UPDATE produtos
            SET nome = ?, categoria = ?, preco = ?, estoque = ?, estoque_min = ?, ordem = ?,
                ativo = ?, imagem = CASE WHEN ? = 1 THEN imagem ELSE ? END, selo = ?, descricao = ?,
@@ -262,9 +225,9 @@ export const produtosRepo = {
         produto.order || 9999,
         paraBanco(produto.active), preservarImagem ? 1 : 0, produto.image, produto.badge, produto.description,
         paraBanco(produto.saborPizza), id
-      ]));
+      ])));
     }
-    return paraApi(await um(`
+    return comCmv(paraApi(await um(`
       UPDATE produtos
          SET nome = ?, categoria = ?, preco = ?, estoque = ?, estoque_min = ?, ordem = ?, destaque_ordem = ?,
              ativo = ?, imagem = CASE WHEN ? = 1 THEN imagem ELSE ? END, selo = ?, descricao = ?,
@@ -276,7 +239,7 @@ export const produtosRepo = {
       produto.order || 9999, produto.featuredOrder || 0,
       paraBanco(produto.active), preservarImagem ? 1 : 0, produto.image, produto.badge, produto.description,
       paraBanco(produto.saborPizza), id
-    ]));
+    ])));
   },
 
   async definirDestaque(id, ordem) {
@@ -285,12 +248,12 @@ export const produtosRepo = {
     if (destaque > 0) {
       await alteradas("UPDATE produtos SET destaque_ordem = 0, atualizado_em = now() WHERE destaque_ordem = ? AND id <> ?", [destaque, id]);
     }
-    return paraApi(await um(`
+    return comCmv(paraApi(await um(`
       UPDATE produtos
          SET destaque_ordem = ?, atualizado_em = now()
        WHERE id = ?
       RETURNING *
-    `, [destaque, id]));
+    `, [destaque, id])));
   },
 
   async reordenarIds(ids) {

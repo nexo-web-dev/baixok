@@ -56,7 +56,7 @@ export const apiProdutos = {
   ajustarEstoque: (id, ajuste) => http.patch(`/painel/produtos/${id}/estoque`, ajuste),
   moverOrdem: (id, direction) => http.patch(`/painel/produtos/${id}/ordem`, { direction }),
   reordenar: ids => http.patch("/painel/produtos/ordem", { ids }),
-  definirFichaTecnica: (id, itens) => http.put(`/painel/produtos/${id}/ficha-tecnica`, { itens })
+  ajustarCmv: (id, dados) => http.patch(`/painel/produtos/${id}/cmv`, dados)
 };
 
 export const apiInsumos = {

@@ -1,8 +1,9 @@
-/* CMV: uma linha por produto, com a ficha tecnica (insumo + quantidade) ja
- * pronta pra preencher e o custo calculado na hora, sem precisar abrir o
- * cadastro do produto. O custo por unidade de cada insumo vem de Estoque
- * (preco pago no pacote / quanto ele rende) — aqui so se escolhe o insumo e
- * quanto uma porcao consome. */
+/* CMV: uma linha por produto do cardápio, agrupado por categoria.
+ *
+ * Sem catálogo de insumo pra escolher — direto no produto: quantas gramas vai
+ * numa porção vendida, quanto pesa o saco/pacote comprado e quanto custou. O
+ * resto (rendimento, faturamento possível, custo da porção, CMV%) sai sozinho,
+ * com o mesmo cálculo de "custo do saco / peso do saco * porção". */
 import { el, render, $, delegar } from "../../../utils/dom.js";
 import { reais } from "../../../utils/formato.js";
 import { rotuloCategoria } from "../../../utils/categorias.js";
@@ -11,8 +12,8 @@ import { estado, carregar } from "../store.js";
 import { toast, toastFalha } from "../../../components/toast.js";
 
 let busca = "";
-/* Rascunho local por produto — so vira gravado quando a pessoa clica em
- * Salvar naquela linha, senao cada tecla chamaria a API. */
+/* Rascunho local por produto (porcao em g, saco em kg pra digitar do jeito
+ * que a pessoa compra, custo em R$) — so vira gravado ao clicar Salvar. */
 const rascunhos = new Map();
 
 const normalizar = valor => String(valor || "")
@@ -22,49 +23,64 @@ const normalizar = valor => String(valor || "")
 
 function rascunhoDe(produto) {
   if (!rascunhos.has(produto.id)) {
-    rascunhos.set(produto.id, (produto.recipe || []).map(item => ({ insumoId: item.insumoId, qty: item.qty })));
+    rascunhos.set(produto.id, {
+      portionG: produto.cmvPortionG || "",
+      packageWeightKg: produto.cmvPackageWeightG ? produto.cmvPackageWeightG / 1000 : "",
+      packageCost: produto.cmvPackageCost || ""
+    });
   }
   return rascunhos.get(produto.id);
 }
 
-function opcoesInsumo(selecionado) {
-  return [
-    el("option", { value: "" }, "Insumo..."),
-    ...(estado.insumos || [])
-      .filter(insumo => insumo.active)
-      .map(insumo => el("option", {
-        value: String(insumo.id), selected: String(insumo.id) === String(selecionado)
-      }, `${insumo.name} (${insumo.unit || "un"})`))
-  ];
+/* Mesma conta em cima do rascunho (ainda nao salvo) pra mostrar o resultado
+ * na hora, sem precisar clicar em Salvar so pra ver quanto vai dar. */
+function calcular(rascunho, price) {
+  const portionG = Number(rascunho.portionG) || 0;
+  const packageWeightG = (Number(rascunho.packageWeightKg) || 0) * 1000;
+  const packageCost = Number(rascunho.packageCost) || 0;
+
+  const rendimento = portionG > 0 ? packageWeightG / portionG : 0;
+  const custoPorcao = rendimento > 0 ? packageCost / rendimento : 0;
+  return {
+    rendimento,
+    faturamento: rendimento * price,
+    custoPorcao,
+    cmvPct: price > 0 ? (custoPorcao / price) * 100 : 0
+  };
 }
 
-function custoDaLinha(item) {
-  const insumo = (estado.insumos || []).find(i => String(i.id) === String(item?.insumoId));
-  return insumo?.unitCost ? insumo.unitCost * Number(item.qty || 0) : 0;
+function textosResultado(resultado) {
+  if (!(resultado.rendimento > 0)) {
+    return { pill: "sem cálculo", linhas: [] };
+  }
+  return {
+    pill: `CMV ${resultado.cmvPct.toFixed(1)}%`,
+    linhas: [
+      `Rende ${resultado.rendimento % 1 === 0 ? resultado.rendimento : resultado.rendimento.toFixed(1)} porções`,
+      `Faturamento possível: ${reais(resultado.faturamento)}`,
+      `Custo da porção: ${reais(resultado.custoPorcao)}`
+    ]
+  };
 }
 
-function custoTotalDe(itens) {
-  return itens.reduce((total, item) => total + custoDaLinha(item), 0);
-}
+function atualizarLinha(produtoId) {
+  const linha = document.querySelector(`.cmv-row[data-id="${CSS.escape(produtoId)}"]`);
+  const produto = estado.produtos.find(item => item.id === produtoId);
+  const rascunho = rascunhos.get(produtoId);
+  if (!linha || !produto || !rascunho) return;
 
-function linhaReceita(produtoId, item, indice) {
-  return el("div.recipe-row", {},
-    el("select", { dataset: { acao: "cmv-insumo", produto: produtoId, indice: String(indice) } }, ...opcoesInsumo(item.insumoId)),
-    el("input", {
-      type: "number", min: "0", step: "0.001", placeholder: "Qtd",
-      value: item.qty ?? "", dataset: { acao: "cmv-qty", produto: produtoId, indice: String(indice) }
-    }),
-    el("span.small.faint.cmv-linha-custo", {}, custoDaLinha(item) > 0 ? reais(custoDaLinha(item)) : ""),
-    el("button.split-row-remove", {
-      type: "button", title: "Remover", dataset: { acao: "cmv-remover-linha", produto: produtoId, indice: String(indice) }
-    }, "×")
-  );
+  const resultado = calcular(rascunho, produto.price);
+  const { pill, linhas } = textosResultado(resultado);
+  const pillEl = linha.querySelector(".cmv-pill");
+  if (pillEl) pillEl.textContent = pill;
+  const resultadoEl = linha.querySelector(".cmv-result-linhas");
+  if (resultadoEl) render(resultadoEl, ...linhas.map(texto => el("span", {}, texto)));
 }
 
 function linhaProduto(produto) {
-  const itens = rascunhoDe(produto);
-  const custoTotal = custoTotalDe(itens);
-  const cmvPct = produto.price > 0 ? (custoTotal / produto.price) * 100 : 0;
+  const rascunho = rascunhoDe(produto);
+  const resultado = calcular(rascunho, produto.price);
+  const { pill, linhas } = textosResultado(resultado);
 
   return el("article.cmv-row", { dataset: { id: produto.id } },
     el("div.cmv-row-head", {},
@@ -73,12 +89,27 @@ function linhaProduto(produto) {
         el("span.small.faint", {}, rotuloCategoria(produto.category))
       ),
       el("span.price", {}, reais(produto.price)),
-      el("span.pill.cmv-pill", {}, custoTotal > 0 ? `CMV ${cmvPct.toFixed(1)}%` : "sem custo")
+      el("span.pill.cmv-pill", {}, pill)
     ),
-    el("div.recipe-rows", {}, itens.map((item, indice) => linhaReceita(produto.id, item, indice))),
-    el("div.recipe-actions", {},
-      el("button.secondary.small", { type: "button", dataset: { acao: "cmv-adicionar-linha", produto: produto.id } }, "+ insumo"),
-      el("span.money-text.cmv-custo-total", {}, custoTotal > 0 ? `Custo estimado: ${reais(custoTotal)}` : ""),
+    el("div.cmv-inputs", {},
+      el("label.field-col", {}, el("span.field-label", {}, "Porção vendida (g)"),
+        el("input", {
+          type: "number", min: "0", step: "1", placeholder: "Ex: 400", value: rascunho.portionG,
+          dataset: { acao: "cmv-porcao", produto: produto.id }
+        })),
+      el("label.field-col", {}, el("span.field-label", {}, "Peso do saco (kg)"),
+        el("input", {
+          type: "number", min: "0", step: "0.01", placeholder: "Ex: 2", value: rascunho.packageWeightKg,
+          dataset: { acao: "cmv-saco-peso", produto: produto.id }
+        })),
+      el("label.field-col", {}, el("span.field-label", {}, "Custo do saco (R$)"),
+        el("input", {
+          type: "number", min: "0", step: "0.01", placeholder: "Ex: 20,00", value: rascunho.packageCost,
+          dataset: { acao: "cmv-saco-custo", produto: produto.id }
+        }))
+    ),
+    el("div.cmv-result", {},
+      el("div.cmv-result-linhas", {}, ...linhas.map(texto => el("span", {}, texto))),
       el("button.primary.small", { type: "button", dataset: { acao: "cmv-salvar", produto: produto.id } }, "Salvar")
     )
   );
@@ -86,55 +117,48 @@ function linhaProduto(produto) {
 
 function produtosFiltrados() {
   const termo = normalizar(busca);
-  return [...estado.produtos]
-    .filter(produto => !termo || normalizar(`${produto.name} ${produto.category || ""}`).includes(termo))
-    .sort((a, b) =>
-      String(a.category || "").localeCompare(String(b.category || "")) || a.name.localeCompare(b.name));
+  return estado.produtos.filter(produto =>
+    !termo || normalizar(`${produto.name} ${produto.category || ""}`).includes(termo));
+}
+
+function produtosAgrupados(produtos) {
+  const grupos = new Map();
+  for (const produto of produtos) {
+    const categoria = String(produto.category || "Sem categoria").trim();
+    if (!grupos.has(categoria)) grupos.set(categoria, []);
+    grupos.get(categoria).push(produto);
+  }
+  return [...grupos].sort(([a], [b]) => a.localeCompare(b));
 }
 
 export function desenharCmv() {
   const alvo = $("#cmv-table");
   if (!alvo) return;
-  const produtos = produtosFiltrados();
-  render(alvo, produtos.length
-    ? produtos.map(linhaProduto)
+  const grupos = produtosAgrupados(produtosFiltrados());
+
+  render(alvo, grupos.length
+    ? grupos.map(([categoria, produtos]) =>
+        el("section.cmv-category-group", {},
+          el("h3", {}, rotuloCategoria(categoria)),
+          el("div.cmv-category-list", {}, produtos.map(linhaProduto))
+        ))
     : el("p.faint.pad", {}, "Nenhum produto encontrado."));
 }
 
-/* So atualiza os numeros da linha (nao redesenha o input) — senao a pessoa
- * perderia o foco a cada digito na quantidade. */
-function atualizarTotaisLinha(produtoId) {
-  const linha = document.querySelector(`.cmv-row[data-id="${CSS.escape(produtoId)}"]`);
-  if (!linha) return;
-  const produto = estado.produtos.find(item => item.id === produtoId);
-  const itens = rascunhos.get(produtoId) || [];
-
-  linha.querySelectorAll(".recipe-row").forEach((linhaDom, indice) => {
-    const span = linhaDom.querySelector(".cmv-linha-custo");
-    const custo = custoDaLinha(itens[indice]);
-    if (span) span.textContent = custo > 0 ? reais(custo) : "";
-  });
-
-  const custoTotal = custoTotalDe(itens);
-  const cmvPct = produto?.price > 0 ? (custoTotal / produto.price) * 100 : 0;
-  const pill = linha.querySelector(".cmv-pill");
-  if (pill) pill.textContent = custoTotal > 0 ? `CMV ${cmvPct.toFixed(1)}%` : "sem custo";
-  const totalSpan = linha.querySelector(".cmv-custo-total");
-  if (totalSpan) totalSpan.textContent = custoTotal > 0 ? `Custo estimado: ${reais(custoTotal)}` : "";
-}
-
 async function salvarLinha(produtoId, botao) {
-  const itens = (rascunhos.get(produtoId) || [])
-    .filter(item => item.insumoId && Number(item.qty) > 0)
-    .map(item => ({ insumoId: Number(item.insumoId), qty: Number(item.qty) }));
+  const rascunho = rascunhos.get(produtoId);
+  if (!rascunho) return;
 
   botao.disabled = true;
   try {
-    await apiProdutos.definirFichaTecnica(produtoId, itens);
+    await apiProdutos.ajustarCmv(produtoId, {
+      portionG: Number(rascunho.portionG) || 0,
+      packageWeightG: (Number(rascunho.packageWeightKg) || 0) * 1000,
+      packageCost: Number(rascunho.packageCost) || 0
+    });
     await carregar("produtos");
-    rascunhos.delete(produtoId);
     desenharCmv();
-    toast("Ficha técnica salva.");
+    toast("CMV salvo.");
   } catch (erro) {
     toastFalha(erro, "CMV");
   } finally {
@@ -151,29 +175,20 @@ export function ligarCmv() {
     desenharCmv();
   });
 
-  delegar(alvo, "click", "[data-acao='cmv-adicionar-linha']", (_e, botao) => {
-    const itens = rascunhos.get(botao.dataset.produto) || [];
-    itens.push({ insumoId: "", qty: "" });
-    rascunhos.set(botao.dataset.produto, itens);
-    desenharCmv();
+  delegar(alvo, "input", "[data-acao='cmv-porcao']", (_e, campo) => {
+    const rascunho = rascunhos.get(campo.dataset.produto);
+    if (rascunho) rascunho.portionG = campo.value;
+    atualizarLinha(campo.dataset.produto);
   });
-
-  delegar(alvo, "click", "[data-acao='cmv-remover-linha']", (_e, botao) => {
-    const itens = rascunhos.get(botao.dataset.produto);
-    if (itens) itens.splice(Number(botao.dataset.indice), 1);
-    desenharCmv();
+  delegar(alvo, "input", "[data-acao='cmv-saco-peso']", (_e, campo) => {
+    const rascunho = rascunhos.get(campo.dataset.produto);
+    if (rascunho) rascunho.packageWeightKg = campo.value;
+    atualizarLinha(campo.dataset.produto);
   });
-
-  delegar(alvo, "change", "[data-acao='cmv-insumo']", (_e, campo) => {
-    const item = rascunhos.get(campo.dataset.produto)?.[Number(campo.dataset.indice)];
-    if (item) item.insumoId = campo.value;
-    atualizarTotaisLinha(campo.dataset.produto);
-  });
-
-  delegar(alvo, "input", "[data-acao='cmv-qty']", (_e, campo) => {
-    const item = rascunhos.get(campo.dataset.produto)?.[Number(campo.dataset.indice)];
-    if (item) item.qty = campo.value;
-    atualizarTotaisLinha(campo.dataset.produto);
+  delegar(alvo, "input", "[data-acao='cmv-saco-custo']", (_e, campo) => {
+    const rascunho = rascunhos.get(campo.dataset.produto);
+    if (rascunho) rascunho.packageCost = campo.value;
+    atualizarLinha(campo.dataset.produto);
   });
 
   delegar(alvo, "click", "[data-acao='cmv-salvar']", (_e, botao) => salvarLinha(botao.dataset.produto, botao));

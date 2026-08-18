@@ -65,14 +65,12 @@ export const combinacaoSaborSchema = z.object({
   { message: "Escolha dois sabores diferentes.", path: ["produtoBId"] }
 );
 
-/* Ficha tecnica do produto: quais insumos e quanto de cada um uma porcao
- * vendida consome. Lista vazia e valida — e como se zera a ficha tecnica de
- * um produto (volta a nao ter CMV calculado). */
-export const fichaTecnicaSchema = z.object({
-  itens: z.array(z.object({
-    insumoId: z.coerce.number().int().positive(),
-    qty: z.coerce.number().finite("Quantidade invalida.").positive().max(999999)
-  }).strict()).max(20)
+/* CMV direto no produto: peso do saco comprado, quanto custou e quanto uma
+ * porcao vendida usa — tudo em gramas. Zero e valido (ainda nao calculado). */
+export const ajustarCmvSchema = z.object({
+  portionG: z.coerce.number().finite("Porção inválida.").min(0).max(999999).default(0),
+  packageWeightG: z.coerce.number().finite("Peso do pacote inválido.").min(0).max(999999).default(0),
+  packageCost: z.coerce.number().finite("Custo inválido.").min(0).max(999999).default(0)
 }).strict();
 
 export const reordenarProdutoSchema = z.object({

@@ -137,9 +137,9 @@ export const produtosController = {
   async emFalta(_req, res) {
     res.json({ produtos: await produtosService.emFalta() });
   },
-  async definirFichaTecnica(req, res) {
+  async ajustarCmv(req, res) {
     const { id } = req.validado.params;
-    res.json({ produto: await produtosService.definirFichaTecnica(id, req.validado.body.itens, contexto(req)) });
+    res.json({ produto: await produtosService.ajustarCmv(id, req.validado.body, contexto(req)) });
   }
 };
 

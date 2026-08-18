@@ -1,7 +1,6 @@
 /* Regras de cadastro de produto e estoque. */
 import { produtosRepo } from "../repositories/produtos.repo.js";
 import { promocoesRepo } from "../repositories/promocoes.repo.js";
-import { insumosRepo } from "../repositories/insumos.repo.js";
 import { auditoriaRepo } from "../repositories/auditoria.repo.js";
 import { naoEncontrado, ErroApp } from "../lib/errors.js";
 import { publicar, CANAL } from "../lib/events.js";
@@ -125,9 +124,7 @@ export const produtosService = {
       detalhes: { nome: produto.name, preco: produto.price, destaque: produto.featuredOrder || 0 }, ip
     });
     publicar("produtos", [CANAL.PUBLICO, CANAL.OPERACAO]);
-    /* Recarrega com produtosRepo.buscar em vez de devolver `produto` direto:
-     * criar/definirDestaque nao anexam ficha tecnica/CMV, so buscar() faz. */
-    return produtosRepo.buscar(produto.id);
+    return produto;
   },
 
   async atualizar(id, dados, { usuario, ip }) {
@@ -153,7 +150,7 @@ export const produtosService = {
       entidade: "produto", entidadeId: id, detalhes: mudancas, ip
     });
     publicar("produtos", [CANAL.PUBLICO, CANAL.OPERACAO]);
-    return produtosRepo.buscar(produto.id);
+    return produto;
   },
 
   async moverOrdem(id, direction, { usuario, ip }) {
@@ -210,30 +207,17 @@ export const produtosService = {
     publicar("produtos", [CANAL.PUBLICO, CANAL.OPERACAO]);
   },
 
-  /* Ficha tecnica = quais insumos e quanto de cada um uma porcao do produto
-   * consome. E dai que o CMV sai sozinho (ver produtosRepo.comCmv). */
-  async definirFichaTecnica(id, itens, { usuario, ip }) {
+  /* CMV direto no produto: peso do saco comprado (g), quanto custou e quanto
+   * uma porcao vendida usa (g) — o resto (rendimento, custo, %) e calculado
+   * sozinho em produtosRepo.comCmv. */
+  async ajustarCmv(id, dados, { usuario, ip }) {
     await this.buscar(id);
-
-    const insumos = await insumosRepo.listar();
-    const insumosPorId = new Map(insumos.map(insumo => [insumo.id, insumo]));
-    for (const item of itens) {
-      if (!insumosPorId.has(item.insumoId)) {
-        throw new ErroApp("Um dos insumos escolhidos não existe mais.", 400, "insumo_invalido");
-      }
-    }
-
-    await produtosRepo.definirFichaTecnica(id, itens);
-    const produto = await produtosRepo.buscar(id);
+    const produto = await produtosRepo.ajustarCmv(id, dados);
 
     await auditoriaRepo.registrar({
-      usuarioId: usuario.id, usuario: usuario.usuario, acao: "produto_ficha_tecnica",
+      usuarioId: usuario.id, usuario: usuario.usuario, acao: "produto_cmv",
       entidade: "produto", entidadeId: id,
-      detalhes: {
-        nome: produto.name,
-        itens: itens.map(item => ({ insumo: insumosPorId.get(item.insumoId)?.name, qty: item.qty })),
-        cmv: produto.cmv
-      }, ip
+      detalhes: { nome: produto.name, ...dados, cmv: produto.cmv, cmvPct: produto.cmvPct }, ip
     });
     publicar("produtos", [CANAL.OPERACAO]);
     return produto;

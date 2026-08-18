@@ -325,23 +325,22 @@
 .split-row-remove:hover { background: rgba(212,127,110,.28); }
 .split-payment-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 
-/* â€” ficha tecnica / CMV â€” */
-.recipe-rows { display: grid; gap: 8px; }
-.recipe-row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, .8fr) auto auto; gap: 8px; align-items: center; }
-.recipe-row span { color: var(--muted); font-size: .78rem; text-align: right; white-space: nowrap; }
-.recipe-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+/* â€” aba CMV: uma linha por produto, agrupado por categoria â€” */
 .cmv-pill { border-color: rgba(217,154,104,.42); color: var(--gold-light); background: rgba(217,154,104,.14); }
-
-/* â€” aba CMV: uma linha por produto â€” */
 .cmv-toolbar { margin-bottom: 14px; }
 .cmv-toolbar input { max-width: 420px; }
-.cmv-table { display: grid; gap: 10px; }
-.cmv-row { display: grid; gap: 10px; padding: 14px 16px; border-radius: var(--radius-md); background: var(--sidebar); border: 1px solid var(--line-soft); }
+.cmv-table { display: grid; gap: 22px; }
+.cmv-category-group { display: grid; gap: 10px; }
+.cmv-category-group h3 { color: var(--gold); font-size: .95rem; }
+.cmv-category-list { display: grid; gap: 10px; }
+.cmv-row { display: grid; gap: 12px; padding: 14px 16px; border-radius: var(--radius-md); background: var(--sidebar); border: 1px solid var(--line-soft); }
 .cmv-row-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .cmv-row-head > div { display: grid; gap: 2px; flex: 1; min-width: 160px; }
 .cmv-row-head > div span { color: var(--muted); font-size: .74rem; }
-.cmv-row .recipe-rows { gap: 8px; }
-.cmv-row .recipe-actions { padding-top: 2px; }
+.cmv-inputs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.cmv-result { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; padding-top: 2px; }
+.cmv-result-linhas { display: flex; gap: 16px; flex-wrap: wrap; color: var(--muted-2); font-size: .8rem; }
+.cmv-result-linhas span { white-space: nowrap; }
 
 /* â€” cozinha (KDS) â€” */
 .kds-board { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }

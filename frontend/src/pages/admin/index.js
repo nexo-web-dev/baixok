@@ -79,7 +79,7 @@ const DESENHO = {
 const AFETADAS = {
   pedidos: ["pedidos", "motoboy", "mesas", "dashboard"],
   produtos: ["produtos", "estoque", "promos", "combos", "dashboard", "cmv"],
-  insumos: ["estoque", "cmv"],
+  insumos: ["estoque"],
   promocoes: ["promos", "produtos"],
   cupons: ["promos"],
   mesas: ["mesas"],
@@ -95,7 +95,7 @@ const DEPENDENCIAS_ABA = {
   /* insumos entra aqui (e nao so em estoque) porque a ficha tecnica do
    * produto — de onde sai o CMV — escolhe insumo num select nesta tela. */
   produtos: ["produtos", "promocoes"],
-  cmv: ["produtos", "insumos"],
+  cmv: ["produtos"],
   combos: ["produtos", "combos", "combinacoesSabores"],
   promos: ["produtos", "promocoes", "cupons"],
   entrega: ["entrega"],

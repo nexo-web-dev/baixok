@@ -50,7 +50,7 @@ export const ABAS = Object.freeze({
   },
   cmv: {
     titulo: "CMV",
-    subtitulo: "Uma linha por produto: escolha o insumo e a quantidade por porção, o custo sai sozinho.",
+    subtitulo: "Porção vendida, peso e custo do saco comprado — o custo por produto sai sozinho.",
     icone: "$",
     rotulo: "CMV",
     papeis: ["admin"]
