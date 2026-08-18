@@ -377,6 +377,21 @@ function htmlRelatorio(caixa) {
       .metric { break-inside: avoid; }
       .table-card { break-inside: avoid; }
     }
+    /* Feito pra A4/impressao, mas quem confere o fechamento no celular antes
+     * de dormir nao pode achar 4 colunas de metrica espremidas numa tela de
+     * 360px — empilha tudo numa coluna so. */
+    @media (max-width: 720px) {
+      body { padding: 12px; }
+      .print-btn { position: static; display: block; width: 100%; margin-bottom: 12px; }
+      header { grid-template-columns: 1fr; padding: 20px; }
+      .tag { justify-self: start; text-align: left; }
+      .meta { grid-template-columns: 1fr; padding: 14px 16px; }
+      main { padding: 16px; }
+      .grid { grid-template-columns: 1fr 1fr; }
+      .tables { grid-template-columns: 1fr; }
+      table { display: block; overflow-x: auto; }
+      .section-title { flex-wrap: wrap; }
+    }
   </style>
 </head>
 <body>

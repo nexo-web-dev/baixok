@@ -201,6 +201,8 @@
 .flag { padding: 3px 9px; border-radius: var(--radius-pill); color: var(--muted-2); background: var(--chip); font-size: .66rem; font-weight: 600; }
 .flag.paid { color: var(--green); }
 .flag.done { color: var(--green); background: var(--green-bg); }
+.flag.unpaid { color: var(--danger); background: var(--danger-bg); font-weight: 800; }
+.flag.cortesia { color: var(--gold); background: rgba(217,154,104,.22); font-weight: 800; }
 .priority-attention .flag.time { color: var(--gold-light); background: var(--amber-bg); }
 .priority-urgent .flag.time { color: var(--danger); background: var(--danger-bg); }
 
@@ -238,6 +240,13 @@
 .order-detail-summary strong {
   color: var(--gold-light); font-family: var(--font-head); font-size: .95rem; overflow-wrap: anywhere;
 }
+/* Nao pago e cortesia usam a mesma grade dos outros cartoes, mas coloridos —
+ * senao a informacao mais importante do pedido ficava do mesmo jeito que
+ * "Tempo" ou "Mesa", facil de passar batido numa olhada rapida. */
+.order-detail-summary div.highlight-danger { border-color: var(--danger); background: var(--danger-bg); }
+.order-detail-summary div.highlight-cortesia { border-color: var(--gold); background: rgba(217,154,104,.14); }
+.order-detail-summary div.highlight-cortesia strong { color: var(--gold); }
+.order-note.cortesia-text strong { color: var(--gold); }
 .order-detail-items { display: grid; gap: 8px; }
 .order-detail-item {
   display: grid; grid-template-columns: 70px minmax(0, 1fr) auto auto auto; gap: 12px; align-items: center;
@@ -324,8 +333,27 @@
 }
 .split-row-remove:hover { background: rgba(212,127,110,.28); }
 .split-payment-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
-.nao-pago-tipo { display: flex; gap: 18px; flex-wrap: wrap; }
+.nao-pago-tipo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tipo-opcao {
+  position: relative; display: grid; gap: 3px; padding: 14px 16px; border-radius: var(--radius-sm);
+  border: 1.5px solid var(--line); background: var(--soft); cursor: pointer;
+  transition: border-color .15s ease, background .15s ease;
+}
+.tipo-opcao:hover { border-color: rgba(217,154,104,.4); }
+.tipo-opcao input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; inset: 0; cursor: pointer; }
+.tipo-opcao strong { color: var(--ink); font-size: .94rem; }
+.tipo-opcao span { color: var(--muted); font-size: .78rem; }
+.tipo-opcao:has(input:checked) { border-color: var(--gold); background: rgba(217,154,104,.14); }
+.tipo-opcao:has(input:checked) strong { color: var(--gold); }
 .cortesia-itens { display: grid; gap: 6px; max-height: 180px; overflow-y: auto; padding: 4px 2px; }
+.motivo-textarea { min-height: 110px; font-size: .92rem; resize: vertical; }
+
+@keyframes piscar-erro {
+  0%, 100% { border-color: var(--line); background: var(--soft); }
+  25%, 75% { border-color: var(--danger); background: var(--danger-bg); }
+  50% { border-color: var(--line); background: var(--soft); }
+}
+.campo-piscando { animation: piscar-erro .5s ease-in-out 2; border-color: var(--danger) !important; }
 
 /* â€” aba CMV: uma linha por produto, agrupado por categoria â€” */
 .cmv-pill { border-color: rgba(217,154,104,.42); color: var(--gold-light); background: rgba(217,154,104,.14); }
@@ -832,6 +860,8 @@
   width: max-content; padding: 4px 8px; border-radius: var(--radius-pill);
   color: var(--gold-light) !important; background: rgba(217,154,104,.12); font-weight: 800;
 }
+.sale-tag-danger { color: var(--danger) !important; background: var(--danger-bg); }
+.sale-tag-cortesia { color: var(--gold) !important; background: rgba(217,154,104,.22); border: 1px solid rgba(217,154,104,.4); }
 .money-text { color: var(--gold-light) !important; font-weight: 800; }
 .sale-items { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin-top: 6px; }
 .sale-item {
@@ -955,6 +985,9 @@
   .motoboy-card-head { display: grid; }
   .motoboy-grid { grid-template-columns: 1fr; }
   .motoboy-actions .secondary, .motoboy-actions .ghost-green { width: 100%; }
+  .cmv-inputs { grid-template-columns: 1fr; }
+  .cmv-result { align-items: stretch; }
+  .cmv-result button { width: 100%; }
 }
 
 

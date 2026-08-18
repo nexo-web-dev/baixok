@@ -721,6 +721,26 @@ export const pedidosService = {
     return pedido;
   },
 
+  /* Desfaz cortesia do pedido inteiro — errou o botao, ou o cliente acabou
+   * pagando depois. Nao pede motivo: o motivo de ter marcado ja fica na
+   * auditoria de quando foi marcado. */
+  async reverterCortesia(id, { usuario, ip }) {
+    const atual = await this.buscar(id);
+    if (atual.status === "cancelado") throw conflito("Pedido cancelado não tem cortesia pra reverter.");
+    if (!(atual.cortesiaValue > 0)) throw conflito("Este pedido não tem cortesia marcada.");
+
+    const pedido = await pedidosRepo.reverterCortesia(id);
+
+    await auditoriaRepo.registrar({
+      usuarioId: usuario.id, usuario: usuario.usuario, acao: "pedido_cortesia_revertida",
+      entidade: "pedido", entidadeId: id,
+      detalhes: { valorCortesiaAnterior: atual.cortesiaValue, motivoAnterior: atual.cortesiaReason },
+      ip
+    });
+    publicar("pedidos", [CANAL.OPERACAO, CANAL.TELAO]);
+    return pedido;
+  },
+
   /* Pedido pago em mais de uma forma (parte cartao, parte Pix etc.) — grava
    * cada parcela em pedido_pagamentos e marca pedidos.pagamento = "Dividido",
    * pro resto do sistema saber que precisa ir atras da quebra por forma em

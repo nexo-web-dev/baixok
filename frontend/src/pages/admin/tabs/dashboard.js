@@ -75,6 +75,8 @@ function renderizarListasVendas() {
   renderizarLista("dashboard-canceled", "dashboard-canceled-empty", cancelados, canceladoLinha, "Nenhum pedido cancelado neste período.");
   renderizarLista("dashboard-unpaid", "dashboard-unpaid-empty",
     vendas.filter(pedido => pedido.payment === "Não pago"), vendaLinha, "Nenhuma venda não paga neste período.");
+  renderizarLista("dashboard-cortesia", "dashboard-cortesia-empty",
+    vendas.filter(pedido => pedido.cortesiaValue > 0), vendaLinha, "Nenhuma cortesia neste período.");
 }
 
 function metrica(rotulo, valor, nota, tom = "") {
@@ -186,8 +188,8 @@ function trocoResumoDashboard(pedido) {
   return `Troco para ${reais(trocoPara)} | devolver ${reais(troco)}`;
 }
 
-function vendaTag(texto) {
-  return texto ? el("span.sale-tag", {}, texto) : null;
+function vendaTag(texto, classe = "") {
+  return texto ? el("span.sale-tag", { class: classe }, texto) : null;
 }
 
 /* "Dividido" sozinho nao diz nada pra quem esta olhando a lista — mostra
@@ -243,7 +245,8 @@ function vendaLinha(pedido) {
       el("div.sale-tags", {},
         vendaTag(CANAIS_ROTULO[pedido.channel] || pedido.channel || "-"),
         vendaTag(MODALIDADES_ROTULO[pedido.fulfillment] || pedido.fulfillment || "-"),
-        vendaTag(rotuloPagamento(pedido))
+        vendaTag(rotuloPagamento(pedido), pedido.payment === "Não pago" ? "sale-tag-danger" : ""),
+        pedido.cortesiaValue > 0 ? vendaTag(`Cortesia · ${reais(pedido.cortesiaValue)}`, "sale-tag-cortesia") : null
       ),
       pedido.fulfillment === "entrega" && pedido.motoboy ? el("span", {}, `Motoboy: ${pedido.motoboy}`) : null,
       cancelado && pedido.cancelReason ? el("span.danger-text", {}, `Motivo: ${pedido.cancelReason}`) : null,
@@ -538,6 +541,7 @@ export function ligarDashboard() {
   };
   delegar($("#dashboard-sales"), "click", "[data-action='cancel-sale']", cancelarVenda);
   delegar($("#dashboard-unpaid"), "click", "[data-action='cancel-sale']", cancelarVenda);
+  delegar($("#dashboard-cortesia"), "click", "[data-action='cancel-sale']", cancelarVenda);
 
   /* Mesmo formulario de prejuizo/cortesia do modal "Ver pedido" — ver
    * pedidos.js. Reaproveita em vez de duplicar aqui um segundo prompt() so
@@ -559,6 +563,7 @@ export function ligarDashboard() {
   };
   delegar($("#dashboard-sales"), "click", "[data-action='edit-sale']", editarVenda);
   delegar($("#dashboard-unpaid"), "click", "[data-action='edit-sale']", editarVenda);
+  delegar($("#dashboard-cortesia"), "click", "[data-action='edit-sale']", editarVenda);
 
   const reimprimirVenda = async (_evento, botao) => {
     const linha = botao.closest(".sale-row");
@@ -576,6 +581,7 @@ export function ligarDashboard() {
   };
   delegar($("#dashboard-sales"), "click", "[data-action='reprint-sale']", reimprimirVenda);
   delegar($("#dashboard-unpaid"), "click", "[data-action='reprint-sale']", reimprimirVenda);
+  delegar($("#dashboard-cortesia"), "click", "[data-action='reprint-sale']", reimprimirVenda);
 
   const alternarDetalhes = (_evento, botao) => {
     const detalhe = botao.closest(".sale-row")?.querySelector(".sale-detail");
@@ -584,6 +590,7 @@ export function ligarDashboard() {
   delegar($("#dashboard-sales"), "click", "[data-action='details-sale']", alternarDetalhes);
   delegar($("#dashboard-canceled"), "click", "[data-action='details-sale']", alternarDetalhes);
   delegar($("#dashboard-unpaid"), "click", "[data-action='details-sale']", alternarDetalhes);
+  delegar($("#dashboard-cortesia"), "click", "[data-action='details-sale']", alternarDetalhes);
 
   const abrirExclusao = (_evento, botao) => {
     const linha = botao.closest(".sale-row");
@@ -599,6 +606,7 @@ export function ligarDashboard() {
   delegar($("#dashboard-sales"), "click", "[data-action='delete-sale']", abrirExclusao);
   delegar($("#dashboard-canceled"), "click", "[data-action='delete-sale']", abrirExclusao);
   delegar($("#dashboard-unpaid"), "click", "[data-action='delete-sale']", abrirExclusao);
+  delegar($("#dashboard-cortesia"), "click", "[data-action='delete-sale']", abrirExclusao);
 
   const fecharExclusao = () => {
     pedidoParaExcluir = null;

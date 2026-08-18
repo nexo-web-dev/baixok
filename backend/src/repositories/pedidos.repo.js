@@ -431,6 +431,18 @@ export const pedidosRepo = {
     return this.buscar(pedidoId);
   },
 
+  /* Desfaz cortesia do pedido inteiro — zera o sinal em todos os itens e o
+   * valor/motivo denormalizados. Reverter so parte dos itens nao tem UI hoje;
+   * pra isso e mais simples desfazer tudo e marcar de novo so o que precisa. */
+  async reverterCortesia(pedidoId) {
+    await alteradas("UPDATE pedido_itens SET cortesia = 0 WHERE pedido_id = ?", [pedidoId]);
+    await alteradas(
+      "UPDATE pedidos SET valor_cortesia = 0, motivo_cortesia = '', atualizado_em = now() WHERE id = ?",
+      [pedidoId]
+    );
+    return this.buscar(pedidoId);
+  },
+
   async definirMotoboy(id, motoboy) {
     await alteradas("UPDATE pedidos SET motoboy = ?, atualizado_em = now() WHERE id = ?", [motoboy, id]);
     return this.buscar(id);
