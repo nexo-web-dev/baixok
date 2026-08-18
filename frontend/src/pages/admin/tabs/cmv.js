@@ -77,6 +77,19 @@ function atualizarLinha(produtoId) {
   if (resultadoEl) render(resultadoEl, ...linhas.map(texto => el("span", {}, texto)));
 }
 
+/* Mesma miniatura do resto do painel — leve (lazy) pra nao pesar com a lista
+ * inteira de produtos na tela ao mesmo tempo. */
+function fotoProdutoMini(produto) {
+  if (!produto?.image) return el("div.add-item-thumb.no-photo", {}, "Sem foto");
+  return el("span.fit-media.add-item-thumb", {},
+    el("img.fit-media-bg", { src: produto.image, alt: "", loading: "lazy", decoding: "async", "aria-hidden": "true" }),
+    el("img.fit-media-main", {
+      src: produto.image, alt: produto.name || "Produto", loading: "lazy", decoding: "async",
+      onerror: evento => evento.target.closest(".fit-media")?.replaceWith(el("div.add-item-thumb.no-photo", {}, "Sem foto"))
+    })
+  );
+}
+
 function linhaProduto(produto) {
   const rascunho = rascunhoDe(produto);
   const resultado = calcular(rascunho, produto.price);
@@ -84,7 +97,8 @@ function linhaProduto(produto) {
 
   return el("article.cmv-row", { dataset: { id: produto.id } },
     el("div.cmv-row-head", {},
-      el("div", {},
+      fotoProdutoMini(produto),
+      el("div.cmv-row-info", {},
         el("strong", {}, produto.name),
         el("span.small.faint", {}, rotuloCategoria(produto.category))
       ),
@@ -115,10 +129,15 @@ function linhaProduto(produto) {
   );
 }
 
-function produtosFiltrados() {
+/* Sem busca, a lista inteira do cardapio de uma vez pesa e enterra quem ja
+ * foi preenchido no meio de quem nunca foi mexido. Sem termo, mostra so quem
+ * ja tem CMV calculado (facil de achar e conferir); pra mexer num produto
+ * novo, e so buscar pelo nome ou categoria. */
+function produtosVisiveis() {
   const termo = normalizar(busca);
+  if (!termo) return estado.produtos.filter(produto => produto.cmv > 0);
   return estado.produtos.filter(produto =>
-    !termo || normalizar(`${produto.name} ${produto.category || ""}`).includes(termo));
+    normalizar(`${produto.name} ${produto.category || ""}`).includes(termo));
 }
 
 function produtosAgrupados(produtos) {
@@ -134,7 +153,11 @@ function produtosAgrupados(produtos) {
 export function desenharCmv() {
   const alvo = $("#cmv-table");
   if (!alvo) return;
-  const grupos = produtosAgrupados(produtosFiltrados());
+  const grupos = produtosAgrupados(produtosVisiveis());
+
+  const vazio = busca.trim()
+    ? "Nenhum produto encontrado com esse termo."
+    : "Nenhum produto com CMV calculado ainda. Busque um produto acima pra preencher.";
 
   render(alvo, grupos.length
     ? grupos.map(([categoria, produtos]) =>
@@ -142,7 +165,7 @@ export function desenharCmv() {
           el("h3", {}, rotuloCategoria(categoria)),
           el("div.cmv-category-list", {}, produtos.map(linhaProduto))
         ))
-    : el("p.faint.pad", {}, "Nenhum produto encontrado."));
+    : el("p.faint.pad", {}, vazio));
 }
 
 async function salvarLinha(produtoId, botao) {
