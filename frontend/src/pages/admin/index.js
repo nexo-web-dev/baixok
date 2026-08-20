@@ -243,6 +243,12 @@ async function iniciar() {
   $("#usuario-papel").textContent = { admin: "Administrador", caixa: "Caixa", cozinha: "Cozinha", entregador: "Entregador" }[sessao.usuario.papel];
   garantirNomeMotoboy();
   iniciarRastreamentoMotoboy();
+  /* So quem tem a aba "Plano do sistema" (admin, ver abas.js) precisa saber
+   * que a mensalidade esta vencendo — importa o modulo so nesse caso, sem
+   * puxar pro pacote principal o codigo de quem nunca ve essa aba. */
+  if (sessao.usuario.papel === "admin") {
+    import("./tabs/plano.js").then(mod => mod.verificarAlertaVencimento()).catch(() => {});
+  }
 
   montarMenu(sessao.usuario);
   ligarShell();
