@@ -13,7 +13,7 @@ import { registrarPwa } from "../../services/pwa.js";
 import { reais, dataHora } from "../../utils/formato.js";
 import { rotuloCategoria } from "../../utils/categorias.js";
 import { controlaEstoqueCategoria } from "../../utils/estoque.js";
-import { desenharDestaques, desenharFiltros, desenharGrade, foto, blocoBrindes } from "./catalogo.js";
+import { desenharDestaques, desenharFiltros, desenharGrade, categoriaInicial, foto, blocoBrindes } from "./catalogo.js";
 import { carrinho, aoMudarCarrinho } from "./carrinho-store.js";
 import {
   desenharCarrinho, aplicarCupom, removerCupom, revalidarCupom,
@@ -76,6 +76,9 @@ async function carregarCardapio() {
     const { produtos, combos, combinacoesSabores, loja } = await apiPublica.cardapio();
     const combosProdutos = (combos || []).map(comboComoProduto);
     estado.produtos = [...produtos, ...combosProdutos];
+    /* So resolve uma vez — depois que o filtro ja abriu numa categoria de
+     * verdade, "todos" nao volta a acontecer sozinho num recarregamento. */
+    if (estado.categoria === "todos") estado.categoria = categoriaInicial(estado.produtos);
     estado.produtosPorId = new Map(estado.produtos.map(produto => [produto.id, produto]));
     estado.combosPorId = new Map((combos || []).map(combo => [combo.id, combo]));
     estado.combinacoesMap = new Map(
@@ -125,7 +128,9 @@ function desenharCarrinhoEResumo() {
 
 function redesenharCatalogo() {
   if (estado.categoria !== "todos" && !estado.produtos.some(produto => produto.category === estado.categoria)) {
-    estado.categoria = "todos";
+    /* A categoria escolhida sumiu do catalogo (produto pausado/excluido) —
+     * volta pro filtro inicial, nunca pra grade toda misturada. */
+    estado.categoria = categoriaInicial(estado.produtos);
   }
   desenharDestaques(estado.produtos);
   desenharFiltros(estado.produtos, estado.categoria);

@@ -23,6 +23,23 @@ function pesoCategoria(chave, rotulo) {
   return indice === -1 ? 50 : indice;
 }
 
+/* Categoria que a pagina abre com o filtro ja marcado — burguer, se a casa
+ * vender — e pra onde volta se a categoria escolhida sumir do catalogo. Mesma
+ * correspondencia por trecho do nome que pesoCategoria usa, pra nao depender
+ * de bater a grafia exata cadastrada ("Burguers", "burguer"...). A casa nao
+ * quer a grade misturando categoria nenhuma vez — "todos" (tudo junto) so
+ * sai daqui se o catalogo inteiro estiver sem categoria cadastrada. */
+export function categoriaInicial(produtos) {
+  const comBurguer = (produtos || []).find(produto => {
+    const categoria = String(produto?.category || "").trim();
+    return categoria && normalizarBusca(categoria).includes("burg");
+  });
+  if (comBurguer) return String(comBurguer.category).trim();
+
+  const primeira = (produtos || []).find(produto => String(produto?.category || "").trim());
+  return primeira ? String(primeira.category).trim() : "todos";
+}
+
 /* Sem "Todos": o filtro comeca sem nada selecionado (mostra tudo, ver
  * estado.categoria em index.js) e cada botao so filtra pra sua categoria.
  * "promocoes" nao e categoria de verdade: e um filtro por cima de qualquer
@@ -186,6 +203,13 @@ export function desenharGrade(produtos, { categoria, busca, lojaAberta = true })
       normalizarBusca(`${produto.name} ${produto.description || ""} ${produto.badge || ""} ${produto.category || ""}`).includes(termo);
     return categoriaOk && buscaOk;
   });
+
+  /* Mesma prioridade de categoria dos botoes de filtro (pesoCategoria), agora
+   * tambem na grade — sem isto "Todos" misturava burguer, bebida e pizza na
+   * ordem crua do cadastro. Sort e estavel: dentro da mesma categoria, quem
+   * decide a ordem continua sendo o "ordem" que ja veio de produtos.js. */
+  lista.sort((a, b) =>
+    pesoCategoria(a.category, rotuloCategoria(a.category)) - pesoCategoria(b.category, rotuloCategoria(b.category)));
 
   render(alvo, lista.length
     ? lista.map((produto, indice) => cartaoProduto(produto, { lojaAberta, prioridade: indice < CARDS_PRIORITARIOS }))
