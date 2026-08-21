@@ -112,6 +112,7 @@ function barras(linhas, formatar, vazioMensagem = "Sem dados no periodo.", vazio
 const primeiro = lista => lista?.[0] || null;
 const dinheiroEPedidos = (valor, linha) => `${reais(valor)} · ${Number(linha.pedidos || 0)} ped.`;
 const dinheiroEUnidades = (valor, linha) => `${reais(valor)} · ${Number(linha.unidades || 0)} un.`;
+const unidadesEDinheiro = (valor, linha) => `${valor}x · ${reais(linha.faturamento || 0)}`;
 
 function produtoResumo(produto) {
   return produto ? `${produto.rotulo} (${produto.quantidade}x)` : "Sem venda";
@@ -494,15 +495,15 @@ export async function desenharDashboard() {
   ));
 
   render($("#best-items"), barras(
-    maisVendidos.map(linha => ({ rotulo: linha.rotulo, valor: linha.quantidade })),
-    valor => `${valor}x`,
+    maisVendidos.map(linha => ({ rotulo: linha.rotulo, valor: linha.quantidade, faturamento: linha.faturamento })),
+    unidadesEDinheiro,
     "Sem itens vendidos ainda.",
     "Os produtos mais fortes do período entram aqui automaticamente."
   ));
 
   render($("#worst-items"), barras(
-    menosVendidos.map(linha => ({ rotulo: linha.rotulo, valor: linha.quantidade })),
-    valor => `${valor}x`,
+    menosVendidos.map(linha => ({ rotulo: linha.rotulo, valor: linha.quantidade, faturamento: linha.faturamento })),
+    unidadesEDinheiro,
     "Sem itens para comparar.",
     "Quando houver mais vendas, os itens fracos aparecem aqui."
   ));
