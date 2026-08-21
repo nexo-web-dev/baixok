@@ -138,7 +138,7 @@ function parametrosDashboard() {
 /* "Pagar no balcao" fica de fora de proposito: nunca foi forma de pagamento
  * de verdade, so o marcador de "ainda nao pago" enquanto a mesa estava aberta
  * — o fechamento da conta troca pelo pagamento real (ver mesas.service.js). */
-const PAGAMENTOS_CONHECIDOS = ["Dinheiro", "Pix", "Cartão"];
+const PAGAMENTOS_CONHECIDOS = ["Dinheiro", "Pix", "Cartão de Crédito", "Cartão de Débito"];
 
 /* So categorias com produto ATIVO — "remover" produto so desativa (arquiva),
  * entao um rascunho antigo nunca publicado nao pode continuar aparecendo
@@ -168,6 +168,87 @@ function resumoModalidade(porModalidade) {
     loja,
     entrega: Number(mapa.entrega || 0)
   };
+}
+
+const PERIODOS_TEXTO = {
+  "Hoje": "Hoje",
+  "Ultimos 7 dias": "Nos últimos 7 dias",
+  "Ultimos 30 dias": "Nos últimos 30 dias",
+  "Este mes": "Neste mês",
+  "Tudo": "Considerando todo o histórico"
+};
+
+function periodoPreposicional(periodo) {
+  const rotulo = periodo?.rotulo || "";
+  return PERIODOS_TEXTO[rotulo] || (rotulo ? `No período de ${rotulo}` : "No período selecionado");
+}
+
+function filtrosAtivosTexto() {
+  const partes = [];
+  if (filtros.canal) partes.push(`canal ${CANAIS_ROTULO[filtros.canal] || filtros.canal}`);
+  if (filtros.pagamento) partes.push(`pagamento ${filtros.pagamento}`);
+  if (filtros.categoria) partes.push(`categoria ${rotuloCategoria(filtros.categoria)}`);
+  return partes;
+}
+
+/* Resumo em texto corrido do período filtrado — pensado pra quem quer ler uma
+ * frase e entender o dia, sem precisar juntar os cartões de metrica um a um.
+ * So entra o que teve movimento: sem cancelado/prejuizo/cortesia no periodo,
+ * a frase de alerta nem aparece, pra nao poluir com "nenhum" toda hora. */
+function montarResumoTextual({ resumo, periodo, pagamentoTop, plataformaTop, modalidades, maisVendidos }) {
+  const filtrosTexto = filtrosAtivosTexto();
+  const sufixoFiltro = filtrosTexto.length ? `, considerando o filtro de ${filtrosTexto.join(" e ")},` : "";
+
+  if (!resumo.pedidos) {
+    return `${periodoPreposicional(periodo)}${sufixoFiltro} não houve nenhum pedido registrado.`;
+  }
+
+  const frases = [];
+
+  frases.push(
+    `${periodoPreposicional(periodo)}${sufixoFiltro} a loja faturou ${reais(resumo.faturamento)} em ` +
+    `${resumo.pedidos} pedido${resumo.pedidos === 1 ? "" : "s"}, com ticket médio de ${reais(resumo.ticketMedio)}.`
+  );
+
+  const maisVendidoTop = primeiro(maisVendidos);
+  if (maisVendidoTop) {
+    frases.push(`O produto mais vendido foi ${maisVendidoTop.rotulo} (${maisVendidoTop.quantidade}x, ${reais(maisVendidoTop.faturamento)}).`);
+  }
+
+  if (pagamentoTop) {
+    frases.push(`A forma de pagamento predominante foi ${pagamentoTop.rotulo || "não informada"}, responsável por ${reais(pagamentoTop.faturamento)}.`);
+  }
+
+  if (plataformaTop) {
+    frases.push(`O canal com maior faturamento foi ${CANAIS_ROTULO[plataformaTop.rotulo] || plataformaTop.rotulo}.`);
+  }
+
+  if (modalidades.entrega > 0 && modalidades.loja > 0) {
+    frases.push(
+      `Das vendas, ${modalidades.entrega} ${modalidades.entrega === 1 ? "foi" : "foram"} por entrega e ` +
+      `${modalidades.loja} ${modalidades.loja === 1 ? "foi" : "foram"} na loja (retirada ou mesa).`
+    );
+  } else if (modalidades.entrega > 0) {
+    frases.push("Todas as vendas foram por entrega.");
+  } else if (modalidades.loja > 0) {
+    frases.push("Todas as vendas foram na loja, por retirada ou mesa.");
+  }
+
+  const alertas = [];
+  if (resumo.cancelados) {
+    alertas.push(`${resumo.cancelados} pedido${resumo.cancelados === 1 ? "" : "s"} cancelado${resumo.cancelados === 1 ? "" : "s"}`);
+  }
+  if (resumo.naoPagos) {
+    alertas.push(`${resumo.naoPagos} pedido${resumo.naoPagos === 1 ? "" : "s"} com prejuízo, somando ${reais(resumo.valorNaoPago || 0)}`);
+  }
+  if (resumo.cortesias) {
+    alertas.push(`${resumo.cortesias} cortesia${resumo.cortesias === 1 ? "" : "s"}, somando ${reais(resumo.valorCortesia || 0)}`);
+  }
+  if (alertas.length) {
+    frases.push(`Fora do faturamento, ficaram ${alertas.join(", ")}.`);
+  }
+
+  return frases.join(" ");
 }
 
 function horaCurta(data) {
@@ -311,6 +392,11 @@ export async function desenharDashboard() {
   const plataformaTop = primeiro(porCanal);
   const modalidades = resumoModalidade(porModalidade);
   const motoboyTop = primeiro(porMotoboy);
+
+  const resumoTexto = $("#dashboard-summary-text");
+  if (resumoTexto) {
+    resumoTexto.textContent = montarResumoTextual({ resumo, periodo, pagamentoTop, plataformaTop, modalidades, maisVendidos });
+  }
 
   render($("#dashboard-metrics"),
     metrica("Faturamento", reais(resumo.faturamento), periodo.rotulo),
