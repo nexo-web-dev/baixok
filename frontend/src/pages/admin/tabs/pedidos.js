@@ -372,23 +372,38 @@ function atualizarListaAdicionarItem() {
   if (!lista) return;
 
   const termo = normalizarBuscaItem(buscaAdicionarItem).trim();
-  const opcoes = estado.produtos
+  /* Combo entra na mesma busca que produto avulso — sem controle de estoque
+   * proprio (quem controla e cada produto componente, ver precificar() no
+   * backend), so precisa estar ativo. */
+  const produtosOk = estado.produtos
     .filter(produto => produto.active && (!controlaEstoqueCategoria(produto.category) || produto.stock > 0))
-    .filter(produto => !termo || normalizarBuscaItem(`${produto.name} ${produto.category || ""}`).includes(termo))
+    .map(produto => ({
+      tipo: "produto", id: produto.id, name: produto.name, image: produto.image,
+      price: produto.price, rotulo: rotuloCategoria(produto.category)
+    }));
+  const combosOk = (estado.combos || [])
+    .filter(combo => combo.active)
+    .map(combo => ({ tipo: "combo", id: combo.id, name: combo.name, image: combo.image, price: combo.price, rotulo: "Combo" }));
+
+  const opcoes = [...produtosOk, ...combosOk]
+    .filter(item => !termo || normalizarBuscaItem(`${item.name} ${item.rotulo}`).includes(termo))
     .slice(0, 8);
 
   render(lista, ...(opcoes.length
-    ? opcoes.map(produto =>
+    ? opcoes.map(item =>
         el("button.add-item-option", {
           type: "button",
-          dataset: { acao: "adicionar-item-pedido", id: pedidoDetalheAtualId, produtoId: produto.id }
+          dataset: {
+            acao: "adicionar-item-pedido", id: pedidoDetalheAtualId,
+            ...(item.tipo === "combo" ? { comboId: item.id } : { produtoId: item.id })
+          }
         },
-          fotoMini(produto.image, produto.name, "add-item-thumb"),
+          fotoMini(item.image, item.name, "add-item-thumb"),
           el("span", {},
-            el("strong", {}, produto.name),
-            el("small", {}, rotuloCategoria(produto.category))
+            el("strong", {}, item.name),
+            el("small", {}, item.rotulo)
           ),
-          el("em", {}, reais(produto.price))
+          el("em", {}, reais(item.price))
         ))
     : [el("p.faint.small", {}, "Nenhum produto encontrado.")]));
 }
@@ -913,7 +928,10 @@ export function ligarPedidos() {
   delegar($("#order-detail-body"), "click", "[data-acao='adicionar-item-pedido']", async (_e, botao) => {
     botao.disabled = true;
     try {
-      await apiPedidos.adicionarItens(botao.dataset.id, [{ id: botao.dataset.produtoId, qty: 1 }]);
+      const item = botao.dataset.comboId
+        ? { comboId: botao.dataset.comboId, qty: 1 }
+        : { id: botao.dataset.produtoId, qty: 1 };
+      await apiPedidos.adicionarItens(botao.dataset.id, [item]);
       await carregar("pedidos");
       abrirDetalhePedido(botao.dataset.id);
       toast("Item adicionado ao pedido. Reimprima a nota se a cozinha já tiver a via antiga.");

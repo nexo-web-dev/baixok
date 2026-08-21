@@ -379,6 +379,15 @@ export const pedidosRepo = {
     )) > 0;
   },
 
+  /* "+"/"-" no detalhe do pedido. So a quantidade — preco e totais quem
+   * recalcula e o service, que sabe a diferenca pra mexer no estoque certo. */
+  async ajustarQuantidadeItem(pedidoId, itemId, quantidade) {
+    return (await alteradas(
+      "UPDATE pedido_itens SET quantidade = ? WHERE id = ? AND pedido_id = ?",
+      [quantidade, itemId, pedidoId]
+    )) > 0;
+  },
+
   async atualizarTotais(id, { subtotal, total }) {
     await alteradas(
       "UPDATE pedidos SET subtotal = ?, total = ?, atualizado_em = now() WHERE id = ?",

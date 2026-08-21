@@ -28,6 +28,10 @@ let cotacaoManual = null;
 let timerBuscaManual = null;
 let requisicaoBuscaManual = null;
 
+/* Chave que identifica uma linha do carrinho — comboId ou id, nunca os dois
+ * (rascunho.itens grava so um dos dois preenchido, o outro fica null). */
+const chaveItem = item => item.comboId || item.id;
+
 const subtotal = () => rascunho.itens.reduce((soma, item) => soma + item.price * item.qty, 0);
 const freteManual = () => rascunho.modalidade === "entrega" && cotacaoManual?.dentro ? Number(cotacaoManual.taxa) : 0;
 
@@ -162,26 +166,42 @@ function desenharChips() {
   if (!mostraTroco && $("#manual-change-for")) $("#manual-change-for").value = "";
 }
 
+/* Combo entra na mesma busca de produto avulso — sem estoque proprio (quem
+ * controla e cada produto componente, ver precificar() no backend). */
 function desenharProdutos() {
   const termo = normalizarBusca($("#manual-search")?.value).trim();
-  const lista = estado.produtos
+  const produtosOk = estado.produtos
     .filter(produto => produto.active && (!controlaEstoqueCategoria(produto.category) || produto.stock > 0))
-    .filter(produto => !termo || normalizarBusca(`${produto.name} ${produto.category || ""}`).includes(termo))
+    .map(produto => ({
+      tipo: "produto", id: produto.id, name: produto.name, image: produto.image || "",
+      price: precoEfetivo(produto),
+      legenda: `${rotuloCategoria(produto.category)} · ${controlaEstoqueCategoria(produto.category)
+        ? `${produto.stock} em estoque`
+        : "sem controle de estoque"}`
+    }));
+  const combosOk = (estado.combos || [])
+    .filter(combo => combo.active)
+    .map(combo => ({
+      tipo: "combo", id: combo.id, name: combo.name, image: combo.image || "",
+      price: Number(combo.price), legenda: "Combo"
+    }));
+
+  const lista = [...produtosOk, ...combosOk]
+    .filter(item => !termo || normalizarBusca(`${item.name} ${item.legenda}`).includes(termo))
     .slice(0, 40);
 
   render($("#manual-products"), ...(lista.length
-    ? lista.map(produto =>
-        el("button.manual-product", { type: "button", dataset: { acao: "add-item", id: produto.id } },
-          produto.image
-            ? el("img.manual-thumb", { src: produto.image, alt: "", loading: "lazy", decoding: "async" })
+    ? lista.map(item =>
+        el("button.manual-product", {
+          type: "button",
+          dataset: item.tipo === "combo" ? { acao: "add-item", comboId: item.id } : { acao: "add-item", id: item.id }
+        },
+          item.image
+            ? el("img.manual-thumb", { src: item.image, alt: "", loading: "lazy", decoding: "async" })
             : el("span.manual-thumb.no-photo", {}, "Sem foto"),
-          el("span.manual-name", {}, produto.name),
-          el("span.manual-price", {}, reais(precoEfetivo(produto))),
-          el("small", {},
-            `${rotuloCategoria(produto.category)} · ${controlaEstoqueCategoria(produto.category)
-              ? `${produto.stock} em estoque`
-              : "sem controle de estoque"}`
-          )
+          el("span.manual-name", {}, item.name),
+          el("span.manual-price", {}, reais(item.price)),
+          el("small", {}, item.legenda)
         ))
     : [el("p.faint", {}, "Nenhum produto encontrado.")]));
 }
@@ -201,8 +221,8 @@ function desenharCarrinho() {
             el("span", {}, `${item.qty}x ${item.name}`),
             el("span", {}, reais(item.price * item.qty)),
             el("div.qty-actions", {},
-              el("button", { type: "button", dataset: { acao: "qtd", id: item.id, delta: "-1" } }, "-"),
-              el("button", { type: "button", dataset: { acao: "qtd", id: item.id, delta: "1" } }, "+")
+              el("button", { type: "button", dataset: { acao: "qtd", id: chaveItem(item), delta: "-1" } }, "-"),
+              el("button", { type: "button", dataset: { acao: "qtd", id: chaveItem(item), delta: "1" } }, "+")
             )
           )),
         freteManual() > 0
@@ -242,6 +262,9 @@ export async function abrirVendaManual(mesa = null, callback = null) {
   }
   if (!estado.produtos.length) {
     try { await carregar("produtos"); } catch { /* o formulario abre e mostra erro se continuar vazio */ }
+  }
+  if (!estado.combos.length) {
+    try { await carregar("combos"); } catch { /* combo so nao aparece na busca, resto do formulario funciona */ }
   }
 
   rascunho.itens = [];
@@ -284,7 +307,9 @@ async function registrar() {
     return definirErro("Informe troco para quanto.");
   }
   const corpo = {
-    items: rascunho.itens.map(item => ({ id: item.id, qty: item.qty })),
+    items: rascunho.itens.map(item => item.comboId
+      ? { comboId: item.comboId, qty: item.qty }
+      : { id: item.id, qty: item.qty }),
     customer: nome || (rascunho.mesa ? `Mesa ${rascunho.mesa}` : CANAIS_ROTULO[rascunho.canal]),
     phone: telefone,
     place: rascunho.mesa
@@ -353,6 +378,19 @@ export function ligarVendaManual() {
   });
 
   delegar(modal, "click", "[data-acao='add-item']", (_e, botao) => {
+    if (botao.dataset.comboId) {
+      const combo = (estado.combos || []).find(item => item.id === botao.dataset.comboId);
+      if (!combo) return;
+      const existente = rascunho.itens.find(item => item.comboId === combo.id);
+      if (existente) existente.qty += 1;
+      else rascunho.itens.push({
+        id: null, comboId: combo.id, name: combo.name, image: combo.image || "", price: Number(combo.price), qty: 1
+      });
+      definirErro("");
+      desenharCarrinho();
+      return;
+    }
+
     const produto = estado.produtos.find(item => item.id === botao.dataset.id);
     if (!produto) return;
     const controlaEstoque = controlaEstoqueCategoria(produto.category);
@@ -361,17 +399,19 @@ export function ligarVendaManual() {
       if (controlaEstoque && existente.qty >= produto.stock) return definirErro(`${produto.name}: restam ${produto.stock} em estoque.`);
       existente.qty += 1;
     } else {
-      rascunho.itens.push({ id: produto.id, name: produto.name, image: produto.image || "", price: precoEfetivo(produto), qty: 1 });
+      rascunho.itens.push({
+        id: produto.id, comboId: null, name: produto.name, image: produto.image || "", price: precoEfetivo(produto), qty: 1
+      });
     }
     definirErro("");
     desenharCarrinho();
   });
 
   delegar(modal, "click", "[data-acao='qtd']", (_e, botao) => {
-    const item = rascunho.itens.find(linha => linha.id === botao.dataset.id);
+    const item = rascunho.itens.find(linha => chaveItem(linha) === botao.dataset.id);
     if (!item) return;
     item.qty += Number(botao.dataset.delta);
-    if (item.qty <= 0) rascunho.itens = rascunho.itens.filter(linha => linha.id !== item.id);
+    if (item.qty <= 0) rascunho.itens = rascunho.itens.filter(linha => chaveItem(linha) !== chaveItem(item));
     desenharCarrinho();
   });
 }

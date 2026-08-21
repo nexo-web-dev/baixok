@@ -513,6 +513,62 @@ export const pedidosService = {
     return pedido;
   },
 
+  /* "+"/"-" no detalhe do pedido. Zero reaproveita removerItem — mesma regra
+   * de "pedido em aberto nao pode zerar". Fora isso, estoque so mexe pela
+   * DIFERENCA entre a quantidade nova e a antiga (pode ser negativa — devolve
+   * em vez de baixar); combo e pizza de 2 sabores tem mais de um componente,
+   * cada um baixa/devolve na sua propria proporcao. */
+  async ajustarQuantidadeItem(id, itemId, novaQtd, { usuario, ip }) {
+    const atual = await this.buscar(id);
+    if (atual.status === "cancelado") {
+      throw new ErroApp("Pedido cancelado não tem item pra ajustar.", 409, "pedido_fechado");
+    }
+    const item = atual.items.find(item => item.itemId === itemId);
+    if (!item) throw naoEncontrado("Item não encontrado neste pedido.");
+    if (novaQtd === item.qty) return atual;
+    if (novaQtd === 0) return this.removerItem(id, itemId, { usuario, ip });
+
+    const diferenca = novaQtd - item.qty;
+
+    const pedido = await emTransacao(async () => {
+      if (atual.stockDeducted) {
+        if (item.comboId) {
+          const combo = await combosRepo.buscar(item.comboId);
+          for (const compItem of (combo?.items || [])) {
+            const produtoComp = await produtosRepo.buscar(compItem.productId);
+            if (controlaEstoqueCategoria(produtoComp?.category)) {
+              await produtosRepo.ajustarEstoque(compItem.productId, -compItem.quantity * diferenca);
+            }
+          }
+        } else {
+          if (item.id) {
+            const produto = await produtosRepo.buscar(item.id);
+            if (controlaEstoqueCategoria(produto?.category)) await produtosRepo.ajustarEstoque(item.id, -diferenca);
+          }
+          if (item.id2) {
+            const produto2 = await produtosRepo.buscar(item.id2);
+            if (controlaEstoqueCategoria(produto2?.category)) await produtosRepo.ajustarEstoque(item.id2, -diferenca);
+          }
+        }
+      }
+
+      await pedidosRepo.ajustarQuantidadeItem(id, itemId, novaQtd);
+      const valorDiferenca = item.price * diferenca;
+      return pedidosRepo.atualizarTotais(id, {
+        subtotal: Math.max(0, Math.round((atual.subtotal + valorDiferenca) * 100) / 100),
+        total: Math.max(0, Math.round((atual.total + valorDiferenca) * 100) / 100)
+      });
+    });
+
+    await auditoriaRepo.registrar({
+      usuarioId: usuario.id, usuario: usuario.usuario, acao: "pedido_item_quantidade",
+      entidade: "pedido", entidadeId: id,
+      detalhes: { item: item.name, de: item.qty, para: novaQtd, totalAntes: atual.total, totalDepois: pedido.total }, ip
+    });
+    publicar("pedidos", [CANAL.OPERACAO, CANAL.TELAO, CANAL.PUBLICO]);
+    return pedido;
+  },
+
   async mudarStatus(id, dados, { usuario, ip }) {
     const status = typeof dados === "string" ? dados : dados.status;
     let atual = await this.buscar(id);

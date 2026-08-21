@@ -89,7 +89,9 @@ const AFETADAS = {
 };
 
 const DEPENDENCIAS_ABA = {
-  pedidos: ["pedidos", "caixa", "ajustes"],
+  /* combos entra aqui pra "Adicionar item ao pedido" (no detalhe do pedido)
+   * conseguir buscar combo tambem, nao so produto avulso. */
+  pedidos: ["pedidos", "caixa", "ajustes", "combos"],
   motoboy: [],
   mesas: ["mesas", "produtos", "ajustes"],
   /* insumos entra aqui (e nao so em estoque) porque a ficha tecnica do
