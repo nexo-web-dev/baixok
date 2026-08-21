@@ -40,7 +40,7 @@ let marcarPagoForma = "";
 
 /* Mesma lista usada na venda manual e no filtro do dashboard — a divisao nao
  * inventa forma nova, so reparte entre as que a casa ja usa no dia a dia. */
-const FORMAS_PAGAMENTO_DIVISAO = ["Dinheiro", "Pix", "Cartão"];
+const FORMAS_PAGAMENTO_DIVISAO = ["Dinheiro", "Pix", "Cartão de Crédito", "Cartão de Débito"];
 
 /* Pisca o campo em vez de so mostrar um toast — muito mais dificil de passar
  * batido quando o motivo e obrigatorio e a pessoa clicou Confirmar direto. */
@@ -527,9 +527,10 @@ function redesenharMarcarPago() {
 }
 
 function conteudoMarcarPagoForm(pedido) {
+  const eraNaoPago = pedido.payment === "Não pago";
   return el("div.split-payment-form", {},
-    el("strong", {}, "Marcar como pago"),
-    el("p.faint.small", {}, "Qual foi a forma de pagamento de verdade?"),
+    el("strong", {}, eraNaoPago ? "Marcar como pago" : "Mudar forma de pagamento"),
+    el("p.faint.small", {}, eraNaoPago ? "Qual foi a forma de pagamento de verdade?" : "Selecione a forma de pagamento correta:"),
     el("select", { dataset: { acao: "marcar-pago-forma" } },
       el("option", { value: "" }, "Selecione..."),
       ...FORMAS_PAGAMENTO_DIVISAO.map(forma =>
@@ -623,12 +624,13 @@ export async function abrirDetalhePedido(id, { abrirNaoPago = false } = {}) {
             dataset: { acao: "abrir-nao-pago-form", id: pedido.id }
           }, pedido.cortesiaValue > 0 ? "Editar não pago / cortesia" : "Pedido não pago")
         : null,
-      pedido.payment === "Não pago"
-        ? el("button.primary", {
-            type: "button", title: "O cliente acabou pagando, ou foi marcado sem querer",
-            dataset: { acao: "abrir-marcar-pago-form", id: pedido.id }
-          }, "Marcar como pago")
-        : null,
+      el("button" + (pedido.payment === "Não pago" ? ".primary" : ".secondary"), {
+        type: "button",
+        title: pedido.payment === "Não pago"
+          ? "O cliente acabou pagando, ou foi marcado sem querer"
+          : "Corrigir a forma de pagamento deste pedido",
+        dataset: { acao: "abrir-marcar-pago-form", id: pedido.id }
+      }, pedido.payment === "Não pago" ? "Marcar como pago" : "Mudar forma de pagamento"),
       pedido.cortesiaValue > 0
         ? el("button.secondary", {
             type: "button", title: "Tira a cortesia de todos os itens do pedido",
@@ -891,13 +893,14 @@ export function ligarPedidos() {
   delegar($("#order-detail-body"), "click", "[data-acao='marcar-pago-confirmar']", async (_e, botao) => {
     if (!marcarPagoForma) return toastFalha(new Error("Selecione a forma de pagamento."), "Pagamento");
 
+    const eraNaoPago = pedidoDetalheAtualCache?.payment === "Não pago";
     botao.disabled = true;
     try {
       await apiPedidos.definirPagamento(botao.dataset.id, marcarPagoForma, "");
       marcarPagoAberto = false;
       await carregar("pedidos");
       abrirDetalhePedido(botao.dataset.id);
-      toast("Pedido marcado como pago.");
+      toast(eraNaoPago ? "Pedido marcado como pago." : "Forma de pagamento atualizada.");
     } catch (erro) {
       toastFalha(erro, "Pagamento");
     } finally {
