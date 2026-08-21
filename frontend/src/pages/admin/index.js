@@ -89,9 +89,11 @@ const AFETADAS = {
 };
 
 const DEPENDENCIAS_ABA = {
-  /* combos entra aqui pra "Adicionar item ao pedido" (no detalhe do pedido)
-   * conseguir buscar combo tambem, nao so produto avulso. */
-  pedidos: ["pedidos", "caixa", "ajustes", "combos"],
+  /* produtos e combos entram aqui pra "Adicionar item ao pedido" (no detalhe
+   * do pedido) conseguir buscar os dois — sem isso, quem abre o painel e vai
+   * direto pra um pedido (Pedidos e a aba inicial) via um catalogo vazio ate
+   * visitar Produtos ou Combos por acaso. */
+  pedidos: ["pedidos", "caixa", "ajustes", "produtos", "combos"],
   motoboy: [],
   mesas: ["mesas", "produtos", "ajustes"],
   /* insumos entra aqui (e nao so em estoque) porque a ficha tecnica do
