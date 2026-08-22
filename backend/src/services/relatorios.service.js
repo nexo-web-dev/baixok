@@ -61,6 +61,17 @@ export function resolverPeriodo({ periodo, desde, ate }) {
     return { desde: "2000-01-01 00:00:00", ate: paraSql(agora), rotulo: "Tudo" };
   }
 
+  /* "Ontem" e o unico periodo fixo que NAO vai ate agora — e o dia operacional
+   * anterior inteiro, do inicio ao fim, pra nao misturar com o movimento de
+   * hoje que ainda esta rolando. */
+  if (periodo === "ontem") {
+    const inicioHoje = inicioDoDiaOperacional(agora);
+    const inicioOntem = new Date(inicioHoje);
+    inicioOntem.setDate(inicioOntem.getDate() - 1);
+    const fimOntem = new Date(inicioHoje.getTime() - 1000);
+    return { desde: paraSql(inicioOntem), ate: paraSql(fimOntem), rotulo: "Ontem" };
+  }
+
   const inicio = inicioDoDiaOperacional(agora);
   if (periodo === "7dias") inicio.setDate(inicio.getDate() - 6);
   if (periodo === "30dias") inicio.setDate(inicio.getDate() - 29);

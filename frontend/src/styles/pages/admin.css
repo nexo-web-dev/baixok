@@ -785,6 +785,7 @@
 .motoboy-save-state.erro { color: var(--danger); }
 
 /* â€” dashboard â€” */
+.filter-note { margin: 0 0 8px; }
 .filter-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
 .filter-bar select { width: auto; min-height: 40px; padding: 8px 14px; border-radius: var(--radius-pill); background: var(--panel); color: var(--muted-2); font-size: .78rem; font-weight: 600; }
 .period-group { display: flex; gap: 8px; }

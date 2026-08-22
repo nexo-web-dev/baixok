@@ -389,9 +389,11 @@
         <p>Resultado do caixa no período. Pedidos cancelados ficam fora do faturamento. Exporte em planilha quando precisar fechar o mês.</p>
         <p>Os números contam pedidos já <strong>entregues</strong>, pela data em que o pedido foi feito — não pela data em que foi entregue. Pedido ainda em preparo aparece no Kanban, mas só entra na conta quando você marcar como entregue. Use "De/Até" com hora pra ver uma janela específica do dia (ex: só o almoço).</p>
       </div>
+      <p class="small faint filter-note">Os filtros de período usam o horário em que o pedido foi feito, não o de quando foi entregue.</p>
       <div class="filter-bar">
         <div class="period-group" id="period-group">
           <button class="period-btn active" type="button" data-period="hoje">Hoje</button>
+          <button class="period-btn" type="button" data-period="ontem">Ontem</button>
           <button class="period-btn" type="button" data-period="7dias">7 dias</button>
           <button class="period-btn" type="button" data-period="30dias">30 dias</button>
           <button class="period-btn" type="button" data-period="mes">Este mês</button>

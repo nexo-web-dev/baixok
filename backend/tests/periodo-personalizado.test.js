@@ -59,3 +59,22 @@ test("periodo personalizado com hora (datetime-local) usa o minuto exato, nao o 
   assert.equal(new Date(ate).toISOString(), "2026-08-17T18:00:00.000Z");
   assert.equal(rotulo, "17/08 11:30 a 17/08 15:00");
 });
+
+test("periodo 'ontem' cobre o dia operacional anterior inteiro, sem sobrepor nem furar 'hoje'", () => {
+  const hoje = resolverPeriodo({ periodo: "hoje" });
+  const ontem = resolverPeriodo({ periodo: "ontem" });
+
+  const inicioHoje = new Date(hoje.desde);
+  const inicioOntem = new Date(ontem.desde);
+  const fimOntem = new Date(ontem.ate);
+
+  /* Fim de ontem tem que terminar exatamente 1 segundo antes do inicio de
+   * hoje — sem sobreposicao (pedido contado duas vezes) nem buraco (pedido
+   * que nao entra em nenhum dos dois). */
+  assert.equal(inicioHoje.getTime() - fimOntem.getTime(), 1000);
+
+  /* "Ontem" e um dia operacional inteiro: 24h do inicio ao fim. */
+  assert.equal(fimOntem.getTime() - inicioOntem.getTime(), 24 * 60 * 60 * 1000 - 1000);
+
+  assert.equal(ontem.rotulo, "Ontem");
+});
