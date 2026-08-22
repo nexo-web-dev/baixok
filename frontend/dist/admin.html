@@ -153,7 +153,7 @@
       <div class="products-layout">
         <div class="data-table" id="product-table">
           <div class="product-tools">
-            <input id="product-search" type="search" placeholder="Filtrar por nome, categoria ou descrição">
+            <input id="product-search" type="search" placeholder="Filtrar por nome, categoria ou descrição" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
             <button class="secondary" type="button" id="export-menu-pdf">⇩ Exportar cardápio (PDF)</button>
           </div>
           <div class="filters product-category-filters" id="product-category-filters" aria-label="Filtrar produtos por categoria"></div>
@@ -237,7 +237,7 @@
         <p>Aparecem aqui os produtos que já têm CMV calculado. Para adicionar outro, busque pelo nome ou categoria — preencha quantas gramas vai numa porção vendida, quanto pesa o saco/pacote comprado e quanto custou, e o rendimento, o faturamento possível e o CMV são calculados sozinhos. Clique em Salvar em cada linha para gravar.</p>
       </div>
       <div class="cmv-toolbar">
-        <input type="search" id="cmv-search" placeholder="Buscar produto por nome ou categoria...">
+        <input type="search" id="cmv-search" placeholder="Buscar produto por nome ou categoria..." autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
       </div>
       <div class="cmv-table" id="cmv-table"></div>
     </section>
@@ -464,7 +464,7 @@
           </div>
         </div>
         <div class="sales-filter-bar">
-          <input id="sales-search" type="search" autocomplete="off" placeholder="Buscar por cliente, telefone, nº do pedido ou item...">
+          <input id="sales-search" type="search" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-form-type="other" placeholder="Buscar por cliente, telefone, nº do pedido ou item...">
           <select id="sales-filter-fulfillment" aria-label="Filtrar por modalidade">
             <option value="">Todas as modalidades</option>
             <option value="retirada">Retirada</option>
@@ -676,7 +676,7 @@
         <textarea class="motivo-textarea" id="manual-cortesia-motivo" rows="3" placeholder="Motivo da cortesia (obrigatório)..."></textarea>
       </div>
       <div class="chip-row" id="manual-category-filter"></div>
-      <input id="manual-search" type="search" placeholder="Buscar produto para adicionar...">
+      <input id="manual-search" type="search" placeholder="Buscar produto para adicionar..." autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
       <div class="manual-product-list" id="manual-products"></div>
       <div class="manual-cart" id="manual-cart"></div>
       <p class="form-error hidden" id="manual-error" role="alert"></p>
