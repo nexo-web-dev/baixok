@@ -387,6 +387,7 @@
       <div class="tab-guide">
         <strong>Como usar esta aba</strong>
         <p>Resultado do caixa no período. Pedidos cancelados ficam fora do faturamento. Exporte em planilha quando precisar fechar o mês.</p>
+        <p>Os números contam pedidos já <strong>entregues</strong>, pela data em que o pedido foi feito — não pela data em que foi entregue. Pedido ainda em preparo aparece no Kanban, mas só entra na conta quando você marcar como entregue. Use "De/Até" com hora pra ver uma janela específica do dia (ex: só o almoço).</p>
       </div>
       <div class="filter-bar">
         <div class="period-group" id="period-group">
@@ -397,8 +398,8 @@
           <button class="period-btn" type="button" data-period="tudo">Tudo</button>
         </div>
         <div class="custom-period" id="custom-period">
-          <label><span>De</span><input id="filter-from" type="date"></label>
-          <label><span>Até</span><input id="filter-to" type="date"></label>
+          <label><span>De</span><input id="filter-from" type="datetime-local"></label>
+          <label><span>Até</span><input id="filter-to" type="datetime-local"></label>
           <button class="secondary small" type="button" id="apply-period">Aplicar</button>
         </div>
         <select id="filter-channel" aria-label="Filtrar por canal"></select>

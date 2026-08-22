@@ -47,3 +47,15 @@ test("periodo 'hoje' (botao) e personalizado 'hoje ate hoje' (campo De/Ate) cobr
   assert.ok(fimPersonalizado.getTime() >= Date.now() - 1000,
     "fim do personalizado precisa alcancar o instante atual, igual o botao Hoje");
 });
+
+test("periodo personalizado com hora (datetime-local) usa o minuto exato, nao o dia inteiro", () => {
+  const { desde, ate, rotulo } = resolverPeriodo({
+    periodo: "personalizado", desde: "2026-08-17T11:30", ate: "2026-08-17T15:00"
+  });
+
+  /* 11:30 em Brasilia e 14:30 UTC — se caisse pro fallback de "dia inteiro"
+   * (00:00-23:59:59), esse teste pegaria a regressao na hora. */
+  assert.equal(new Date(desde).toISOString(), "2026-08-17T14:30:00.000Z");
+  assert.equal(new Date(ate).toISOString(), "2026-08-17T18:00:00.000Z");
+  assert.equal(rotulo, "17/08 11:30 a 17/08 15:00");
+});

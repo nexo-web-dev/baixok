@@ -792,7 +792,7 @@
 .period-btn.active { background: var(--copper); color: var(--on-accent); }
 .custom-period { display: flex; align-items: end; gap: 8px; flex-wrap: wrap; padding: 6px; border-radius: var(--radius-pill); background: var(--sidebar); border: 1px solid var(--line-soft); }
 .custom-period label { display: grid; gap: 3px; color: var(--muted); font-size: .66rem; font-weight: 700; }
-.custom-period input { width: 135px; min-height: 34px; padding: 6px 10px; border-radius: var(--radius-pill); font-size: .75rem; }
+.custom-period input { width: 190px; min-height: 34px; padding: 6px 10px; border-radius: var(--radius-pill); font-size: .75rem; }
 .export-btn { margin-left: auto; }
 .dashboard-summary { margin-bottom: 14px; }
 .dashboard-summary h2 { margin: 0 0 8px; }

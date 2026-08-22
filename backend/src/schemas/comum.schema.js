@@ -46,5 +46,6 @@ export const paramsNumero = z.object({
 export const longitude = z.coerce.number().min(-180).max(180);
 export const latitude = z.coerce.number().min(-90).max(90);
 
-/* Datas do dashboard chegam como AAAA-MM-DD. */
-export const dataIso = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use o formato AAAA-MM-DD.");
+/* Datas do dashboard chegam como AAAA-MM-DD, ou AAAA-MM-DDTHH:MM quando o
+ * filtro personalizado tambem tem hora (input datetime-local do navegador). */
+export const dataIso = z.string().regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/, "Use o formato AAAA-MM-DD ou AAAA-MM-DDTHH:MM.");

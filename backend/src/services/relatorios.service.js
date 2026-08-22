@@ -38,10 +38,20 @@ export function resolverPeriodo({ periodo, desde, ate }) {
    * Date() de verdade (paraSql), nao de texto digitado pela pessoa. Fixo em
    * -03:00 porque o Brasil nao tem mais horario de verao desde 2019. */
   if (periodo === "personalizado" && desde && ate) {
+    /* Com hora (datetime-local do navegador, "AAAA-MM-DDTHH:MM") usa o minuto
+     * exato escolhido; so com data (formato antigo) continua cobrindo o dia
+     * inteiro, de 00:00 a 23:59:59. */
+    const comHora = valor => valor.length > 10;
+    const desdeTexto = comHora(desde) ? `${desde}:00-03:00` : `${desde}T00:00:00-03:00`;
+    const ateTexto = comHora(ate) ? `${ate}:00-03:00` : `${ate}T23:59:59-03:00`;
+    const formatarRotulo = valor => comHora(valor)
+      ? `${valor.slice(8, 10)}/${valor.slice(5, 7)} ${valor.slice(11, 16)}`
+      : `${valor.slice(8, 10)}/${valor.slice(5, 7)}`;
+
     return {
-      desde: `${desde}T00:00:00-03:00`,
-      ate: `${ate}T23:59:59-03:00`,
-      rotulo: `${desde} a ${ate}`
+      desde: desdeTexto,
+      ate: ateTexto,
+      rotulo: `${formatarRotulo(desde)} a ${formatarRotulo(ate)}`
     };
   }
 
