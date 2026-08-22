@@ -14,7 +14,10 @@ import { toast, toastFalha } from "../../components/toast.js";
 
 const PAGAMENTOS = ["Dinheiro", "Pix", "Cartão de Crédito", "Cartão de Débito"];
 
-const rascunho = { itens: [], canal: "loja", pagamento: "Dinheiro", modalidade: "retirada", mesa: null };
+const rascunho = {
+  itens: [], canal: "loja", pagamento: "Dinheiro", modalidade: "retirada", mesa: null,
+  cortesia: false, cortesiaMotivo: ""
+};
 let aoConcluir = null;
 
 const normalizarBusca = valor => String(valor || "")
@@ -28,9 +31,11 @@ let cotacaoManual = null;
 let timerBuscaManual = null;
 let requisicaoBuscaManual = null;
 
-/* Chave que identifica uma linha do carrinho — comboId ou id, nunca os dois
- * (rascunho.itens grava so um dos dois preenchido, o outro fica null). */
-const chaveItem = item => item.comboId || item.id;
+/* Chave que identifica uma linha do carrinho — comboId, id+id2 (pizza de 2
+ * sabores) ou so id, nunca mais de um preenchido ao mesmo tempo. id2 entra na
+ * chave pra uma pizza meio-a-meio nao se confundir com o sabor avulso, que
+ * usa o mesmo id de produto. */
+const chaveItem = item => item.comboId || (item.id2 ? `${item.id}+${item.id2}` : item.id);
 
 const subtotal = () => rascunho.itens.reduce((soma, item) => soma + item.price * item.qty, 0);
 const freteManual = () => rascunho.modalidade === "entrega" && cotacaoManual?.dentro ? Number(cotacaoManual.taxa) : 0;
@@ -166,15 +171,30 @@ function desenharChips() {
   if (!mostraTroco && $("#manual-change-for")) $("#manual-change-for").value = "";
 }
 
+/* Mesma prioridade de categoria do cardapio do cliente (ver pesoCategoria em
+ * pages/menu/catalogo.js) — nao importa de la porque e um modulo do
+ * cardapio publico, entao replica local, so a ordenacao mesmo. */
+const ORDEM_CATEGORIA_MANUAL = ["burg", "pizza", "por", "bebid", "drink"];
+function pesoCategoriaManual(chave, rotulo) {
+  const alvo = normalizarBusca(`${chave} ${rotulo}`);
+  if (alvo.includes("combo")) return 100;
+  const indice = ORDEM_CATEGORIA_MANUAL.findIndex(termo => alvo.includes(termo));
+  return indice === -1 ? 50 : indice;
+}
+
+let categoriaManual = "todos";
+
 /* Combo entra na mesma busca de produto avulso — sem estoque proprio (quem
- * controla e cada produto componente, ver precificar() no backend). */
+ * controla e cada produto componente, ver precificar() no backend). Pizza de
+ * 2 sabores herda a categoria do primeiro sabor (sempre pizza, ja que so
+ * sabor de pizza entra em combinacao — ver exigirSaborPizza no backend). */
 function desenharProdutos() {
   const termo = normalizarBusca($("#manual-search")?.value).trim();
   const produtosOk = estado.produtos
     .filter(produto => produto.active && (!controlaEstoqueCategoria(produto.category) || produto.stock > 0))
     .map(produto => ({
       tipo: "produto", id: produto.id, name: produto.name, image: produto.image || "",
-      price: precoEfetivo(produto),
+      price: precoEfetivo(produto), categoria: produto.category,
       legenda: `${rotuloCategoria(produto.category)} · ${controlaEstoqueCategoria(produto.category)
         ? `${produto.stock} em estoque`
         : "sem controle de estoque"}`
@@ -183,10 +203,36 @@ function desenharProdutos() {
     .filter(combo => combo.active)
     .map(combo => ({
       tipo: "combo", id: combo.id, name: combo.name, image: combo.image || "",
-      price: Number(combo.price), legenda: "Combo"
+      price: Number(combo.price), categoria: "combos", legenda: "Combo"
     }));
+  const combinacoesOk = (estado.combinacoesSabores || []).map(combinacao => ({
+    tipo: "combinacao", produtoAId: combinacao.produtoAId, produtoBId: combinacao.produtoBId,
+    name: `Pizza 1/2 ${combinacao.nomeA} + 1/2 ${combinacao.nomeB}`, image: "",
+    price: Number(combinacao.preco), legenda: "Pizza 2 sabores",
+    categoria: estado.produtos.find(produto => produto.id === combinacao.produtoAId)?.category || "combos"
+  }));
 
-  const lista = [...produtosOk, ...combosOk]
+  const todosItens = [...produtosOk, ...combosOk, ...combinacoesOk];
+
+  const categorias = new Map();
+  for (const item of todosItens) {
+    const categoria = String(item.categoria || "").trim();
+    if (categoria && !categorias.has(categoria)) categorias.set(categoria, rotuloCategoria(categoria));
+  }
+  const categoriasOrdenadas = [...categorias.entries()].sort(([chaveA, rotuloA], [chaveB, rotuloB]) =>
+    pesoCategoriaManual(chaveA, rotuloA) - pesoCategoriaManual(chaveB, rotuloB));
+  if (categoriaManual !== "todos" && !categorias.has(categoriaManual)) categoriaManual = "todos";
+
+  render($("#manual-category-filter"), ...[["todos", "Todos"], ...categoriasOrdenadas].map(([categoria, rotulo]) =>
+    el("button.chip", {
+      type: "button",
+      class: categoriaManual === categoria ? "active" : "",
+      dataset: { acao: "categoria-manual", categoria }
+    }, rotulo)
+  ));
+
+  const lista = todosItens
+    .filter(item => categoriaManual === "todos" || item.categoria === categoriaManual)
     .filter(item => !termo || normalizarBusca(`${item.name} ${item.legenda}`).includes(termo))
     .slice(0, 40);
 
@@ -194,7 +240,9 @@ function desenharProdutos() {
     ? lista.map(item =>
         el("button.manual-product", {
           type: "button",
-          dataset: item.tipo === "combo" ? { acao: "add-item", comboId: item.id } : { acao: "add-item", id: item.id }
+          dataset: item.tipo === "combo" ? { acao: "add-item", comboId: item.id }
+            : item.tipo === "combinacao" ? { acao: "add-item", produtoAId: item.produtoAId, produtoBId: item.produtoBId }
+            : { acao: "add-item", id: item.id }
         },
           item.image
             ? el("img.manual-thumb", { src: item.image, alt: "", loading: "lazy", decoding: "async" })
@@ -266,12 +314,18 @@ export async function abrirVendaManual(mesa = null, callback = null) {
   if (!estado.combos.length) {
     try { await carregar("combos"); } catch { /* combo so nao aparece na busca, resto do formulario funciona */ }
   }
+  if (!estado.combinacoesSabores.length) {
+    try { await carregar("combinacoesSabores"); } catch { /* pizza de 2 sabores so nao aparece na busca */ }
+  }
 
   rascunho.itens = [];
   rascunho.mesa = mesa;
   rascunho.canal = mesa === null ? "loja" : "loja";
   rascunho.pagamento = "Dinheiro";
   rascunho.modalidade = mesa === null ? "retirada" : "mesa";
+  rascunho.cortesia = false;
+  rascunho.cortesiaMotivo = "";
+  categoriaManual = "todos";
   aoConcluir = callback;
 
   $("#manual-title").textContent = mesa ? `Lançar pedido na mesa ${mesa}` : "Lançar pedido manual";
@@ -279,6 +333,9 @@ export async function abrirVendaManual(mesa = null, callback = null) {
   if ($("#manual-phone")) $("#manual-phone").value = "";
   if ($("#manual-address")) $("#manual-address").value = "";
   if ($("#manual-change-for")) $("#manual-change-for").value = "";
+  if ($("#manual-cortesia")) $("#manual-cortesia").checked = false;
+  if ($("#manual-cortesia-motivo")) $("#manual-cortesia-motivo").value = "";
+  mostrar($("#manual-cortesia-motivo-field"), false);
   $("#manual-search").value = "";
   limparCotacaoManual();
   definirErro("");
@@ -306,10 +363,15 @@ async function registrar() {
   if (rascunho.pagamento === "Dinheiro" && rascunho.mesa === null && !trocoPara) {
     return definirErro("Informe troco para quanto.");
   }
+  if (rascunho.cortesia && !rascunho.cortesiaMotivo.trim()) {
+    return definirErro("Informe o motivo da cortesia.");
+  }
   const corpo = {
     items: rascunho.itens.map(item => item.comboId
       ? { comboId: item.comboId, qty: item.qty }
-      : { id: item.id, qty: item.qty }),
+      : item.id2
+        ? { id: item.id, id2: item.id2, qty: item.qty }
+        : { id: item.id, qty: item.qty }),
     customer: nome || (rascunho.mesa ? `Mesa ${rascunho.mesa}` : CANAIS_ROTULO[rascunho.canal]),
     phone: telefone,
     place: rascunho.mesa
@@ -326,14 +388,26 @@ async function registrar() {
   try {
     const controle = new AbortController();
     const tempo = setTimeout(() => controle.abort(new Error("timeout")), 20000);
+    let pedido;
     try {
-      await apiPedidos.criarManual(corpo, { sinal: controle.signal });
+      ({ pedido } = await apiPedidos.criarManual(corpo, { sinal: controle.signal }));
     } finally {
       clearTimeout(tempo);
     }
+
+    if (rascunho.cortesia) {
+      try {
+        await apiPedidos.definirCortesia(pedido.id, { todoPedido: true, itemIds: [], motivo: rascunho.cortesiaMotivo.trim() });
+      } catch (erro) {
+        toastFalha(erro, "O pedido foi lançado, mas marcar como cortesia falhou. Marque pelo detalhe do pedido");
+      }
+    }
+
     await carregar("pedidos", "produtos", "mesas");
     fecharVendaManual();
-    toast(rascunho.mesa ? `Pedido lançado na mesa ${rascunho.mesa}.` : "Venda registrada na fila.");
+    toast(rascunho.mesa
+      ? `Pedido lançado na mesa ${rascunho.mesa}.`
+      : rascunho.cortesia ? "Venda registrada como cortesia." : "Venda registrada na fila.");
     aoConcluir?.();
   } catch (erro) {
     definirErro(erro.message);
@@ -362,10 +436,27 @@ export function ligarVendaManual() {
     rascunho.modalidade = botao.dataset.modalidade;
     desenharChips();
   });
+  delegar(modal, "click", "[data-acao='categoria-manual']", (_e, botao) => {
+    categoriaManual = botao.dataset.categoria;
+    desenharProdutos();
+  });
 
   $("#manual-change-for")?.addEventListener("input", () => {
     if (rascunho.pagamento === "Dinheiro") definirErro("");
     desenharCarrinho();
+  });
+
+  $("#manual-cortesia")?.addEventListener("change", e => {
+    rascunho.cortesia = e.target.checked;
+    if (!rascunho.cortesia) {
+      rascunho.cortesiaMotivo = "";
+      if ($("#manual-cortesia-motivo")) $("#manual-cortesia-motivo").value = "";
+    }
+    mostrar($("#manual-cortesia-motivo-field"), rascunho.cortesia);
+    definirErro("");
+  });
+  $("#manual-cortesia-motivo")?.addEventListener("input", e => {
+    rascunho.cortesiaMotivo = e.target.value;
   });
 
   $("#manual-address")?.addEventListener("input", e => {
@@ -391,10 +482,27 @@ export function ligarVendaManual() {
       return;
     }
 
+    if (botao.dataset.produtoAId) {
+      const { produtoAId, produtoBId } = botao.dataset;
+      const combinacao = (estado.combinacoesSabores || [])
+        .find(item => item.produtoAId === produtoAId && item.produtoBId === produtoBId);
+      if (!combinacao) return;
+      const existente = rascunho.itens.find(item => item.id === produtoAId && item.id2 === produtoBId);
+      if (existente) existente.qty += 1;
+      else rascunho.itens.push({
+        id: produtoAId, id2: produtoBId, comboId: null,
+        name: `Pizza 1/2 ${combinacao.nomeA} + 1/2 ${combinacao.nomeB}`, image: "",
+        price: Number(combinacao.preco), qty: 1
+      });
+      definirErro("");
+      desenharCarrinho();
+      return;
+    }
+
     const produto = estado.produtos.find(item => item.id === botao.dataset.id);
     if (!produto) return;
     const controlaEstoque = controlaEstoqueCategoria(produto.category);
-    const existente = rascunho.itens.find(item => item.id === produto.id);
+    const existente = rascunho.itens.find(item => chaveItem(item) === produto.id);
     if (existente) {
       if (controlaEstoque && existente.qty >= produto.stock) return definirErro(`${produto.name}: restam ${produto.stock} em estoque.`);
       existente.qty += 1;

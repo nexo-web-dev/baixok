@@ -11,9 +11,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/admin-n-EVg3Ad.js"></script>
+  <script type="module" crossorigin src="/assets/admin-BM1IM_zJ.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/api-PIF9VMEA.js">
-  <link rel="modulepreload" crossorigin href="/assets/estoque-HqF6EDvA.js">
+  <link rel="modulepreload" crossorigin href="/assets/estoque-MLCOp9xA.js">
   <link rel="modulepreload" crossorigin href="/assets/categorias-CaaVB_Yc.js">
   <link rel="stylesheet" crossorigin href="/assets/admin-BPqXY_JQ.css">
 </head>
@@ -668,6 +668,14 @@
         <small>Preencha quando a forma de pagamento for dinheiro.</small>
         <input id="manual-change-for" placeholder="Ex: 100,00" inputmode="decimal">
       </label>
+      <label class="check-field" id="manual-cortesia-field">
+        <input id="manual-cortesia" type="checkbox">
+        Lançar como cortesia (a casa não vai cobrar)
+      </label>
+      <div class="manual-section hidden" id="manual-cortesia-motivo-field">
+        <textarea class="motivo-textarea" id="manual-cortesia-motivo" rows="3" placeholder="Motivo da cortesia (obrigatório)..."></textarea>
+      </div>
+      <div class="chip-row" id="manual-category-filter"></div>
       <input id="manual-search" type="search" placeholder="Buscar produto para adicionar...">
       <div class="manual-product-list" id="manual-products"></div>
       <div class="manual-cart" id="manual-cart"></div>
