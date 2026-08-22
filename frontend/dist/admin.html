@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/admin-G4ayq__e.js"></script>
+  <script type="module" crossorigin src="/assets/admin-7cfJ2tGl.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/api-PIF9VMEA.js">
   <link rel="modulepreload" crossorigin href="/assets/estoque-MLCOp9xA.js">
   <link rel="modulepreload" crossorigin href="/assets/categorias-CaaVB_Yc.js">
@@ -748,6 +748,23 @@
       <div class="field-row">
         <button class="primary wide" type="submit" id="cash-password-submit">Confirmar abertura</button>
         <button class="secondary" type="button" id="cash-password-cancel">Cancelar</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal hidden" id="close-cash-modal" role="dialog" aria-modal="true" aria-labelledby="close-cash-title">
+    <form class="modal-card" id="close-cash-form">
+      <div>
+        <h2 id="close-cash-title">Fechar caixa</h2>
+        <p>Gera o relatório do período e trava novas vendas até abrir de novo.</p>
+      </div>
+      <label>
+        Observação (opcional)
+        <textarea class="motivo-textarea" id="close-cash-observacao" rows="3" placeholder="Ex: fechamento antecipado, diferença no caixa..."></textarea>
+      </label>
+      <div class="field-row">
+        <button class="primary wide" type="submit" id="close-cash-submit">Fechar caixa e gerar relatório</button>
+        <button class="secondary" type="button" id="close-cash-cancel">Cancelar</button>
       </div>
     </form>
   </div>

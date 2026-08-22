@@ -265,13 +265,15 @@ function acoes(pedido, papel) {
       botaoDetalhe(pedido),
       el("button.primary.small", { type: "button", dataset: { acao: "status", id: pedido.id, status: "pronto" } },
         rotuloPronto(pedido)),
-      podeOperar ? el("button.secondary.small", { type: "button", dataset: { acao: "reimprimir", id: pedido.id } }, "Reimprimir") : null
+      podeOperar ? el("button.secondary.small", { type: "button", dataset: { acao: "reimprimir", id: pedido.id } }, "Reimprimir") : null,
+      podeOperar ? el("button.danger.small", { type: "button", dataset: { acao: "cancelar-pedido", id: pedido.id } }, "Cancelar") : null
     ];
   }
   if (pedido.status === "pronto") {
     return [
       botaoDetalhe(pedido),
-      el("button.ghost-green.small", { type: "button", dataset: { acao: "status", id: pedido.id, status: "entregue" } }, rotuloConcluir(pedido))
+      el("button.ghost-green.small", { type: "button", dataset: { acao: "status", id: pedido.id, status: "entregue" } }, rotuloConcluir(pedido)),
+      podeOperar ? el("button.danger.small", { type: "button", dataset: { acao: "cancelar-pedido", id: pedido.id } }, "Cancelar") : null
     ];
   }
   return [botaoDetalhe(pedido)];
@@ -738,17 +740,21 @@ async function mudarStatus(id, status) {
   }
 }
 
-async function recusar(id) {
+/* Recusar (pedido novo, ainda nao aprovado) e cancelar (pedido ja em preparo
+ * ou pronto) sao a mesma acao no backend — so muda o texto que a pessoa ve,
+ * porque "recusar" um pedido que ja esta na cozinha soa estranho. */
+async function cancelarPedido(id, { recusando = false } = {}) {
   const pedido = estado.pedidos.find(item => item.id === id);
-  if (!confirm(`Recusar o pedido de ${pedido?.customer || "cliente"}? Os itens voltam para o estoque.`)) return;
+  const rotulo = recusando ? "Recusar" : "Cancelar";
+  if (!confirm(`${rotulo} o pedido de ${pedido?.customer || "cliente"}? Os itens voltam para o estoque.`)) return;
 
-  const motivo = (prompt("Motivo da recusa (obrigatório e fica registrado):", "") ?? "").trim();
-  if (!motivo) return toastFalha(new Error("Informe o motivo para recusar o pedido."), "Cancelamento");
+  const motivo = (prompt(`Motivo d${recusando ? "a recusa" : "o cancelamento"} (obrigatório e fica registrado):`, "") ?? "").trim();
+  if (!motivo) return toastFalha(new Error(`Informe o motivo para ${rotulo.toLowerCase()} o pedido.`), "Cancelamento");
   try {
     await apiPedidos.cancelar(id, motivo);
     await carregar("pedidos", "produtos");
     desenharPedidos();
-    toast("Pedido recusado e estoque devolvido.");
+    toast(recusando ? "Pedido recusado e estoque devolvido." : "Pedido cancelado e estoque devolvido.");
   } catch (erro) {
     toastFalha(erro);
   }
@@ -760,7 +766,8 @@ export function ligarPedidos() {
 
   delegar(alvo, "click", "[data-acao='aprovar']", (_e, botao) => mudarStatus(botao.dataset.id, "preparo"));
   delegar(alvo, "click", "[data-acao='status']", (_e, botao) => mudarStatus(botao.dataset.id, botao.dataset.status));
-  delegar(alvo, "click", "[data-acao='recusar']", (_e, botao) => recusar(botao.dataset.id));
+  delegar(alvo, "click", "[data-acao='recusar']", (_e, botao) => cancelarPedido(botao.dataset.id, { recusando: true }));
+  delegar(alvo, "click", "[data-acao='cancelar-pedido']", (_e, botao) => cancelarPedido(botao.dataset.id));
   delegar(alvo, "click", "[data-acao='detalhe']", (_e, botao) => abrirDetalhePedido(botao.dataset.id));
   delegar(alvo, "click", "[data-acao='reimprimir']", (_e, botao) => {
     const pedido = estado.pedidos.find(item => item.id === botao.dataset.id);

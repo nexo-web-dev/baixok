@@ -747,6 +747,23 @@
     </form>
   </div>
 
+  <div class="modal hidden" id="close-cash-modal" role="dialog" aria-modal="true" aria-labelledby="close-cash-title">
+    <form class="modal-card" id="close-cash-form">
+      <div>
+        <h2 id="close-cash-title">Fechar caixa</h2>
+        <p>Gera o relatório do período e trava novas vendas até abrir de novo.</p>
+      </div>
+      <label>
+        Observação (opcional)
+        <textarea class="motivo-textarea" id="close-cash-observacao" rows="3" placeholder="Ex: fechamento antecipado, diferença no caixa..."></textarea>
+      </label>
+      <div class="field-row">
+        <button class="primary wide" type="submit" id="close-cash-submit">Fechar caixa e gerar relatório</button>
+        <button class="secondary" type="button" id="close-cash-cancel">Cancelar</button>
+      </div>
+    </form>
+  </div>
+
   <div class="support-modal hidden" id="support-modal" role="dialog" aria-modal="true" aria-labelledby="support-title">
     <div class="support-panel">
       <div class="support-head">

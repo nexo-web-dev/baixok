@@ -1,4 +1,4 @@
-import { el, render, $, delegar, mostrar } from "../../../utils/dom.js";
+import { el, render, $, delegar, mostrar, ligarModal } from "../../../utils/dom.js";
 import { reais, dataHora } from "../../../utils/formato.js";
 import { apiCaixa } from "../../../services/api.js";
 import { estado, carregar } from "../store.js";
@@ -115,12 +115,22 @@ async function abrirCaixa() {
   }
 }
 
-async function fecharCaixa() {
+function abrirModalFecharCaixa() {
   if (!estado.caixaAtual) return toastFalha(new Error("Não há caixa aberto."), "Caixa");
-  const observacao = prompt("Observação do fechamento (opcional):", "") ?? "";
-  if (!confirm("Fechar o caixa agora e gerar o relatório do período?")) return;
+  const modal = $("#close-cash-modal");
+  const campo = $("#close-cash-observacao");
+  if (!modal) return fecharCaixaConfirmado("");
+  if (campo) campo.value = "";
+  mostrar(modal, true);
+  setTimeout(() => campo?.focus(), 30);
+}
 
-  const botao = $("#close-cash");
+function fecharModalFecharCaixa() {
+  mostrar($("#close-cash-modal"), false);
+}
+
+async function fecharCaixaConfirmado(observacao) {
+  const botao = $("#close-cash-submit") || $("#close-cash");
   if (botao) botao.disabled = true;
   try {
     const { caixa } = await apiCaixa.fechar(observacao);
@@ -199,8 +209,16 @@ async function apagarFechamento(id) {
 
 export function ligarFechamentos() {
   $("#open-cash")?.addEventListener("click", abrirCaixa);
-  $("#close-cash")?.addEventListener("click", fecharCaixa);
+  $("#close-cash")?.addEventListener("click", abrirModalFecharCaixa);
   $("#refresh-closings")?.addEventListener("click", desenharFechamentos);
+  $("#close-cash-form")?.addEventListener("submit", evento => {
+    evento.preventDefault();
+    const observacao = $("#close-cash-observacao")?.value.trim() || "";
+    fecharModalFecharCaixa();
+    fecharCaixaConfirmado(observacao);
+  });
+  $("#close-cash-cancel")?.addEventListener("click", fecharModalFecharCaixa);
+  ligarModal($("#close-cash-modal"), fecharModalFecharCaixa);
   delegar($("#closing-list"), "click", "[data-acao='apagar-fechamento']", (_e, botao) =>
     apagarFechamento(botao.dataset.id));
   $("#cash-password-form")?.addEventListener("submit", evento => {
