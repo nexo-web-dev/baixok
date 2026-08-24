@@ -12,13 +12,20 @@ import { mesasFechamentosRepo } from "../repositories/mesas-fechamentos.repo.js"
 import { HORA_VIRADA } from "../config/constants.js";
 import { controlaEstoqueCategoria } from "../lib/estoque.js";
 
-/* O dia operacional vira as 5h: pedido feito 1h da manha pertence ao movimento
- * da noite anterior, nao ao dia seguinte. */
+/* O dia operacional vira as 5h em Brasilia: pedido feito 1h da manha pertence
+ * ao movimento da noite anterior, nao ao dia seguinte.
+ *
+ * Calcula em cima do relogio de Brasilia explicitamente (UTC-3 fixo, sem
+ * horario de verao desde 2019) em vez de getHours()/setHours() do Node, que
+ * usam o fuso do PROCESSO — se o servidor rodar em UTC (comum em host de
+ * nuvem), a virada aconteceria as 5h UTC = 2h da manha em Brasilia, 3h mais
+ * cedo do que deveria, empurrando pedido da madrugada pro dia errado. */
 function inicioDoDiaOperacional(quando = new Date()) {
-  const inicio = new Date(quando);
-  if (inicio.getHours() < HORA_VIRADA) inicio.setDate(inicio.getDate() - 1);
-  inicio.setHours(HORA_VIRADA, 0, 0, 0);
-  return inicio;
+  const TRES_HORAS_MS = 3 * 60 * 60 * 1000;
+  const brasilia = new Date(quando.getTime() - TRES_HORAS_MS);
+  if (brasilia.getUTCHours() < HORA_VIRADA) brasilia.setUTCDate(brasilia.getUTCDate() - 1);
+  brasilia.setUTCHours(HORA_VIRADA, 0, 0, 0);
+  return new Date(brasilia.getTime() + TRES_HORAS_MS);
 }
 
 /* 'AAAA-MM-DD HH:MM:SS' e o formato que o repositorio converte com

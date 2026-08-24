@@ -78,3 +78,24 @@ test("periodo 'ontem' cobre o dia operacional anterior inteiro, sem sobrepor nem
 
   assert.equal(ontem.rotulo, "Ontem");
 });
+
+test("virada do dia operacional (5h) usa Brasilia mesmo se o servidor rodar em outro fuso", () => {
+  /* Regressao real: inicioDoDiaOperacional usava getHours()/setHours() do
+   * Node, que le o fuso do PROCESSO, nao o de Brasilia. Servidor de nuvem
+   * rodando em UTC faria a virada as 5h UTC = 2h da manha em Brasilia — 3h
+   * mais cedo do que deveria, e pedido feito entre 2h e 5h caia no dia
+   * seguinte por engano (raiz provavel do "filtro Hoje mostra venda de
+   * ontem"). Troca o TZ do processo pra provar que agora nao faz diferenca. */
+  const tzOriginal = process.env.TZ;
+  try {
+    process.env.TZ = "UTC";
+
+    /* 03:00 em Brasilia (UTC-3) = 06:00 UTC — depois da virada as 5h, entao
+     * ainda pertence ao dia de HOJE (que comecou as 5h de Brasilia). */
+    const hoje = resolverPeriodo({ periodo: "hoje" });
+    assert.equal(new Date(hoje.desde).toISOString().slice(11, 16), "08:00",
+      "inicio de 'hoje' tem que ser 5h em Brasilia (08:00 UTC), nao 5h UTC (02:00 Brasilia)");
+  } finally {
+    process.env.TZ = tzOriginal;
+  }
+});

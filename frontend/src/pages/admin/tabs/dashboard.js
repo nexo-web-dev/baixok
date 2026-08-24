@@ -5,7 +5,7 @@
  * somar faturamento no navegador. Alem de pesado, colocava a base de clientes
  * dentro de um tablet que fica no balcao. */
 import { el, render, $, delegar, mostrar, debounce } from "../../../utils/dom.js";
-import { reais } from "../../../utils/formato.js";
+import { reais, dataHora } from "../../../utils/formato.js";
 import { CANAIS_ROTULO, MODALIDADES_ROTULO, rotuloCategoria } from "../../../utils/categorias.js";
 import { apiPedidos, apiRelatorios } from "../../../services/api.js";
 import { toastFalha, toastOk } from "../../../components/toast.js";
@@ -182,6 +182,15 @@ const PERIODOS_TEXTO = {
 function periodoPreposicional(periodo) {
   const rotulo = periodo?.rotulo || "";
   return PERIODOS_TEXTO[rotulo] || (rotulo ? `No período de ${rotulo}` : "No período selecionado");
+}
+
+/* Mostra a data/hora exata que o filtro esta usando, por baixo do "Hoje"/
+ * "Ontem" abstrato — e a forma mais direta de tirar a duvida de "por que uma
+ * venda de ontem apareceu no Hoje" sem a pessoa precisar entender o conceito
+ * de "dia da loja" (vira as 5h, nao a meia-noite). */
+function janelaPeriodo(periodo) {
+  if (!periodo?.desde || !periodo?.ate) return "";
+  return `"${periodo.rotulo}" agora = de ${dataHora(periodo.desde)} até ${dataHora(periodo.ate)}.`;
 }
 
 function filtrosAtivosTexto() {
@@ -398,6 +407,9 @@ export async function desenharDashboard() {
   if (resumoTexto) {
     resumoTexto.textContent = montarResumoTextual({ resumo, periodo, pagamentoTop, plataformaTop, modalidades, maisVendidos });
   }
+
+  const janelaTexto = $("#period-window");
+  if (janelaTexto) janelaTexto.textContent = janelaPeriodo(periodo);
 
   render($("#dashboard-metrics"),
     metrica("Faturamento", reais(resumo.faturamento), periodo.rotulo),

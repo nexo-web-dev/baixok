@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/admin-7cfJ2tGl.js"></script>
+  <script type="module" crossorigin src="/assets/admin-FQptd7V7.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/api-PIF9VMEA.js">
   <link rel="modulepreload" crossorigin href="/assets/estoque-MLCOp9xA.js">
   <link rel="modulepreload" crossorigin href="/assets/categorias-CaaVB_Yc.js">
@@ -394,7 +394,8 @@
         <p>Resultado do caixa no período. Pedidos cancelados ficam fora do faturamento. Exporte em planilha quando precisar fechar o mês.</p>
         <p>Os números contam pedidos já <strong>entregues</strong>, pela data em que o pedido foi feito — não pela data em que foi entregue. Pedido ainda em preparo aparece no Kanban, mas só entra na conta quando você marcar como entregue. Use "De/Até" com hora pra ver uma janela específica do dia (ex: só o almoço).</p>
       </div>
-      <p class="small faint filter-note">Os filtros de período usam o horário em que o pedido foi feito, não o de quando foi entregue.</p>
+      <p class="small faint filter-note">O dia da loja vira às 5h da manhã, não à meia-noite — pedido feito de madrugada conta como movimento da noite anterior. Os filtros usam o horário em que o pedido foi <strong>feito</strong>, não o de quando foi entregue.</p>
+      <p class="small faint filter-note" id="period-window"></p>
       <div class="filter-bar">
         <div class="period-group" id="period-group">
           <button class="period-btn active" type="button" data-period="hoje">Hoje</button>
