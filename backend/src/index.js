@@ -98,3 +98,15 @@ process.on("SIGTERM", () => encerrar("SIGTERM"));
 process.on("unhandledRejection", motivo => {
   logger.error("Promise rejeitada sem tratamento", { erro: String(motivo) });
 });
+
+/* Sem isto, um erro sincrono que escape de todo try/catch (ex: um bug num
+ * callback de setInterval, fora da cadeia de promises de uma requisicao)
+ * derruba o processo inteiro em silencio — o host reinicia sozinho, mas nao
+ * fica nenhum rastro do que aconteceu, so o hiato de "caiu e voltou" que
+ * aparece pro cliente como erro 520 do Cloudflare. Registrar antes de sair
+ * nao evita a queda (o processo pode estar num estado invalido pra continuar),
+ * mas da o log que falta pra saber a causa na proxima vez. */
+process.on("uncaughtException", erro => {
+  logger.error("Erro fatal nao tratado — processo vai reiniciar", { erro: erro.message, stack: erro.stack });
+  process.exit(1);
+});
