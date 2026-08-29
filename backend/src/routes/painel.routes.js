@@ -17,7 +17,7 @@ import {
   criarPedidoManualSchema, mudarStatusSchema, cancelarPedidoSchema, motoboyPedidoSchema,
   listarPedidosSchema, relatorioSchema, localizacaoMotoboySchema, excluirPedidoSchema,
   adicionarItensPedidoSchema, definirPagamentoSchema, ajustarQuantidadeItemSchema, dividirPagamentoSchema,
-  definirCortesiaSchema
+  definirCortesiaSchema, definirTaxaServicoSchema
 } from "../schemas/pedido.schema.js";
 import { abrirCaixaSchema, fecharCaixaSchema, listarFechamentosSchema, excluirFechamentoSchema } from "../schemas/caixa.schema.js";
 import {
@@ -57,6 +57,7 @@ rotasPainel.patch("/pedidos/:id/pagamento", EDIT_PEDIDOS, validarParams(paramsId
 rotasPainel.post("/pedidos/:id/pagamento/dividir", EDIT_PEDIDOS, validarParams(paramsId), validarCorpo(dividirPagamentoSchema), pedidosController.dividirPagamento);
 rotasPainel.post("/pedidos/:id/cortesia", EDIT_PEDIDOS, validarParams(paramsId), validarCorpo(definirCortesiaSchema), pedidosController.definirCortesia);
 rotasPainel.delete("/pedidos/:id/cortesia", EDIT_PEDIDOS, validarParams(paramsId), pedidosController.reverterCortesia);
+rotasPainel.post("/pedidos/:id/taxa-servico", EDIT_PEDIDOS, validarParams(paramsId), validarCorpo(definirTaxaServicoSchema), pedidosController.definirTaxaServico);
 rotasPainel.post("/pedidos", EDIT_PEDIDOS, validarCorpo(criarPedidoManualSchema), pedidosController.criarManual);
 /* Apagar e diferente de cancelar: some com o registro. So o admin, e mesmo
  * logado precisa confirmar a propria senha de novo (corpo da requisicao). */

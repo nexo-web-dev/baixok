@@ -47,5 +47,6 @@ export const PAPEIS_ROTULO = Object.freeze({
   admin: "Administrador",
   caixa: "Caixa",
   cozinha: "Cozinha",
-  entregador: "Entregador"
+  entregador: "Entregador",
+  garcom: "Garçom"
 });

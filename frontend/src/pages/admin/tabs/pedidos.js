@@ -604,6 +604,9 @@ export async function abrirDetalhePedido(id, { abrirNaoPago = false } = {}) {
       pedido.tableNumber ? el("div", {}, el("span", {}, "Mesa"), el("strong", {}, `Mesa ${pedido.tableNumber}`)) : null,
       pedido.cortesiaValue > 0
         ? el("div.highlight-cortesia", {}, el("span", {}, "Cortesia"), el("strong", {}, reais(pedido.cortesiaValue)))
+        : null,
+      pedido.serviceFee > 0
+        ? el("div", {}, el("span", {}, "Taxa de serviço"), el("strong", {}, reais(pedido.serviceFee)))
         : null
     ),
     el("div.order-detail-items", {}, pedido.items.map(item => linhaDetalheItem(item, pedido, editavel))),
@@ -644,6 +647,12 @@ export async function abrirDetalhePedido(id, { abrirNaoPago = false } = {}) {
             type: "button", title: "Ex.: parte no cartão, parte no Pix",
             dataset: { acao: "abrir-divisao-pagamento", id: pedido.id }
           }, pedido.payment === "Dividido" ? "Editar divisão" : "Dividir pagamento")
+        : null,
+      editavel
+        ? el("button.secondary", {
+            type: "button", title: "10% do garçom, embutido no total antes de imprimir a nota",
+            dataset: { acao: "alternar-taxa-servico", id: pedido.id }
+          }, pedido.serviceFee > 0 ? "Remover taxa de serviço (10%)" : "Adicionar taxa de serviço (10%)")
         : null,
       el("button.secondary", { type: "button", dataset: { acao: "reimprimir-detalhe", id: pedido.id } }, "Reimprimir nota")
     ),
@@ -925,6 +934,22 @@ export function ligarPedidos() {
       toast("Cortesia desfeita.");
     } catch (erro) {
       toastFalha(erro, "Cortesia");
+    } finally {
+      botao.disabled = false;
+    }
+  });
+
+  delegar($("#order-detail-body"), "click", "[data-acao='alternar-taxa-servico']", async (_e, botao) => {
+    const pedido = pedidoDetalheAtualCache;
+    const aplicar = !(pedido?.serviceFee > 0);
+    botao.disabled = true;
+    try {
+      await apiPedidos.definirTaxaServico(botao.dataset.id, aplicar);
+      await carregar("pedidos");
+      abrirDetalhePedido(botao.dataset.id);
+      toast(aplicar ? "Taxa de serviço (10%) adicionada ao total." : "Taxa de serviço removida do total.");
+    } catch (erro) {
+      toastFalha(erro, "Taxa de serviço");
     } finally {
       botao.disabled = false;
     }

@@ -12,14 +12,16 @@ const ABAS_POR_PADRAO = {
   [PAPEIS.ADMIN]: ["pedidos", "motoboy", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "fechamentos", "plano", "usuarios"],
   [PAPEIS.CAIXA]: ["pedidos", "motoboy", "mesas", "estoque", "dashboard", "fechamentos"],
   [PAPEIS.COZINHA]: ["pedidos"],
-  [PAPEIS.ENTREGADOR]: ["pedidos", "motoboy"]
+  [PAPEIS.ENTREGADOR]: ["pedidos", "motoboy"],
+  [PAPEIS.GARCOM]: ["pedidos", "mesas"]
 };
 
 const EDITAVEIS_POR_PADRAO = {
   [PAPEIS.ADMIN]: ["pedidos", "motoboy", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "fechamentos", "plano", "usuarios"],
   [PAPEIS.CAIXA]: ["pedidos", "motoboy", "mesas", "estoque"],
   [PAPEIS.COZINHA]: [],
-  [PAPEIS.ENTREGADOR]: ["pedidos", "motoboy"]
+  [PAPEIS.ENTREGADOR]: ["pedidos", "motoboy"],
+  [PAPEIS.GARCOM]: ["pedidos", "mesas"]
 };
 
 function normalizarLista(valor, fallback = []) {

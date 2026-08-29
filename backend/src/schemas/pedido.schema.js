@@ -110,6 +110,10 @@ export const definirCortesiaSchema = z.object({
   { message: "Selecione o pedido todo ou ao menos um item.", path: ["itemIds"] }
 );
 
+export const definirTaxaServicoSchema = z.object({
+  aplicar: z.boolean()
+}).strict();
+
 export const definirPagamentoSchema = z.object({
   pagamento: texto(60, { obrigatorio: true }),
   /* Obrigatorio so quando pagamento = "Não pago" — checado no service, nao

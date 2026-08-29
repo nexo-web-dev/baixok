@@ -55,7 +55,8 @@ const PADRAO_PERMISSOES = {
   admin: { ver: Object.keys(ABAS), editar: Object.keys(ABAS) },
   caixa: { ver: ["pedidos", "motoboy", "mesas", "estoque", "dashboard", "fechamentos"], editar: ["pedidos", "motoboy", "mesas", "estoque"] },
   cozinha: { ver: ["pedidos"], editar: ["pedidos"] },
-  entregador: { ver: ["pedidos", "motoboy"], editar: ["pedidos", "motoboy"] }
+  entregador: { ver: ["pedidos", "motoboy"], editar: ["pedidos", "motoboy"] },
+  garcom: { ver: ["pedidos", "mesas"], editar: ["pedidos", "mesas"] }
 };
 
 function permissaoPadrao(papel) {
@@ -160,11 +161,21 @@ function prepararFormulario(usuario = null) {
   cancelar?.classList.add("hidden");
   if (papel) papel.value = "caixa";
   if (hint) hint.textContent = "Use um e-mail válido e uma senha com pelo menos 10 caracteres.";
-  aplicarPermissoesNaTela(permissaoPadrao(papel?.value || "caixa"));
+  aplicarPadraoDoPapel(papel?.value || "caixa");
+}
+
+/* aplicarPermissoesNaTela espera {abasVer, abasEditar} (os mesmos nomes do
+ * usuario salvo); permissaoPadrao devolve {ver, editar}. Sem este adaptador,
+ * as duas chaves nunca batem e a tela sempre marca zero checkbox — bug real
+ * que zerava as permissoes de TODO usuario novo, nao so o papel que estava
+ * sendo adicionado agora. */
+function aplicarPadraoDoPapel(papel) {
+  const padrao = permissaoPadrao(papel);
+  aplicarPermissoesNaTela({ abasVer: padrao.ver, abasEditar: padrao.editar });
 }
 
 function atualizarPermissoesDoPapel() {
-  aplicarPermissoesNaTela(permissaoPadrao($("#user-role")?.value || usuarioEmEdicao?.papel || "caixa"));
+  aplicarPadraoDoPapel($("#user-role")?.value || usuarioEmEdicao?.papel || "caixa");
 }
 
 function resumoPermissoes(usuario) {

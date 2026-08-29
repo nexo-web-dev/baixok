@@ -66,6 +66,10 @@ export const pedidosController = {
     const { id } = req.validado.params;
     res.json({ pedido: await pedidosService.reverterCortesia(id, contexto(req)) });
   },
+  async definirTaxaServico(req, res) {
+    const { id } = req.validado.params;
+    res.json({ pedido: await pedidosService.definirTaxaServico(id, req.validado.body.aplicar, contexto(req)) });
+  },
   async marcarImpresso(req, res) {
     await pedidosService.marcarImpresso(req.validado.params.id);
     res.json({ ok: true });

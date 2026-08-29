@@ -61,6 +61,7 @@ const paraApi = (linha, itens = [], pagamentos = []) => linha && ({
   deliveryFee: linha.taxa_entrega,
   deliveryKm: linha.entrega_km,
   deliveryZone: linha.entrega_faixa,
+  serviceFee: Number(linha.taxa_servico || 0),
   total: linha.total,
   motoboy: linha.motoboy || "",
   printed: doBanco(linha.impresso),
@@ -392,6 +393,17 @@ export const pedidosRepo = {
     await alteradas(
       "UPDATE pedidos SET subtotal = ?, total = ?, atualizado_em = now() WHERE id = ?",
       [subtotal, total, id]
+    );
+    return this.buscar(id);
+  },
+
+  /* Taxa de servico (10% do garcom) num pedido avulso — mesma ideia da mesa,
+   * mas aqui e escolha pontual em cima de um pedido so, ligada ou desligada
+   * antes de mandar a nota. `valor` e `total` ja vem prontos do service. */
+  async definirTaxaServico(id, valor, total) {
+    await alteradas(
+      "UPDATE pedidos SET taxa_servico = ?, total = ?, atualizado_em = now() WHERE id = ?",
+      [valor, total, id]
     );
     return this.buscar(id);
   },

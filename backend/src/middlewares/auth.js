@@ -11,14 +11,16 @@ const ABAS_PADRAO_VER = Object.freeze({
   admin: ["pedidos", "motoboy", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "fechamentos", "plano", "usuarios"],
   caixa: ["pedidos", "motoboy", "mesas", "estoque", "dashboard", "fechamentos"],
   cozinha: ["pedidos"],
-  entregador: ["pedidos", "motoboy"]
+  entregador: ["pedidos", "motoboy"],
+  garcom: ["pedidos", "mesas"]
 });
 
 const ABAS_PADRAO_EDITAR = Object.freeze({
   admin: ["pedidos", "motoboy", "mesas", "produtos", "promos", "entrega", "estoque", "dashboard", "fechamentos", "plano", "usuarios"],
   caixa: ["pedidos", "motoboy", "mesas", "estoque"],
   cozinha: [],
-  entregador: ["pedidos", "motoboy"]
+  entregador: ["pedidos", "motoboy"],
+  garcom: ["pedidos", "mesas"]
 });
 
 function listaAbas(usuario, modo = "ver") {

@@ -36,6 +36,7 @@ export const apiPedidos = {
   dividirPagamento: (id, componentes) => http.post(`/painel/pedidos/${id}/pagamento/dividir`, { componentes }),
   definirCortesia: (id, dados) => http.post(`/painel/pedidos/${id}/cortesia`, dados),
   reverterCortesia: id => http.delete(`/painel/pedidos/${id}/cortesia`),
+  definirTaxaServico: (id, aplicar) => http.post(`/painel/pedidos/${id}/taxa-servico`, { aplicar }),
   marcarImpresso: id => http.post(`/painel/pedidos/${id}/impresso`),
   remover: (id, senha) => http.delete(`/painel/pedidos/${id}`, { corpo: { senha } }),
   adicionarItens: (id, items) => http.post(`/painel/pedidos/${id}/itens`, { items }),

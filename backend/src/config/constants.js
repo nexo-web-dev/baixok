@@ -5,7 +5,8 @@ export const PAPEIS = Object.freeze({
   ADMIN: "admin",
   CAIXA: "caixa",
   COZINHA: "cozinha",
-  ENTREGADOR: "entregador"
+  ENTREGADOR: "entregador",
+  GARCOM: "garcom"
 });
 export const TODOS_PAPEIS = Object.freeze(Object.values(PAPEIS));
 

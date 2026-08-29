@@ -30,6 +30,7 @@ import { combinacoesSaboresRepo } from "../repositories/combinacoes-sabores.repo
 import { mesasRepo } from "../repositories/mesas.repo.js";
 import { caixaRepo } from "../repositories/caixa.repo.js";
 import { auditoriaRepo } from "../repositories/auditoria.repo.js";
+import { ajustesRepo } from "../repositories/ajustes.repo.js";
 import { cuponsService } from "./cupons.service.js";
 import { entregaService } from "./entrega.service.js";
 import { authService } from "./auth.service.js";
@@ -791,6 +792,32 @@ export const pedidosService = {
       usuarioId: usuario.id, usuario: usuario.usuario, acao: "pedido_cortesia_revertida",
       entidade: "pedido", entidadeId: id,
       detalhes: { valorCortesiaAnterior: atual.cortesiaValue, motivoAnterior: atual.cortesiaReason },
+      ip
+    });
+    publicar("pedidos", [CANAL.OPERACAO, CANAL.TELAO]);
+    return pedido;
+  },
+
+  /* Taxa de servico (10% do garcom) num pedido avulso — mesmo percentual
+   * configurado pra mesa (ajuste "taxa_servico_mesa"), so que aqui e escolha
+   * pontual em cima de um pedido so, ligada ou desligada antes de mandar a
+   * nota pro cliente. Recalcula sempre em cima do subtotal atual e substitui
+   * a taxa anterior — ligar duas vezes seguidas nao empilha taxa por cima de
+   * taxa. */
+  async definirTaxaServico(id, aplicar, { usuario, ip }) {
+    const atual = await this.buscar(id);
+    if (atual.status === "cancelado") throw conflito("Pedido cancelado não tem taxa de serviço pra marcar.");
+
+    const percentual = aplicar ? await ajustesRepo.lerNumero("taxa_servico_mesa") : 0;
+    const novaTaxa = Math.round(atual.subtotal * percentual * 100) / 100;
+    const novoTotal = Math.max(0, Math.round((atual.total - atual.serviceFee + novaTaxa) * 100) / 100);
+
+    const pedido = await pedidosRepo.definirTaxaServico(id, novaTaxa, novoTotal);
+
+    await auditoriaRepo.registrar({
+      usuarioId: usuario.id, usuario: usuario.usuario, acao: "pedido_taxa_servico",
+      entidade: "pedido", entidadeId: id,
+      detalhes: { de: atual.serviceFee, para: novaTaxa, total: pedido.total },
       ip
     });
     publicar("pedidos", [CANAL.OPERACAO, CANAL.TELAO]);
