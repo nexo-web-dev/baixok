@@ -90,7 +90,11 @@ export function abrirPool() {
        * PEM nos dois campos e extrai de cada um o bloco correspondente. */
       ...(certificadoCliente ? { cert: certificadoCliente, key: certificadoCliente } : {})
     },
-    max: 10,
+    /* 10 era justo pra varias pessoas usando o painel ao mesmo tempo (garcom,
+     * caixa, cozinha, dono, cada um com o proprio aparelho) — sob pico, dava
+     * fila de requisicao esperando conexao livre. 20 da folga sem exagerar
+     * (Supabase aceita bem mais que isso por padrao). */
+    max: 20,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000
   });

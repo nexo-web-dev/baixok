@@ -34,6 +34,19 @@ const servidor = app.listen(env.PORT, () => {
   });
 });
 
+/* Causa classica de 502 aleatorio atras de um proxy/CDN (Cloudflare, no nosso
+ * caso): o Node fecha conexao "keep-alive" ociosa depois de 5s por padrao,
+ * mas o Cloudflare guarda a conexao pra reusar por mais tempo que isso. Se o
+ * Cloudflare manda uma requisicao nova bem no instante em que o Node ja
+ * decidiu fechar aquela conexao, o proxy recebe a conexao caindo no meio e
+ * devolve 502 pro navegador — sem nenhum erro no nosso log, porque do lado
+ * do Node aquilo e so uma conexao ociosa fechada normalmente. Isso bate com
+ * o que aconteceu hoje: intermitente, sem relacao com RAM/CPU, "as vezes
+ * funciona as vezes nao". O ajuste padrao pra quem fica atras de proxy e
+ * manter o keep-alive do Node MAIOR que o do proxy na frente. */
+servidor.keepAliveTimeout = 65000;
+servidor.headersTimeout = 66000;
+
 /* Instalacao nova sem ninguem cadastrado nao pode ficar em silencio: sem esse
  * aviso, o primeiro login e impossivel e nao ha pista do porque.
  *

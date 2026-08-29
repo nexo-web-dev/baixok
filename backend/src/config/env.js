@@ -86,7 +86,13 @@ const schema = z.object({
   /* Tetos por IP. Configuraveis porque a loja com wifi unico faz dezenas de
    * clientes chegarem com o mesmo IP — o padrao serve para a maioria, mas quem
    * usa NAT pesado precisa afrouxar sem editar codigo. */
-  LIMITE_LOGIN: z.coerce.number().int().min(1).default(10),
+  /* 10 e apertado pra uma loja de verdade: garcom, caixa, cozinha e dono
+   * costumam sair pelo mesmo Wi-Fi (mesmo IP publico), e cada um logando no
+   * proprio celular no comeco do turno soma tentativas na MESMA janela de 15
+   * minutos, ver keyGenerator em rateLimit.js. Continua protegendo contra
+   * forca bruta — a senha forte e que faz esse trabalho — so nao trava gente
+   * de verdade tentando entrar. */
+  LIMITE_LOGIN: z.coerce.number().int().min(1).default(30),
   LIMITE_PEDIDO: z.coerce.number().int().min(1).default(20),
   LIMITE_GEOCODIFICACAO: z.coerce.number().int().min(1).default(120),
   LIMITE_GERAL: z.coerce.number().int().min(1).default(3000),

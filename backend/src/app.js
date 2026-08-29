@@ -4,6 +4,8 @@ import fs from "node:fs";
 import express from "express";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
+import compression from "compression";
+import { filtroCompressao } from "./lib/compressao.js";
 import { env } from "./config/env.js";
 import { rotasApi } from "./routes/index.js";
 import { carregarSessao } from "./middlewares/auth.js";
@@ -28,6 +30,14 @@ export function criarApp() {
    * frente e pior: quem chama direto forja X-Forwarded-For e escapa do limite. */
   app.set("trust proxy", env.TRUST_PROXY ? 1 : false);
   app.disable("x-powered-by");
+
+  /* Comprime resposta de texto (JSON da API, HTML, JS, CSS) antes de sair do
+   * servidor. Sem isto, um pedido do dashboard com centenas de itens ou o
+   * bundle do painel trafegam do tamanho cru — mais tempo de transferencia e
+   * mais chance de uma conexao instavel (rede do cliente, ou o Cloudflare
+   * tendo uma falha pontual) interromper no meio. Ver filtroCompressao para
+   * a excecao do SSE. */
+  app.use(compression({ filter: filtroCompressao }));
 
   app.use(helmet({
     contentSecurityPolicy: {

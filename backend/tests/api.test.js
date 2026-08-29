@@ -494,3 +494,25 @@ test("cabecalhos de seguranca estao presentes e sem unsafe-inline em script", as
   assert.equal(resposta.headers.get("x-content-type-options"), "nosniff");
   assert.equal(resposta.headers.get("x-powered-by"), null);
 });
+
+test("resposta normal da API vem comprimida, mas o fluxo de eventos (SSE) nunca", async () => {
+  const normal = await fetch(`${BASE}/api/painel/pedidos`, {
+    headers: { Cookie: sessaoAdmin.cookie, "Accept-Encoding": "gzip" }
+  });
+  await normal.text();
+  assert.ok(
+    normal.headers.get("content-encoding"),
+    "resposta normal da API deveria vir comprimida quando o cliente aceita gzip"
+  );
+
+  /* SSE nunca pode ser comprimido: comprimir bufferiza a saida esperando ter
+   * o que valha a pena compactar, e o aviso de "pedido novo" chegaria
+   * atrasado na cozinha em vez de na hora — ver filtro em app.js. */
+  const controle = new AbortController();
+  const sse = await fetch(`${BASE}/api/eventos/operacao`, {
+    headers: { Cookie: sessaoAdmin.cookie, "Accept-Encoding": "gzip" },
+    signal: controle.signal
+  });
+  assert.equal(sse.headers.get("content-encoding"), null, "SSE nao pode vir comprimido");
+  controle.abort();
+});
