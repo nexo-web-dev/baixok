@@ -84,7 +84,16 @@ export function criarApp() {
    * que o schema ja limita em 500 KB. O antigo aceitava 5 MB em qualquer rota. */
   app.use(express.json({ limit: "1mb" }));
   app.use(cookieParser());
-  app.use(carregarSessao);
+  /* So aqui, nunca global: arquivo estatico (JS, CSS, imagem) nao precisa saber
+   * quem esta logado, e cada um que o navegador pede e uma consulta a mais no
+   * banco se carregarSessao rodar pra tudo. O admin sozinho carrega ~20 arquivos
+   * de uma vez; com a loja cheia de gente usando o painel ao mesmo tempo, isso
+   * estourava as 10 conexoes do pool e a requisicao ficava pendurada esperando
+   * uma vaga — o Cloudflare desistia primeiro e devolvia 520 pro navegador,
+   * de forma intermitente (quem batesse no momento errado via a tela de erro).
+   * As paginas /admin e /telao continuam aqui porque decidem, na proxima linha,
+   * se mostram a tela de login com base em req.usuario. */
+  app.use(["/api", "/admin", "/admin.html", "/telao", "/telao.html"], carregarSessao);
   app.use("/api", limiteGeral);
   app.use(exigirCsrf);
 
