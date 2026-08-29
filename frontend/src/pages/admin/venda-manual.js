@@ -11,6 +11,7 @@ import { controlaEstoqueCategoria } from "../../utils/estoque.js";
 import { apiPedidos, apiPublica } from "../../services/api.js";
 import { estado, carregar, precoEfetivo } from "./store.js";
 import { toast, toastFalha } from "../../components/toast.js";
+import { desenharPedidos } from "./tabs/pedidos.js";
 
 const PAGAMENTOS = ["Dinheiro", "Pix", "Cartão de Crédito", "Cartão de Débito"];
 
@@ -404,6 +405,14 @@ async function registrar() {
     }
 
     await carregar("pedidos", "produtos", "mesas");
+    /* Nao dependia de nada alem do SSE pra redesenhar o kanban — quando a
+     * conexao de eventos ficava lenta ou caia (rede/CDN instavel), o pedido
+     * era criado normalmente mas so aparecia depois de um F5. Redesenha aqui
+     * na hora, sem depender do aviso em tempo real chegar de volta. */
+    desenharPedidos();
+    if (rascunho.mesa) {
+      import("./tabs/mesas.js").then(mod => mod.desenharMesas?.()).catch(() => {});
+    }
     fecharVendaManual();
     toast(rascunho.mesa
       ? `Pedido lançado na mesa ${rascunho.mesa}.`
