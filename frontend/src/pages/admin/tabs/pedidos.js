@@ -14,6 +14,11 @@ import { imprimirAmbas, imprimirTeste } from "../../../components/impressao.js";
 import { registrarMotoboyLocal } from "./motoboy.js";
 
 const MINUTOS_ATRASO = 15;
+/* Pedido que aparece pela primeira vez ganha um "pop" rapido no card, pra
+ * quem esta de olho na tela perceber que chegou algo novo sem precisar ficar
+ * lendo a coluna toda hora. Vazio na primeira carga de proposito — senao
+ * TODOS os pedidos ja existentes piscariam juntos ao abrir a aba. */
+let idsPedidosVistos = new Set();
 let relogioPedidosTimer = null;
 let pedidoDetalheAtualId = null;
 let pedidoDetalheAtualCache = null;
@@ -285,9 +290,10 @@ function cartao(pedido, papel) {
   const prioridade = pedido.status === "entregue"
     ? "normal"
     : espera >= MINUTOS_ATRASO * 2 ? "urgent" : espera >= MINUTOS_ATRASO ? "attention" : "normal";
+  const recemChegado = idsPedidosVistos.size > 0 && !idsPedidosVistos.has(pedido.id) ? "card-recem-chegado" : "";
 
   return el("article.order-card", {
-    class: `status-${pedido.status} priority-${prioridade}`,
+    class: `status-${pedido.status} priority-${prioridade} canal-${pedido.channel} ${recemChegado}`,
     draggable: papel === "entregador" ? pedido.fulfillment === "entrega" : papel !== "cozinha",
     dataset: { id: pedido.id }
   },
@@ -686,14 +692,30 @@ export function desenharPedidos() {
     estado.pedidos.filter(pedido => pedido.status !== "cancelado"),
     papel
   );
+  const colunas = colunasDoPapel(papel);
 
-  render(alvo, ...colunasDoPapel(papel).map(([status, titulo]) => {
+  const fluxo = $("#kanban-flow");
+  if (fluxo) {
+    render(fluxo, colunas.map(([, titulo], indice) => [
+      indice > 0 ? el("span.kanban-flow-seta", {}, "→") : null,
+      el("span", {}, titulo)
+    ]));
+  }
+
+  render(alvo, ...colunas.map(([status, titulo]) => {
     const linhas = porChegada(pedidos.filter(pedido => pedido.status === status));
-    return el("div.kanban-column", { class: `status-zone-${status}`, dataset: { status } },
-      el("h2", {}, titulo, " ", el("span", {}, String(linhas.length))),
+    const totalColuna = linhas.reduce((soma, pedido) => soma + Number(pedido.total || 0), 0);
+    return el("div.kanban-column", { class: `status-zone-${status}${linhas.length ? "" : " vazia"}`, dataset: { status } },
+      el("h2", {}, titulo,
+        el("span.column-meta", {},
+          linhas.length ? el("span.column-total", {}, reais(totalColuna)) : null,
+          el("span.column-count", {}, String(linhas.length))
+        )
+      ),
       linhas.length ? linhas.map(pedido => cartao(pedido, papel)) : el("p.faint", {}, "Nenhum pedido aqui.")
     );
   }));
+  idsPedidosVistos = new Set(pedidos.map(pedido => pedido.id));
 
   const badge = $("#nav-badge");
   if (badge) {

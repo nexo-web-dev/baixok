@@ -159,12 +159,22 @@
 .plan-foot .small { font-size: .76rem; }
 
 /* â€” kanban / cards de pedido â€” */
+/* Legenda do fluxo: mesmos titulos das colunas (colunasDoPapel), so pra
+ * reforcar visualmente a ordem do processo — sem duplicar a lista em outro
+ * lugar, entao nunca desalinha do que o papel logado realmente ve. */
+.kanban-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 10px; color: var(--faint); font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+.kanban-flow-seta { color: var(--line); font-weight: 400; }
 .kanban { display: grid; grid-template-columns: repeat(4, minmax(230px, 1fr)); gap: 16px; align-items: start; overflow-x: auto; padding-bottom: 8px; }
-.kanban-column { display: grid; align-content: start; gap: 11px; min-height: 220px; padding: 14px 14px 16px; border-radius: var(--radius-md); background: var(--sidebar); border: 1px solid var(--line-soft); transition: border-color .16s ease; }
+.kanban-column { display: grid; align-content: start; gap: 11px; min-height: 220px; padding: 14px 14px 16px; border-radius: var(--radius-md); background: var(--sidebar); border: 1px solid var(--line-soft); transition: border-color .16s ease, min-height .16s ease; }
+/* Coluna vazia nao precisa do mesmo espaco reservado de uma coluna com
+ * pedido de verdade — sobra menos area morta na tela. */
+.kanban-column.vazia { min-height: 108px; }
 .kanban-column:hover { border-color: rgba(217,154,104,.3); }
 .kanban-column p { color: var(--faint); font-size: .84rem; }
 .kanban-column h2 { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0 0 2px; padding: 2px 4px 2px; font-size: .85rem; }
-.kanban-column h2 span { display: grid; place-items: center; min-width: 26px; height: 24px; padding: 0 8px; border-radius: var(--radius-pill); background: var(--soft); color: var(--gold); font-family: var(--font-body); font-size: .74rem; }
+.column-meta { display: flex; align-items: center; gap: 6px; }
+.column-total { color: var(--muted-2); font-size: .72rem; font-weight: 700; white-space: nowrap; }
+.column-count { display: grid; place-items: center; min-width: 26px; height: 24px; padding: 0 8px; border-radius: var(--radius-pill); background: var(--soft); color: var(--gold); font-family: var(--font-body); font-size: .74rem; }
 .status-zone-novo h2 { color: var(--gold-light); }
 .status-zone-preparo h2 { color: var(--gold); }
 .status-zone-pronto h2 { color: var(--green); }
@@ -172,14 +182,39 @@
 
 .order-card {
   display: grid; gap: 8px; padding: 13px 14px; cursor: grab; border-radius: 16px;
-  background: var(--panel); border: 1.5px solid var(--line-soft); transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+  background: var(--panel); border: 1.5px solid var(--line-soft); border-left-width: 4px;
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease, background .16s ease;
 }
 .order-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 .order-card:active { cursor: grabbing; }
 .order-card.status-novo { border-color: rgba(201,116,67,.65); animation: bkpulse 1.6s infinite; }
-.order-card.priority-attention { border-color: rgba(217,154,104,.55); }
-.order-card.priority-urgent { border-color: rgba(212,127,110,.5); }
+/* Atraso precisa pular aos olhos pra quem esta correndo no balcao — nao so a
+ * tag pequena de tempo, o card inteiro ganha borda grossa e um fundo com leve
+ * tingimento, crescente conforme o atraso (attention -> urgent). */
+.order-card.priority-attention { border-color: var(--gold); background: linear-gradient(180deg, rgba(217,154,104,.12), rgba(217,154,104,.02)), var(--panel); }
+.order-card.priority-urgent { border-color: var(--danger); background: linear-gradient(180deg, rgba(212,127,110,.16), rgba(212,127,110,.02)), var(--panel); }
 .order-card.status-entregue { opacity: .72; }
+
+/* Faixa na lateral esquerda por canal — separa visualmente delivery de app,
+ * WhatsApp, loja e cardapio proprio sem precisar ler a tag de texto. Cores
+ * reconhecidas de cada plataforma, pra bater com o que a equipe ja associa. */
+.order-card.canal-ifood { border-left-color: #ea1d2c; }
+.order-card.canal-99food { border-left-color: #ff5a00; }
+.order-card.canal-rappi { border-left-color: #fd3c5a; }
+.order-card.canal-whatsapp { border-left-color: #25d366; }
+.order-card.canal-loja { border-left-color: var(--gold); }
+.order-card.canal-cardapio { border-left-color: var(--copper); }
+
+/* Pedido que acabou de entrar na tela "pisca" uma vez pra chamar atencao,
+ * sem ficar pulsando pra sempre feito o status-novo (que tem alerta continuo
+ * proprio, ver acima) — so avisa que algo mudou agora mesmo. */
+.order-card.card-recem-chegado { animation: bkpop .5s ease; }
+
+/* Reimprimir/Cancelar sao acoes de apoio: ficam mais discretas em repouso pra
+ * a acao principal do card (Aprovar/Pronto/Concluir) nao dividir atencao. */
+.order-actions .secondary.small, .order-actions .danger.small { opacity: .78; }
+.order-actions .secondary.small:hover, .order-actions .danger.small:hover,
+.order-actions .secondary.small:focus-visible, .order-actions .danger.small:focus-visible { opacity: 1; }
 .order-card { cursor: pointer; }
 .order-card[draggable="true"] { cursor: grab; }
 .order-card:active { cursor: grabbing; }
