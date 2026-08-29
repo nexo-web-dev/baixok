@@ -24,7 +24,7 @@ test("carregarSessao nao roda pra toda requisicao — so pra /api e paginas rest
     "carregarSessao voltou a rodar global (sem path) — isso consulta o banco pra cada arquivo estatico"
   );
   assert.match(
-    codigo, /app\.use\(\s*\[[^\]]*carregarSessao/,
+    codigo, /app\.use\(\s*\[[^\]]*\]\s*,\s*carregarSessao\s*\)/,
     "carregarSessao precisa continuar restrito a uma lista de paths (api, admin, telao)"
   );
 });
