@@ -104,6 +104,9 @@ function corpoDoRecibo(pedido, cozinha) {
     if (Number(pedido.deliveryFee || 0) > 0) {
       totais.append(el("div.line", {}, el("span", {}, "Taxa de entrega"), el("strong", {}, `R$ ${dinheiro(pedido.deliveryFee)}`)));
     }
+    if (Number(pedido.serviceFee || 0) > 0) {
+      totais.append(el("div.line", {}, el("span", {}, "Taxa de serviço (10%)"), el("strong", {}, `R$ ${dinheiro(pedido.serviceFee)}`)));
+    }
     if (String(pedido.payment || "").toLowerCase().includes("dinheiro") && Number(pedido.trocoPara || 0) > 0) {
       const troco = Math.max(0, Number(pedido.trocoPara) - Number(pedido.total || 0));
       totais.append(
