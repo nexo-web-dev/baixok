@@ -484,6 +484,51 @@ test("tentativas seguidas de senha errada acabam barradas", async () => {
   assert.ok(bloqueado, "a forca bruta precisa acabar em 429");
 });
 
+// ==================================================== cortesia + taxa servico ===
+test("cortesia do pedido inteiro zera a taxa de servico junto, nao so o valor dos itens", async () => {
+  const produto = (await produtosRepo.listar())[0];
+  const { corpo: pedidoCriado } = await chamar("/api/publico/pedidos", {
+    metodo: "POST",
+    corpo: { customer: "Cliente Cortesia Taxa", items: [{ id: produto.id, qty: 1 }], fulfillment: "retirada" }
+  });
+  const id = pedidoCriado.pedido.id;
+
+  const comTaxa = await chamar(`/api/painel/pedidos/${id}/taxa-servico`, {
+    metodo: "POST", sessao: sessaoAdmin, corpo: { aplicar: true }
+  });
+  assert.equal(comTaxa.status, 200);
+  assert.ok(comTaxa.corpo.pedido.serviceFee > 0, "taxa de servico deveria ter sido aplicada");
+  const totalComTaxa = comTaxa.corpo.pedido.total;
+
+  const comCortesia = await chamar(`/api/painel/pedidos/${id}/cortesia`, {
+    metodo: "POST", sessao: sessaoAdmin, corpo: { todoPedido: true, itemIds: [], motivo: "Teste automatizado" }
+  });
+  assert.equal(comCortesia.status, 200);
+  assert.equal(comCortesia.corpo.pedido.serviceFee, 0, "taxa de servico tem que zerar junto com a cortesia do pedido inteiro");
+  assert.equal(
+    comCortesia.corpo.pedido.total,
+    Math.round((totalComTaxa - comTaxa.corpo.pedido.serviceFee) * 100) / 100,
+    "total tem que descontar a taxa de servico que foi zerada"
+  );
+});
+
+// ============================================================== healthcheck ===
+test("/api/saude continua sempre ok:true (sinal de container vivo pro host)", async () => {
+  const resposta = await fetch(`${BASE}/api/saude`);
+  assert.equal(resposta.status, 200);
+  const corpo = await resposta.json();
+  assert.equal(corpo.ok, true);
+});
+
+test("/api/saude/banco confirma o Postgres respondendo de verdade", async () => {
+  const resposta = await fetch(`${BASE}/api/saude/banco`);
+  assert.equal(resposta.status, 200);
+  const corpo = await resposta.json();
+  assert.equal(corpo.ok, true);
+  assert.equal(corpo.banco, true);
+  assert.equal(typeof corpo.latenciaMs, "number");
+});
+
 // ============================================================== cabecalhos ===
 test("cabecalhos de seguranca estao presentes e sem unsafe-inline em script", async () => {
   const resposta = await fetch(`${BASE}/api/saude`);

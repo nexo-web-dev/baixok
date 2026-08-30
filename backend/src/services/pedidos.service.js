@@ -763,7 +763,18 @@ export const pedidosService = {
     const motivoLimpo = String(motivo || "").trim();
     if (!motivoLimpo) throw new ErroApp("Informe o motivo da cortesia.", 400, "motivo_obrigatorio");
 
-    const pedido = await pedidosRepo.definirCortesia(id, alvos, motivoLimpo);
+    let pedido = await pedidosRepo.definirCortesia(id, alvos, motivoLimpo);
+
+    /* Pedido inteiro de cortesia nao pode deixar a taxa de servico de fora —
+     * senao o relatorio de faturamento (que so desconta `valor_cortesia`, o
+     * total dos itens) continuaria contando os 10% do garcom como dinheiro de
+     * verdade num pedido que a casa decidiu nao cobrar nada. So no "pedido
+     * todo": cortesia parcial nao tem como saber que fatia da taxa (calculada
+     * em cima do subtotal inteiro) pertenceria so aos itens escolhidos. */
+    if (todoPedido && pedido.serviceFee > 0) {
+      const novoTotal = Math.max(0, Math.round((pedido.total - pedido.serviceFee) * 100) / 100);
+      pedido = await pedidosRepo.definirTaxaServico(id, 0, novoTotal);
+    }
 
     await auditoriaRepo.registrar({
       usuarioId: usuario.id, usuario: usuario.usuario, acao: "pedido_cortesia",

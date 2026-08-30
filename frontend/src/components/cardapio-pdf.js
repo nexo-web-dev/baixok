@@ -426,21 +426,53 @@ export async function exportarCardapioPdf(produtos, ajustes) {
    * navegadores baseados em Chromium) encolhe fonte, foto e espacamento
    * juntos, mantendo tudo legivel. Teto de 50%: abaixo disso a letra fica
    * pequena demais pra ler, e melhor deixar estourar pra segunda pagina do
-   * que entregar um cardapio ilegivel. */
+   * que entregar um cardapio ilegivel.
+   *
+   * Margem de 2% (nao mira 100% da altura util) porque uma unica passada as
+   * vezes nao basta: o navegador so termina de assentar uma foto ou troca de
+   * fonte um instante depois do primeiro encolhimento, e a folha volta a
+   * crescer alguns pixels — no de verdade, um cardapio de ~45 itens ficava
+   * uns 16px acima da altura util mesmo com o zoom certo aplicado, e isso
+   * bastava pra estourar pra segunda pagina. Por isso confere de novo depois
+   * de 2 frames (tempo do reflow do zoom assentar) e corrige por cima se
+   * ainda sobrar altura. */
+  const MARGEM_SEGURANCA = 0.98;
+
   function ajustarParaUmaPagina() {
     const folha = doc.getElementById("folha");
-    if (!folha) return;
-    const altura = folha.scrollHeight;
-    if (altura <= ALTURA_UTIL_PX) return;
-    const escala = Math.max(0.5, ALTURA_UTIL_PX / altura);
-    folha.style.zoom = escala;
+    if (!folha) return Promise.resolve();
+
+    function encolherSeNecessario() {
+      /* scrollHeight mede o tamanho NATURAL da folha — o zoom que ela mesma
+       * ja tem aplicado nao entra nessa leitura. Por isso a proporcao e
+       * sempre "altura alvo / altura natural", nunca multiplicada pela
+       * escala atual: multiplicar contaria o encolhimento ja aplicado uma
+       * segunda vez e derrubava o zoom direto pro teto de 50%. */
+      const altura = folha.scrollHeight;
+      const alturaAlvo = ALTURA_UTIL_PX * MARGEM_SEGURANCA;
+      if (altura <= alturaAlvo) return false;
+      const escalaAtual = parseFloat(folha.style.zoom) || 1;
+      const novaEscala = Math.min(escalaAtual, Math.max(0.5, alturaAlvo / altura));
+      if (novaEscala >= escalaAtual) return false;
+      folha.style.zoom = novaEscala;
+      return true;
+    }
+
+    if (!encolherSeNecessario()) return Promise.resolve();
+    return new Promise(resolve => {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        encolherSeNecessario();
+        resolve();
+      }));
+    });
   }
 
   janela.addEventListener("load", () => {
-    Promise.all([fontesProntas, imagensProntas()]).then(() => {
-      ajustarParaUmaPagina();
-      janela.focus();
-      janela.print();
-    });
+    Promise.all([fontesProntas, imagensProntas()])
+      .then(() => ajustarParaUmaPagina())
+      .then(() => {
+        janela.focus();
+        janela.print();
+      });
   });
 }

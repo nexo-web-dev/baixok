@@ -93,7 +93,12 @@ const schema = z.object({
    * forca bruta — a senha forte e que faz esse trabalho — so nao trava gente
    * de verdade tentando entrar. */
   LIMITE_LOGIN: z.coerce.number().int().min(1).default(30),
-  LIMITE_PEDIDO: z.coerce.number().int().min(1).default(20),
+  /* 20 a cada 10 minutos e apertado numa loja de verdade: quando o cliente
+   * pede pelo Wi-Fi da propria casa (comum em quem come no salao), varias
+   * mesas diferentes dividem o MESMO IP publico (ver keyGenerator em
+   * rateLimit.js) — numa sexta cheia, 20 pedidos de mesas diferentes em 10
+   * minutos e plausivel, e nao e abuso nenhum. */
+  LIMITE_PEDIDO: z.coerce.number().int().min(1).default(60),
   LIMITE_GEOCODIFICACAO: z.coerce.number().int().min(1).default(120),
   LIMITE_GERAL: z.coerce.number().int().min(1).default(3000),
 
