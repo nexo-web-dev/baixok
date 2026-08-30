@@ -165,7 +165,13 @@
 .kanban-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 10px; color: var(--faint); font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
 .kanban-flow-seta { color: var(--line); font-weight: 400; }
 .kanban { display: grid; grid-template-columns: repeat(4, minmax(230px, 1fr)); gap: 16px; align-items: start; overflow-x: auto; padding-bottom: 8px; }
-.kanban-column { display: grid; align-content: start; gap: 11px; min-height: 220px; padding: 14px 14px 16px; border-radius: var(--radius-md); background: var(--sidebar); border: 1px solid var(--line-soft); transition: border-color .16s ease, min-height .16s ease; }
+/* Altura maxima + rolagem propria: sem isso, uma coluna com muitos pedidos
+ * cresce mais que as outras (align-items: start, cada uma com altura
+ * independente) e a coluna vizinha, mais curta, fica fora do alcance de
+ * quem tenta arrastar um card de la debaixo — nao tem pra onde soltar.
+ * Com altura igual (e rolagem interna) toda coluna continua alcancavel,
+ * nao importa quantos pedidos tenha. */
+.kanban-column { display: grid; align-content: start; gap: 11px; min-height: 220px; max-height: calc(100vh - 300px); overflow-y: auto; padding: 14px 14px 16px; border-radius: var(--radius-md); background: var(--sidebar); border: 1px solid var(--line-soft); transition: border-color .16s ease, min-height .16s ease; }
 /* Coluna vazia nao precisa do mesmo espaco reservado de uma coluna com
  * pedido de verdade — sobra menos area morta na tela. */
 .kanban-column.vazia { min-height: 108px; }
@@ -232,7 +238,12 @@
 .order-place { color: var(--muted); font-size: .7rem; }
 .order-actions { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 3px; }
 .order-flags { display: flex; gap: 5px; flex-wrap: wrap; }
-.status-shortcuts { display: none; }
+/* Alternativa ao arrastar — sempre visivel, nao so no celular: com muitos
+ * pedidos numa coluna, a proxima coluna pode ficar fora do alcance do
+ * arrastar (colunas de altura independente), e mover pelo botao sempre
+ * funciona, nao importa o tamanho da fila. */
+.status-shortcuts { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; padding-top: 8px; border-top: 1px solid var(--line-soft); }
+.status-shortcuts span { flex: 1 0 100%; color: var(--muted); font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
 .flag { padding: 3px 9px; border-radius: var(--radius-pill); color: var(--muted-2); background: var(--chip); font-size: .66rem; font-weight: 600; }
 .flag.paid { color: var(--green); }
 .flag.done { color: var(--green); background: var(--green-bg); }
@@ -993,22 +1004,8 @@
   .admin-product-title strong { font-size: .92rem; line-height: 1.2; }
   .admin-product-main p { font-size: .8rem; }
   .cash-status, .cash-lock-note, .orders-clock { width: 100%; margin-right: 0; justify-content: center; text-align: center; }
-  .status-shortcuts {
-    display: flex;
-    gap: 7px;
-    flex-wrap: wrap;
-    align-items: center;
-    padding-top: 8px;
-    border-top: 1px solid var(--line-soft);
-  }
-  .status-shortcuts span {
-    flex: 1 0 100%;
-    color: var(--muted);
-    font-size: .68rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-  }
+  /* No celular o alvo de toque precisa ser maior — no desktop o botao ja
+   * segue o tamanho padrao de ".ghost.small". */
   .status-shortcuts button {
     flex: 1 1 auto;
     min-height: 36px;

@@ -235,7 +235,7 @@ function atalhosStatus(pedido, papel) {
   if (!permitidos.length) return null;
 
   return el("div.status-shortcuts", {},
-    el("span", {}, "Mover no celular"),
+    el("span", {}, "Mover pedido"),
     ...permitidos.map(status =>
       el("button.ghost.small", {
         type: "button",
