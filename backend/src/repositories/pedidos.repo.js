@@ -171,15 +171,25 @@ function filtroRelatorio({ desde, ate, canal = null, pagamento = null, categoria
 export const pedidosRepo = {
   /* Os `::tipo` nos filtros opcionais sao obrigatorios: com o parametro nulo, o
    * Postgres nao deduz o tipo e recusa a consulta inteira. */
-  async listar({ desde = null, ate = null, status = null, limite = 500 } = {}) {
+  /* canal/pagamento sao filtrados AQUI, no SQL, e nao depois em JS: com LIMIT
+   * e periodo largo ("Este mes", "Tudo"), so os N pedidos mais recentes vem
+   * do banco — filtrar canal/pagamento so depois de truncar escondia pedido
+   * antigo que batia o filtro mas ficou fora da amostra dos N mais recentes
+   * (o cartao de resumo do dashboard, que agrega no banco sem limite,
+   * continuava certo — so a lista embaixo divergia). categoria
+   * DELIBERADAMENTE nao entra aqui: um pedido mistura categorias na mesma
+   * linha, e esta lista mostra o pedido inteiro, nao um recorte dele. */
+  async listar({ desde = null, ate = null, status = null, canal = null, pagamento = null, limite = 500 } = {}) {
     const linhas = await todos(`
       ${SELECT_BASE}
       WHERE (?::timestamptz IS NULL OR p.criado_em >= ?::timestamptz)
         AND (?::timestamptz IS NULL OR p.criado_em <= ?::timestamptz)
         AND (?::text IS NULL OR p.status = ?::text)
+        AND (?::text IS NULL OR p.canal = ?::text)
+        AND (?::text IS NULL OR p.pagamento = ?::text)
       ORDER BY p.criado_em DESC
       LIMIT ?
-    `, [desde, desde, ate, ate, status, status, limite]);
+    `, [desde, desde, ate, ate, status, status, canal, canal, pagamento, pagamento, limite]);
     return anexarItens(linhas);
   },
 
@@ -548,6 +558,38 @@ export const pedidosRepo = {
        WHERE ${f.sql} AND status = 'entregue' AND valor_cortesia > 0
        ORDER BY criado_em DESC
     `, f.params);
+  },
+
+  /* Mesmo recorte de resumoNaoPago/resumoCortesia, mas com o pedido completo
+   * (itens, cliente, telefone) — para os paineis "Vendas não pagas" e
+   * "Cortesias" do dashboard. Sem LIMIT, ao contrario de listar(): esses dois
+   * casos sao raros por natureza (a propria loja so descobre 1 ou 2 por
+   * fechamento), entao nunca competem com o problema que o limite de
+   * listar() existe para evitar. Ter uma lista PROPRIA aqui tambem evita o
+   * bug que motivou este comentario: o dashboard antigo derivava essas duas
+   * listas filtrando em JS o array de "todas as vendas", que so traz os 200
+   * pedidos mais recentes do periodo — um mes com mais de 200 pedidos
+   * entregues escondia da lista qualquer nao-pago/cortesia mais antigo,
+   * mesmo com o cartao de resumo (que vem de agregacao SQL, sem limite)
+   * contando certo. Painel e resumo mostravam numeros diferentes. */
+  async listarNaoPagosCompleto(filtro) {
+    const f = filtroRelatorio(filtro, "p");
+    const linhas = await todos(`
+      ${SELECT_BASE}
+      WHERE ${f.sql} AND p.status = 'entregue' AND p.pagamento = 'Não pago'
+      ORDER BY p.criado_em DESC
+    `, f.params);
+    return anexarItens(linhas);
+  },
+
+  async listarCortesiasCompleto(filtro) {
+    const f = filtroRelatorio(filtro, "p");
+    const linhas = await todos(`
+      ${SELECT_BASE}
+      WHERE ${f.sql} AND p.status = 'entregue' AND p.valor_cortesia > 0
+      ORDER BY p.criado_em DESC
+    `, f.params);
+    return anexarItens(linhas);
   },
 
   /* to_char no lugar do strftime, que so existe no SQLite. Roda no fuso da

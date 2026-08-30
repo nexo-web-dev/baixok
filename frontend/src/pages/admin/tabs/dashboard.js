@@ -70,12 +70,17 @@ function renderizarLista(alvoId, vazioId, todos, renderLinha, mensagemVazio) {
 }
 
 function renderizarListasVendas() {
-  const { vendas = [] } = ultimoRelatorio || {};
+  const { vendas = [], naoPagosLista = [], cortesiaLista = [] } = ultimoRelatorio || {};
   renderizarLista("dashboard-sales", "dashboard-sales-empty", vendas, vendaLinha, "Nenhuma venda neste período.");
+  /* naoPagosLista/cortesiaLista vem de uma consulta propria no servidor, sem
+   * limite — NAO derivar mais de `vendas` (que trunca nos 200 pedidos mais
+   * recentes do periodo): num mes cheio, um nao-pago/cortesia mais antigo
+   * ficava fora da amostra e sumia da lista mesmo contando certo no cartao
+   * de resumo (que agrega no banco, sem limite nenhum). */
   renderizarLista("dashboard-unpaid", "dashboard-unpaid-empty",
-    vendas.filter(pedido => pedido.payment === "Não pago"), vendaLinha, "Nenhuma venda não paga neste período.");
+    naoPagosLista, vendaLinha, "Nenhuma venda não paga neste período.");
   renderizarLista("dashboard-cortesia", "dashboard-cortesia-empty",
-    vendas.filter(pedido => pedido.cortesiaValue > 0), vendaLinha, "Nenhuma cortesia neste período.");
+    cortesiaLista, vendaLinha, "Nenhuma cortesia neste período.");
 }
 
 function metrica(rotulo, valor, nota, tom = "") {
@@ -553,6 +558,17 @@ async function exportarPlanilha() {
 }
 
 export function ligarDashboard() {
+  /* Minimizar/expandir cada painel de vendas — com muitos pedidos no
+   * periodo, a lista inteira nao cabe na tela e a pessoa nao conseguia
+   * descer ate os graficos/paineis seguintes sem rolar por centenas de
+   * linhas primeiro. */
+  delegar($("#tab-dashboard"), "click", "[data-acao='alternar-secao']", (_e, botao) => {
+    const alvo = document.getElementById(botao.dataset.alvo);
+    if (!alvo) return;
+    const minimizado = alvo.classList.toggle("hidden");
+    botao.textContent = minimizado ? "Expandir" : "Minimizar";
+  });
+
   $("#sales-search")?.addEventListener("input", debounce(evento => {
     buscaVendas.termo = evento.target.value;
     renderizarListasVendas();

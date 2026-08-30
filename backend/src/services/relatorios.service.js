@@ -108,7 +108,7 @@ export const relatoriosService = {
 
     const [
       resumo, canceladosResumo, naoPagoResumo, cortesiaResumo, emFalta, porHora, porDia, porCanal, porPagamento, porModalidade, porCategoria,
-      porMotoboy, maisVendidos, menosVendidos, vendas, cancelados, taxaServico
+      porMotoboy, maisVendidos, menosVendidos, vendas, cancelados, taxaServico, naoPagos, cortesias
     ] = await Promise.all([
       pedidosRepo.resumoPeriodo(filtro),
       pedidosRepo.resumoCancelados(filtro),
@@ -124,9 +124,11 @@ export const relatoriosService = {
       pedidosRepo.porMotoboy(filtro),
       pedidosRepo.maisVendidos({ ...filtro, limite: 10 }),
       pedidosRepo.menosVendidos({ ...filtro, limite: 10 }),
-      pedidosRepo.listar({ ...filtro, status: "entregue", limite: 200 }),
-      pedidosRepo.listar({ ...filtro, status: "cancelado", limite: 100 }),
-      mesasFechamentosRepo.resumoPeriodo(filtro)
+      pedidosRepo.listar({ desde: filtro.desde, ate: filtro.ate, canal: filtro.canal, pagamento: filtro.pagamento, status: "entregue", limite: 200 }),
+      pedidosRepo.listar({ desde: filtro.desde, ate: filtro.ate, canal: filtro.canal, pagamento: filtro.pagamento, status: "cancelado", limite: 100 }),
+      mesasFechamentosRepo.resumoPeriodo(filtro),
+      pedidosRepo.listarNaoPagosCompleto({ desde: filtro.desde, ate: filtro.ate, canal: filtro.canal, pagamento: filtro.pagamento }),
+      pedidosRepo.listarCortesiasCompleto({ desde: filtro.desde, ate: filtro.ate, canal: filtro.canal, pagamento: filtro.pagamento })
     ]);
 
     return {
@@ -161,9 +163,16 @@ export const relatoriosService = {
       menosVendidos,
       /* A lista bruta (nao os graficos) nao filtra por categoria: o pedido pode
        * misturar categorias na mesma linha, e aqui e a conferencia do pedido
-       * inteiro — filtrar sumiria com o resto do que a pessoa comprou. */
-      vendas: vendas.filter(pedido => (!canal || pedido.channel === canal) && (!pagamento || pedido.payment === pagamento)),
-      cancelados: cancelados.filter(pedido => (!canal || pedido.channel === canal) && (!pagamento || pedido.payment === pagamento)),
+       * inteiro — filtrar sumiria com o resto do que a pessoa comprou. canal e
+       * pagamento ja vem filtrados do SQL (ver comentario em pedidosRepo.listar). */
+      vendas,
+      cancelados,
+      /* Listas proprias, sem LIMIT — ver comentario em
+       * listarNaoPagosCompleto/listarCortesiasCompleto. Nao derivar mais de
+       * `vendas` (que trunca em 200 pedidos) evita o painel do dashboard
+       * mostrar menos nao-pagos/cortesias do que o cartao de resumo conta. */
+      naoPagosLista: naoPagos,
+      cortesiaLista: cortesias,
       estoqueBaixo: emFalta
         .filter(produto => controlaEstoqueCategoria(produto.category))
         .map(produto => ({

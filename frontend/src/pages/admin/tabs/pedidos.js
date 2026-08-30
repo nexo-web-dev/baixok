@@ -954,6 +954,7 @@ export function ligarPedidos() {
       }
       naoPagoAberto = false;
       await carregar("pedidos");
+      desenharPedidos();
       abrirDetalhePedido(botao.dataset.id);
       toast(naoPagoTipo === "prejuizo" ? "Pedido marcado como não pago." : "Cortesia registrada.");
     } catch (erro) {
@@ -987,6 +988,7 @@ export function ligarPedidos() {
       await apiPedidos.definirPagamento(botao.dataset.id, marcarPagoForma, "");
       marcarPagoAberto = false;
       await carregar("pedidos");
+      desenharPedidos();
       abrirDetalhePedido(botao.dataset.id);
       toast(eraNaoPago ? "Pedido marcado como pago." : "Forma de pagamento atualizada.");
     } catch (erro) {
@@ -1002,6 +1004,7 @@ export function ligarPedidos() {
     try {
       await apiPedidos.reverterCortesia(botao.dataset.id);
       await carregar("pedidos");
+      desenharPedidos();
       abrirDetalhePedido(botao.dataset.id);
       toast("Cortesia desfeita.");
     } catch (erro) {
@@ -1018,6 +1021,7 @@ export function ligarPedidos() {
     try {
       await apiPedidos.definirTaxaServico(botao.dataset.id, aplicar);
       await carregar("pedidos");
+      desenharPedidos();
       abrirDetalhePedido(botao.dataset.id);
       toast(aplicar ? "Taxa de serviço (10%) adicionada ao total." : "Taxa de serviço removida do total.");
     } catch (erro) {
@@ -1040,6 +1044,7 @@ export function ligarPedidos() {
         : { id: botao.dataset.produtoId, qty: 1 };
       await apiPedidos.adicionarItens(botao.dataset.id, [item]);
       await carregar("pedidos");
+      desenharPedidos();
       abrirDetalhePedido(botao.dataset.id);
       toast("Item adicionado ao pedido. Reimprima a nota se a cozinha já tiver a via antiga.");
     } catch (erro) {
@@ -1054,6 +1059,7 @@ export function ligarPedidos() {
     try {
       await apiPedidos.removerItem(botao.dataset.id, Number(botao.dataset.itemId));
       await carregar("pedidos");
+      desenharPedidos();
       abrirDetalhePedido(botao.dataset.id);
       toast("Item removido do pedido.");
     } catch (erro) {
@@ -1081,6 +1087,7 @@ export function ligarPedidos() {
       try {
         await apiPedidos.ajustarQuantidadeItem(botao.dataset.id, Number(botao.dataset.itemId), nova);
         await carregar("pedidos");
+        desenharPedidos();
         abrirDetalhePedido(botao.dataset.id);
         toast(nova === 0 ? "Item removido do pedido." : "Quantidade atualizada.");
       } catch (erro) {
@@ -1139,6 +1146,7 @@ export function ligarPedidos() {
       await apiPedidos.dividirPagamento(botao.dataset.id, componentes);
       divisaoPagamentoAberta = false;
       await carregar("pedidos");
+      desenharPedidos();
       abrirDetalhePedido(botao.dataset.id);
       toast("Pagamento dividido registrado.");
     } catch (erro) {

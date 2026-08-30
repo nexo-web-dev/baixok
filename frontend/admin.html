@@ -463,21 +463,24 @@
             <h2>Todas as vendas</h2>
             <p class="small faint">Confira pedidos do período e cancele lançamentos errados.</p>
           </div>
+          <button class="secondary small" type="button" data-acao="alternar-secao" data-alvo="dashboard-sales-body">Minimizar</button>
         </div>
-        <div class="sales-filter-bar">
-          <input id="sales-search" type="search" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-form-type="other" placeholder="Buscar por cliente, telefone, nº do pedido ou item...">
-          <select id="sales-filter-fulfillment" aria-label="Filtrar por modalidade">
-            <option value="">Todas as modalidades</option>
-            <option value="retirada">Retirada</option>
-            <option value="entrega">Entrega</option>
-            <option value="mesa">Mesa</option>
-          </select>
-          <select id="sales-filter-payment" aria-label="Filtrar por pagamento">
-            <option value="">Todos os pagamentos</option>
-          </select>
+        <div id="dashboard-sales-body">
+          <div class="sales-filter-bar">
+            <input id="sales-search" type="search" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-form-type="other" placeholder="Buscar por cliente, telefone, nº do pedido ou item...">
+            <select id="sales-filter-fulfillment" aria-label="Filtrar por modalidade">
+              <option value="">Todas as modalidades</option>
+              <option value="retirada">Retirada</option>
+              <option value="entrega">Entrega</option>
+              <option value="mesa">Mesa</option>
+            </select>
+            <select id="sales-filter-payment" aria-label="Filtrar por pagamento">
+              <option value="">Todos os pagamentos</option>
+            </select>
+          </div>
+          <div class="sales-list" id="dashboard-sales"></div>
+          <p class="faint pad hidden" id="dashboard-sales-empty">Nenhuma venda encontrada com esse filtro.</p>
         </div>
-        <div class="sales-list" id="dashboard-sales"></div>
-        <p class="faint pad hidden" id="dashboard-sales-empty">Nenhuma venda encontrada com esse filtro.</p>
       </div>
 
       <div class="panel all-sales-card">
@@ -486,9 +489,12 @@
             <h2>Vendas não pagas</h2>
             <p class="small faint">O produto saiu, mas o cliente não pagou. Fica fora do faturamento e aparece aqui com o motivo.</p>
           </div>
+          <button class="secondary small" type="button" data-acao="alternar-secao" data-alvo="dashboard-unpaid-body">Minimizar</button>
         </div>
-        <div class="sales-list" id="dashboard-unpaid"></div>
-        <p class="faint pad hidden" id="dashboard-unpaid-empty">Nenhuma venda não paga no período.</p>
+        <div id="dashboard-unpaid-body">
+          <div class="sales-list" id="dashboard-unpaid"></div>
+          <p class="faint pad hidden" id="dashboard-unpaid-empty">Nenhuma venda não paga no período.</p>
+        </div>
       </div>
 
       <div class="panel all-sales-card">
@@ -497,9 +503,12 @@
             <h2>Cortesias</h2>
             <p class="small faint">A própria casa decidiu não cobrar — pedido todo ou só alguns itens. Fica fora do faturamento, com o motivo registrado.</p>
           </div>
+          <button class="secondary small" type="button" data-acao="alternar-secao" data-alvo="dashboard-cortesia-body">Minimizar</button>
         </div>
-        <div class="sales-list" id="dashboard-cortesia"></div>
-        <p class="faint pad hidden" id="dashboard-cortesia-empty">Nenhuma cortesia no período.</p>
+        <div id="dashboard-cortesia-body">
+          <div class="sales-list" id="dashboard-cortesia"></div>
+          <p class="faint pad hidden" id="dashboard-cortesia-empty">Nenhuma cortesia no período.</p>
+        </div>
       </div>
     </section>
 
