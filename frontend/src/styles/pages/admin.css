@@ -959,6 +959,31 @@
 .closing-side strong { color: var(--gold-light); font-family: var(--font-head); font-size: 1rem; }
 .closing-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 
+.agenda-nav { display: flex; align-items: center; gap: 10px; }
+.agenda-nav strong { min-width: 150px; text-align: center; color: var(--ink); font-family: var(--font-head); font-size: .95rem; text-transform: capitalize; }
+.agenda-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.agenda-dia-semana { padding: 4px 0; color: var(--muted); font-size: .7rem; font-weight: 800; text-align: center; text-transform: uppercase; }
+.agenda-dia {
+  display: grid; gap: 4px; min-height: 58px; padding: 6px 4px; border-radius: var(--radius-xs);
+  background: var(--panel); border: 1px solid var(--line-soft); color: var(--muted); cursor: pointer; text-align: left;
+}
+.agenda-dia-vazio { background: transparent; border-color: transparent; cursor: default; }
+.agenda-dia-numero { font-size: .78rem; font-weight: 700; }
+.agenda-dia-valor { color: var(--gold-light); font-size: .68rem; font-weight: 800; line-height: 1.2; overflow-wrap: anywhere; }
+.agenda-dia.trabalhado { background: rgba(224,166,109,.14); border-color: rgba(224,166,109,.4); color: var(--ink); }
+.agenda-dia.em-andamento { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold) inset; }
+.agenda-dia.hoje .agenda-dia-numero { color: var(--gold); }
+.agenda-dia.selecionado { outline: 2px solid var(--gold); outline-offset: -2px; }
+.agenda-dia-detalhe { margin-top: 12px; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--panel); border: 1px solid var(--line-soft); }
+.agenda-dia-detalhe-inner { display: grid; gap: 8px; }
+.agenda-dia-detalhe-inner strong { color: var(--ink); text-transform: capitalize; }
+.agenda-sessao { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 6px 0; border-top: 1px solid var(--line-soft); font-size: .78rem; color: var(--muted); }
+
+@media (max-width: 640px) {
+  .agenda-dia { min-height: 46px; }
+  .agenda-dia-valor { font-size: .62rem; }
+}
+
 @media (max-width: 1280px) {
   .products-layout { grid-template-columns: 1fr; }
   .panel-form { position: static; }

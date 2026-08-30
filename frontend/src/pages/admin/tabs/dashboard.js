@@ -41,11 +41,11 @@ function pedidoCombinaBusca(pedido) {
   return alvo.includes(termo);
 }
 
-function preencherFiltroPagamento(vendas, cancelados) {
+function preencherFiltroPagamento(vendas) {
   const select = $("#sales-filter-payment");
   if (!select) return;
   const atual = select.value;
-  const pagamentos = [...new Set([...vendas, ...cancelados].map(p => p.payment).filter(Boolean))].sort();
+  const pagamentos = [...new Set(vendas.map(p => p.payment).filter(Boolean))].sort();
 
   render(select,
     el("option", { value: "" }, "Todos os pagamentos"),
@@ -70,9 +70,8 @@ function renderizarLista(alvoId, vazioId, todos, renderLinha, mensagemVazio) {
 }
 
 function renderizarListasVendas() {
-  const { vendas = [], cancelados = [] } = ultimoRelatorio || {};
+  const { vendas = [] } = ultimoRelatorio || {};
   renderizarLista("dashboard-sales", "dashboard-sales-empty", vendas, vendaLinha, "Nenhuma venda neste período.");
-  renderizarLista("dashboard-canceled", "dashboard-canceled-empty", cancelados, canceladoLinha, "Nenhum pedido cancelado neste período.");
   renderizarLista("dashboard-unpaid", "dashboard-unpaid-empty",
     vendas.filter(pedido => pedido.payment === "Não pago"), vendaLinha, "Nenhuma venda não paga neste período.");
   renderizarLista("dashboard-cortesia", "dashboard-cortesia-empty",
@@ -245,9 +244,6 @@ function montarResumoTextual({ resumo, periodo, pagamentoTop, plataformaTop, mod
   }
 
   const alertas = [];
-  if (resumo.cancelados) {
-    alertas.push(`${resumo.cancelados} pedido${resumo.cancelados === 1 ? "" : "s"} cancelado${resumo.cancelados === 1 ? "" : "s"}`);
-  }
   if (resumo.naoPagos) {
     alertas.push(`${resumo.naoPagos} pedido${resumo.naoPagos === 1 ? "" : "s"} com prejuízo, somando ${reais(resumo.valorNaoPago || 0)}`);
   }
@@ -378,10 +374,6 @@ function vendaLinha(pedido) {
   );
 }
 
-function canceladoLinha(pedido) {
-  return vendaLinha(pedido);
-}
-
 export async function desenharDashboard() {
   try {
     ultimoRelatorio = await apiRelatorios.dashboard(parametrosDashboard());
@@ -393,7 +385,7 @@ export async function desenharDashboard() {
   const {
     resumo, porHora, porDia = [], agrupadoPorMes = false, porCanal, porPagamento, porModalidade = [],
     porCategoria = [], porMotoboy = [], maisVendidos, menosVendidos = [], estoqueBaixo, periodo, vendas = [],
-    cancelados = [], taxaServico = { total: 0, contasFechadas: 0, contasSemCobranca: 0 }
+    taxaServico = { total: 0, contasFechadas: 0, contasSemCobranca: 0 }
   } = ultimoRelatorio;
   preencherFiltroSelect("filter-payment", PAGAMENTOS_CONHECIDOS, "Pagamento: todos");
   preencherFiltroSelect("filter-category", categoriasDoCatalogo(), "Categoria: todas", rotuloCategoria);
@@ -426,8 +418,6 @@ export async function desenharDashboard() {
         ? `${taxaServico.contasSemCobranca} conta(s) fechada(s) sem cobrar`
         : `${taxaServico.contasFechadas} conta(s) de mesa fechada(s)`,
       taxaServico.contasSemCobranca ? "alert-copper" : ""),
-    metrica("Cancelados", String(resumo.cancelados || 0), (resumo.valorCancelado || 0) ? `valor ${reais(resumo.valorCancelado)}` : "nenhum no período",
-      (resumo.cancelados || 0) ? "alert-danger" : ""),
     metrica("Prejuízo sem pagamento", reais(resumo.valorNaoPago || 0),
       (resumo.naoPagos || 0) ? `${resumo.naoPagos} pedido(s) · fora do faturamento` : "nenhum no período",
       (resumo.valorNaoPago || 0) ? "alert-danger" : ""),
@@ -537,7 +527,7 @@ export async function desenharDashboard() {
         "Quando algo baixar, este bloco vira alerta visual."
       ));
 
-  preencherFiltroPagamento(vendas, cancelados);
+  preencherFiltroPagamento(vendas);
   renderizarListasVendas();
 }
 
@@ -687,7 +677,6 @@ export function ligarDashboard() {
     detalhe?.classList.toggle("hidden");
   };
   delegar($("#dashboard-sales"), "click", "[data-action='details-sale']", alternarDetalhes);
-  delegar($("#dashboard-canceled"), "click", "[data-action='details-sale']", alternarDetalhes);
   delegar($("#dashboard-unpaid"), "click", "[data-action='details-sale']", alternarDetalhes);
   delegar($("#dashboard-cortesia"), "click", "[data-action='details-sale']", alternarDetalhes);
 
@@ -703,7 +692,6 @@ export function ligarDashboard() {
     senha?.focus();
   };
   delegar($("#dashboard-sales"), "click", "[data-action='delete-sale']", abrirExclusao);
-  delegar($("#dashboard-canceled"), "click", "[data-action='delete-sale']", abrirExclusao);
   delegar($("#dashboard-unpaid"), "click", "[data-action='delete-sale']", abrirExclusao);
   delegar($("#dashboard-cortesia"), "click", "[data-action='delete-sale']", abrirExclusao);
 

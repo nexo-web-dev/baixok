@@ -111,7 +111,10 @@ const carregadores = {
     estado.caixaAtual = (await apiCaixa.atual()).caixa;
   },
   async fechamentos() {
-    estado.fechamentos = (await apiCaixa.fechamentos()).fechamentos;
+    /* limite alto (nao so os 100 padrao) porque a Agenda do mes, em
+     * fechamentos.js, precisa enxergar meses anteriores pra montar o
+     * calendario — nao so o historico recente da lista abaixo dela. */
+    estado.fechamentos = (await apiCaixa.fechamentos({ limite: 400 })).fechamentos;
   },
   async entrega() {
     if (estado.usuario?.papel === "cozinha") return;

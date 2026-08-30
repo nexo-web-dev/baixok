@@ -12,11 +12,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/admin-Cztayx5Z.js"></script>
+  <script type="module" crossorigin src="/assets/admin-qmhfji3l.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/api-DxJU_VOi.js">
   <link rel="modulepreload" crossorigin href="/assets/estoque-CqZFOTJI.js">
   <link rel="modulepreload" crossorigin href="/assets/categorias-DMcvoUfT.js">
-  <link rel="stylesheet" crossorigin href="/assets/admin-C_-trOVc.css">
+  <link rel="stylesheet" crossorigin href="/assets/admin-BC7gkmMx.css">
 </head>
 <body data-page="admin">
   <div class="aviso-offline" role="alert">Sem conexão com o servidor. As alterações não estão sendo salvas.</div>
@@ -488,17 +488,6 @@
       <div class="panel all-sales-card">
         <div class="sales-head">
           <div>
-            <h2>Pedidos cancelados</h2>
-            <p class="small faint">Cancelamentos ficam fora do faturamento. Aqui aparece quem cancelou, o motivo e os itens para conferência.</p>
-          </div>
-        </div>
-        <div class="sales-list" id="dashboard-canceled"></div>
-        <p class="faint pad hidden" id="dashboard-canceled-empty">Nenhum pedido cancelado encontrado com esse filtro.</p>
-      </div>
-
-      <div class="panel all-sales-card">
-        <div class="sales-head">
-          <div>
             <h2>Vendas não pagas</h2>
             <p class="small faint">O produto saiu, mas o cliente não pagou. Fica fora do faturamento e aparece aqui com o motivo.</p>
           </div>
@@ -525,6 +514,23 @@
         <strong>Como usar esta aba</strong>
         <p>Todo caixa fechado fica salvo aqui. Abra o relatório para imprimir ou salvar como PDF quando precisar conferir o movimento do dia.</p>
       </div>
+
+      <div class="panel">
+        <div class="sales-head">
+          <div>
+            <h2>Agenda do mês</h2>
+            <p class="small faint">Dias com caixa aberto no mês, quanto faturou em cada um e o horário de funcionamento.</p>
+          </div>
+          <div class="agenda-nav">
+            <button class="ghost small" type="button" id="agenda-mes-anterior" aria-label="Mês anterior">‹</button>
+            <strong id="agenda-mes-titulo"></strong>
+            <button class="ghost small" type="button" id="agenda-mes-seguinte" aria-label="Mês seguinte">›</button>
+          </div>
+        </div>
+        <div class="agenda-grid" id="agenda-grid"></div>
+        <div class="agenda-dia-detalhe hidden" id="agenda-dia-detalhe"></div>
+      </div>
+
       <div class="panel">
         <div class="sales-head">
           <div>
@@ -581,12 +587,6 @@
               <button class="secondary hidden" type="button" id="user-cancel">Cancelar edição</button>
             </div>
           </form>
-        </section>
-
-        <section class="panel">
-          <h2>Auditoria</h2>
-          <p class="small faint">Últimas 100 ações. Responde quem cancelou um pedido, mudou um preço ou fechou uma conta.</p>
-          <div class="audit-list" id="audit-list"></div>
         </section>
       </div>
     </section>

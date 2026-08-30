@@ -8,6 +8,140 @@ function podeOperarCaixa() {
   return ["admin", "caixa"].includes(estado.usuario?.papel);
 }
 
+/* Agenda do mes: um calendario visual dos dias que tiveram caixa aberto,
+ * montado so com o que o navegador ja tem em estado.fechamentos (nenhuma
+ * rota nova) — cada fechamento e agrupado pelo dia (fuso de Sao Paulo) do
+ * seu ABERTO_EM, nao do fechado_em, pra um caixa que abre de noite e fecha
+ * de madrugada continuar contando pro dia em que o movimento comecou. */
+const MESES_ROTULO = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+];
+const DIAS_SEMANA = ["D", "S", "T", "Q", "Q", "S", "S"];
+
+const agenda = { ano: new Date().getFullYear(), mes: new Date().getMonth(), diaSelecionado: null };
+
+function chaveDia(dataIso) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(dataIso));
+}
+
+function horaSP(dataIso) {
+  return new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }).format(new Date(dataIso));
+}
+
+function agendaPorDia() {
+  const mapa = new Map();
+  const diaDe = chave => {
+    if (!mapa.has(chave)) mapa.set(chave, { faturamento: 0, sessoes: [], emAndamento: false });
+    return mapa.get(chave);
+  };
+
+  for (const caixa of estado.fechamentos) {
+    if (caixa.status !== "fechado") continue;
+    const dia = diaDe(chaveDia(caixa.abertoEm));
+    dia.faturamento += Number(caixa.faturamento || 0);
+    dia.sessoes.push(caixa);
+  }
+  if (estado.caixaAtual) {
+    const dia = diaDe(chaveDia(estado.caixaAtual.abertoEm));
+    dia.sessoes.push(estado.caixaAtual);
+    dia.emAndamento = true;
+  }
+  for (const dia of mapa.values()) dia.sessoes.sort((a, b) => new Date(a.abertoEm) - new Date(b.abertoEm));
+  return mapa;
+}
+
+function horarioSessao(caixa) {
+  return caixa.status === "aberto" ? `${horaSP(caixa.abertoEm)}–em andamento` : `${horaSP(caixa.abertoEm)}–${horaSP(caixa.fechadoEm)}`;
+}
+
+function detalheDia(chave, dados) {
+  const [ano, mes, dia] = chave.split("-").map(Number);
+  const rotuloDia = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", weekday: "long", day: "2-digit", month: "long" })
+    .format(new Date(Date.UTC(ano, mes - 1, dia, 12)));
+
+  if (!dados) {
+    return el("div.agenda-dia-detalhe-inner", {},
+      el("strong", {}, rotuloDia.charAt(0).toUpperCase() + rotuloDia.slice(1)),
+      el("p.faint.small", {}, "Sem caixa aberto neste dia."));
+  }
+
+  return el("div.agenda-dia-detalhe-inner", {},
+    el("strong", {}, rotuloDia.charAt(0).toUpperCase() + rotuloDia.slice(1)),
+    el("p.small", {}, `Faturamento do dia: `, el("strong", {}, reais(dados.faturamento))),
+    ...dados.sessoes.map(caixa => el("div.agenda-sessao", {},
+      el("span", {}, horarioSessao(caixa)),
+      caixa.status === "fechado"
+        ? el("span", {}, `${reais(caixa.faturamento)} · ${caixa.pedidos} pedido(s)`)
+        : el("span.small.faint", {}, "caixa aberto agora"),
+      caixa.status === "fechado"
+        ? el("a.secondary.small", { href: apiCaixa.relatorioUrl(caixa.id), target: "_blank", rel: "noopener" }, "Abrir PDF")
+        : null
+    ))
+  );
+}
+
+function desenharAgenda() {
+  const titulo = $("#agenda-mes-titulo");
+  if (titulo) titulo.textContent = `${MESES_ROTULO[agenda.mes]} de ${agenda.ano}`;
+
+  const porDia = agendaPorDia();
+  const primeiroDia = new Date(agenda.ano, agenda.mes, 1);
+  const diasNoMes = new Date(agenda.ano, agenda.mes + 1, 0).getDate();
+  const offset = primeiroDia.getDay();
+  const hoje = chaveDia(new Date().toISOString());
+
+  const celulas = [];
+  for (let i = 0; i < offset; i++) celulas.push(el("div.agenda-dia.agenda-dia-vazio", {}));
+  for (let dia = 1; dia <= diasNoMes; dia++) {
+    const chave = `${agenda.ano}-${String(agenda.mes + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+    const dados = porDia.get(chave);
+    const trabalhado = Boolean(dados?.sessoes.length);
+    celulas.push(el("button.agenda-dia", {
+      type: "button",
+      class: `${trabalhado ? "trabalhado" : ""} ${dados?.emAndamento ? "em-andamento" : ""} ${chave === hoje ? "hoje" : ""} ${chave === agenda.diaSelecionado ? "selecionado" : ""}`,
+      dataset: { dia: chave }
+    },
+      el("span.agenda-dia-numero", {}, String(dia)),
+      trabalhado ? el("span.agenda-dia-valor", {}, reais(dados.faturamento)) : null
+    ));
+  }
+
+  render($("#agenda-grid"),
+    ...DIAS_SEMANA.map(rotulo => el("div.agenda-dia-semana", {}, rotulo)),
+    ...celulas
+  );
+
+  const alvoDetalhe = $("#agenda-dia-detalhe");
+  if (alvoDetalhe) {
+    if (agenda.diaSelecionado) {
+      render(alvoDetalhe, detalheDia(agenda.diaSelecionado, porDia.get(agenda.diaSelecionado)));
+      mostrar(alvoDetalhe, true);
+    } else {
+      mostrar(alvoDetalhe, false);
+    }
+  }
+}
+
+function ligarAgenda() {
+  $("#agenda-mes-anterior")?.addEventListener("click", () => {
+    agenda.mes -= 1;
+    if (agenda.mes < 0) { agenda.mes = 11; agenda.ano -= 1; }
+    agenda.diaSelecionado = null;
+    desenharAgenda();
+  });
+  $("#agenda-mes-seguinte")?.addEventListener("click", () => {
+    agenda.mes += 1;
+    if (agenda.mes > 11) { agenda.mes = 0; agenda.ano += 1; }
+    agenda.diaSelecionado = null;
+    desenharAgenda();
+  });
+  delegar($("#agenda-grid"), "click", "[data-dia]", (_e, botao) => {
+    agenda.diaSelecionado = agenda.diaSelecionado === botao.dataset.dia ? null : botao.dataset.dia;
+    desenharAgenda();
+  });
+}
+
 function atualizarStatusCaixa() {
   const alvo = $("#cash-status");
   const abrir = $("#open-cash");
@@ -91,6 +225,7 @@ export async function desenharFechamentos() {
     render($("#closing-list"), estado.fechamentos.length
       ? estado.fechamentos.map(fechamentoLinha)
       : el("p.faint.pad", {}, "Nenhum fechamento salvo ainda."));
+    desenharAgenda();
   } catch (erro) {
     toastFalha(erro, "Fechamentos");
   }
@@ -208,6 +343,7 @@ async function apagarFechamento(id) {
 }
 
 export function ligarFechamentos() {
+  ligarAgenda();
   $("#open-cash")?.addEventListener("click", abrirCaixa);
   $("#close-cash")?.addEventListener("click", abrirModalFecharCaixa);
   $("#refresh-closings")?.addEventListener("click", desenharFechamentos);
