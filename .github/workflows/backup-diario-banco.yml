@@ -1,0 +1,67 @@
+name: Backup diario do banco
+
+# So funciona a partir da branch padrao do GitHub (hoje "main") -- e uma regra
+# do proprio GitHub para "schedule", nao coisa deste arquivo. Se um dia
+# trocarem a branch padrao pra "prod", mover este arquivo pra la tambem.
+on:
+  schedule:
+    # 06:00 UTC = 03:00 em Brasilia (sem horario de verao desde 2019).
+    - cron: "0 6 * * *"
+  # Permite rodar manualmente em Actions > Backup diario do banco > Run workflow,
+  # sem esperar o horario agendado -- util pra testar se o secret esta certo.
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Preparar
+        run: sudo apt-get update -y && sudo apt-get install -y postgresql-client
+
+      # pg_dump so LE o banco -- nunca apaga, altera ou trava nada em producao.
+      # Formato "custom" (-Fc): compacto e restaura com pg_restore, inclusive
+      # so uma tabela por vez se precisar um dia.
+      - name: Gerar o dump
+        env:
+          DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::Falta configurar o secret BACKUP_DATABASE_URL (Settings > Secrets and variables > Actions) antes deste workflow funcionar."
+            exit 1
+          fi
+          data="$(date -u +%Y-%m-%d)"
+          echo "DATA_DUMP=$data" >> "$GITHUB_ENV"
+          pg_dump "$DATABASE_URL" --format=custom --no-owner --no-privileges --file="baixok-${data}.dump"
+
+      - name: Publicar na branch "backups"
+        run: |
+          git config user.name "backup-bot"
+          git config user.email "backup-bot@users.noreply.github.com"
+
+          git fetch origin backups 2>/dev/null || true
+          if git show-ref --verify --quiet refs/remotes/origin/backups; then
+            git checkout -b backups origin/backups
+          else
+            git checkout --orphan backups
+            git reset --hard
+          fi
+
+          mkdir -p backups
+          mv "baixok-${DATA_DUMP}.dump" "backups/"
+
+          # Mantem so os ultimos 180 dias de dump (~6 meses de janela pra
+          # recuperar um erro percebido tarde) -- sem isso a branch cresce pra
+          # sempre. So apaga ARQUIVO DE BACKUP ANTIGO aqui, nunca dado de
+          # producao (pg_dump acima nem tem permissao de escrita no banco).
+          find backups -name "baixok-*.dump" -mtime +180 -delete
+
+          git add backups
+          if git diff --cached --quiet; then
+            echo "Nada novo para commitar (dump identico ao de ontem?)."
+          else
+            git commit -m "backup: ${DATA_DUMP}"
+            git push origin backups
+          fi
