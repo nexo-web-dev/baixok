@@ -80,6 +80,38 @@ const pedidosDoPapel = (pedidos, papel) => papel === "entregador"
 
 const senha = pedido => String(pedido.id).slice(-3).toUpperCase();
 const porChegada = lista => [...lista].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+/* Ordem visual de cada coluna — so gestao de tela, nunca vai pro banco nem
+ * pro servidor. Cada navegador guarda a sua propria (nao sincroniza entre
+ * quem mais estiver com o painel aberto), e reseta sozinha se a pagina
+ * recarregar: comeca sempre igual a ordem por chegada, e so muda quando a
+ * pessoa clica pra subir/descer um pedido especifico. */
+const ordemVisualPorStatus = new Map();
+
+function linhasComOrdemVisual(status, linhasPorChegada) {
+  const idsAtuais = linhasPorChegada.map(pedido => pedido.id);
+  let ordem = ordemVisualPorStatus.get(status);
+  if (!ordem) {
+    ordem = idsAtuais;
+  } else {
+    ordem = ordem.filter(id => idsAtuais.includes(id));
+    for (const id of idsAtuais) if (!ordem.includes(id)) ordem.push(id);
+  }
+  ordemVisualPorStatus.set(status, ordem);
+
+  const porId = new Map(linhasPorChegada.map(pedido => [pedido.id, pedido]));
+  return ordem.map(id => porId.get(id)).filter(Boolean);
+}
+
+function moverNaFila(status, id, direcao) {
+  const ordem = ordemVisualPorStatus.get(status);
+  if (!ordem) return;
+  const indice = ordem.indexOf(id);
+  const novoIndice = indice + direcao;
+  if (indice === -1 || novoIndice < 0 || novoIndice >= ordem.length) return;
+  [ordem[indice], ordem[novoIndice]] = [ordem[novoIndice], ordem[indice]];
+  desenharPedidos();
+}
 const normalizar = valor => String(valor || "")
   .normalize("NFD")
   .replace(/\p{Diacritic}/gu, "")
@@ -284,7 +316,7 @@ function acoes(pedido, papel) {
   return [botaoDetalhe(pedido)];
 }
 
-function cartao(pedido, papel) {
+function cartao(pedido, papel, ordemNaColuna = null) {
   const espera = minutosDesde(pedido.createdAt);
   const troco = trocoResumo(pedido);
   const prioridade = pedido.status === "entregue"
@@ -298,6 +330,20 @@ function cartao(pedido, papel) {
     dataset: { id: pedido.id }
   },
     el("div.order-top", {},
+      ordemNaColuna && ordemNaColuna.total > 1
+        ? el("div.order-reorder", {},
+            el("button.order-reorder-btn", {
+              type: "button", title: "Subir na fila (só nesta tela, não muda pra ninguém)",
+              disabled: ordemNaColuna.indice === 0,
+              dataset: { acao: "mover-fila", id: pedido.id, status: pedido.status, direcao: "-1" }
+            }, "▲"),
+            el("button.order-reorder-btn", {
+              type: "button", title: "Descer na fila (só nesta tela, não muda pra ninguém)",
+              disabled: ordemNaColuna.indice === ordemNaColuna.total - 1,
+              dataset: { acao: "mover-fila", id: pedido.id, status: pedido.status, direcao: "1" }
+            }, "▼")
+          )
+        : null,
       el("strong.order-num", {}, `#${senha(pedido)}`),
       el("strong.order-customer", {}, pedido.customer),
       el("strong.order-total", {}, reais(pedido.total))
@@ -703,7 +749,7 @@ export function desenharPedidos() {
   }
 
   render(alvo, ...colunas.map(([status, titulo]) => {
-    const linhas = porChegada(pedidos.filter(pedido => pedido.status === status));
+    const linhas = linhasComOrdemVisual(status, porChegada(pedidos.filter(pedido => pedido.status === status)));
     const totalColuna = linhas.reduce((soma, pedido) => soma + Number(pedido.total || 0), 0);
     return el("div.kanban-column", { class: `status-zone-${status}${linhas.length ? "" : " vazia"}`, dataset: { status } },
       el("h2", {}, titulo,
@@ -712,7 +758,9 @@ export function desenharPedidos() {
           el("span.column-count", {}, String(linhas.length))
         )
       ),
-      linhas.length ? linhas.map(pedido => cartao(pedido, papel)) : el("p.faint", {}, "Nenhum pedido aqui.")
+      linhas.length
+        ? linhas.map((pedido, indice) => cartao(pedido, papel, { indice, total: linhas.length }))
+        : el("p.faint", {}, "Nenhum pedido aqui.")
     );
   }));
   idsPedidosVistos = new Set(pedidos.map(pedido => pedido.id));
@@ -797,6 +845,8 @@ export function ligarPedidos() {
 
   delegar(alvo, "click", "[data-acao='aprovar']", (_e, botao) => mudarStatus(botao.dataset.id, "preparo"));
   delegar(alvo, "click", "[data-acao='status']", (_e, botao) => mudarStatus(botao.dataset.id, botao.dataset.status));
+  delegar(alvo, "click", "[data-acao='mover-fila']", (_e, botao) =>
+    moverNaFila(botao.dataset.status, botao.dataset.id, Number(botao.dataset.direcao)));
   delegar(alvo, "click", "[data-acao='recusar']", (_e, botao) => cancelarPedido(botao.dataset.id, { recusando: true }));
   delegar(alvo, "click", "[data-acao='cancelar-pedido']", (_e, botao) => cancelarPedido(botao.dataset.id));
   delegar(alvo, "click", "[data-acao='detalhe']", (_e, botao) => abrirDetalhePedido(botao.dataset.id));
