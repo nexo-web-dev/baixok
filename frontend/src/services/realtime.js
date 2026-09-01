@@ -11,12 +11,16 @@
 const ESPERA_INICIAL_MS = 1000;
 const ESPERA_MAXIMA_MS = 30000;
 const ATRASO_OFFLINE_MS = 12000;
+/* Quanto tempo a conexao precisa ficar de pe, sem cair de novo, para a gente
+ * confiar que "voltou de verdade" e zerar a espera pro minimo. */
+const TEMPO_MINIMO_ESTAVEL_MS = 5000;
 
 export function conectarEventos({ canal, aoMudar, aoStatus }) {
   let fonte = null;
   let espera = ESPERA_INICIAL_MS;
   let timerReconexao = null;
   let timerOffline = null;
+  let timerEstabilidade = null;
   let encerrado = false;
 
   const avisarStatus = estado => aoStatus?.(estado);
@@ -37,7 +41,14 @@ export function conectarEventos({ canal, aoMudar, aoStatus }) {
     fonte = new EventSource(`/api/eventos/${canal}`);
 
     fonte.addEventListener("pronto", () => {
-      espera = ESPERA_INICIAL_MS;      // reconectou: zera a espera
+      /* NAO zera a espera aqui na hora — uma rede que fica caindo e voltando
+       * em flashes (o suporte da hospedagem chamou isso de "spam de conexao")
+       * receberia "pronto" a cada reconexao e voltaria a martelar a cada 1s
+       * pra sempre, ja que o erro seguinte reabriria o ciclo do zero. So
+       * confia que a conexao "voltou de verdade" (e so entao zera a espera)
+       * depois de ficar de pe por TEMPO_MINIMO_ESTAVEL_MS sem cair de novo. */
+      clearTimeout(timerEstabilidade);
+      timerEstabilidade = setTimeout(() => { espera = ESPERA_INICIAL_MS; }, TEMPO_MINIMO_ESTAVEL_MS);
       avisarConectado();
     });
 
@@ -52,12 +63,14 @@ export function conectarEventos({ canal, aoMudar, aoStatus }) {
 
     /* Teto de conexoes atingido no servidor: nao adianta insistir rapido. */
     fonte.addEventListener("cheio", () => {
+      clearTimeout(timerEstabilidade);
       espera = ESPERA_MAXIMA_MS;
       fonte.close();
       agendarReconexao();
     });
 
     fonte.onerror = () => {
+      clearTimeout(timerEstabilidade);
       avisarOfflineSePersistir();
       fonte.close();
       agendarReconexao();
@@ -88,6 +101,7 @@ export function conectarEventos({ canal, aoMudar, aoStatus }) {
     encerrado = true;
     clearTimeout(timerReconexao);
     clearTimeout(timerOffline);
+    clearTimeout(timerEstabilidade);
     document.removeEventListener("visibilitychange", aoVoltar);
     fonte?.close();
   };

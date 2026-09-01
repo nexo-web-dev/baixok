@@ -13,6 +13,7 @@ import {
   apiMesas, apiEntrega, apiAjustes, apiInsumos, apiCaixa,
   apiCombos, apiCombinacoesSabores
 } from "../../services/api.js";
+import { toastOk } from "../../components/toast.js";
 
 export const estado = {
   usuario: null,
@@ -57,9 +58,18 @@ export function marcarConexao(online) {
       temporizadorOffline = null;
     }
     if (estado.online === true) return;
+    /* So chega aqui quando o banner "sem conexao" ja tinha acendido de
+     * verdade (estado.online === false) — nunca no primeiro carregamento da
+     * pagina, onde estado.online comeca undefined/true. Sem esse aviso
+     * positivo, a pessoa via o banner sumir sozinho e ficava sem saber se
+     * alguma coisa que ela tentou fazer durante a queda foi perdida. */
+    const estavaOfflineDeVerdade = estado.online === false;
     estado.online = true;
     document.body.classList.toggle("sem-conexao", false);
     avisar("conexao");
+    if (estavaOfflineDeVerdade) {
+      toastOk("Conexão restabelecida. Se alguma ação não foi confirmada durante a queda, tente de novo.");
+    }
     return;
   }
 
