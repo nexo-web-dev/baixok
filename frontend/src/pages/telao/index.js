@@ -39,28 +39,40 @@ function tentarLigarSom() {
   som.ligado = true;
 }
 
+/* Sineta de balcao ("ding!"): fundamental + dois harmonicos levemente
+ * desafinados entre si, ataque quase instantaneo e decaimento exponencial
+ * longo — e o que da o timbre metalico e "campainha de verdade" em vez de um
+ * tom puro de sintetizador. Tocada duas vezes (ding-ding) imita a sineta que
+ * lanchonete usa de verdade pra avisar "pedido pronto". */
+function tocarSino(agora, atraso, frequenciaBase, volume) {
+  const parciais = [
+    { fator: 1, ganho: 1 },
+    { fator: 2.0, ganho: 0.45 },
+    { fator: 2.76, ganho: 0.22 }
+  ];
+
+  for (const { fator, ganho } of parciais) {
+    const oscilador = som.contexto.createOscillator();
+    const ganhoNode = som.contexto.createGain();
+
+    oscilador.type = "sine";
+    oscilador.frequency.value = frequenciaBase * fator;
+    ganhoNode.gain.setValueAtTime(0.0001, agora + atraso);
+    ganhoNode.gain.exponentialRampToValueAtTime(volume * ganho, agora + atraso + 0.006);
+    ganhoNode.gain.exponentialRampToValueAtTime(0.0001, agora + atraso + 0.85);
+
+    oscilador.connect(ganhoNode);
+    ganhoNode.connect(som.contexto.destination);
+    oscilador.start(agora + atraso);
+    oscilador.stop(agora + atraso + 0.9);
+  }
+}
+
 function tocarChamada() {
   if (!som.ligado || !som.contexto) return;
   const agora = som.contexto.currentTime;
-  const notas = [659, 880, 1174, 880];
-
-  notas.forEach((frequencia, indice) => {
-    const atraso = [0, 0.18, 0.36, 0.62][indice];
-    const oscilador = som.contexto.createOscillator();
-    const ganho = som.contexto.createGain();
-    const ultima = indice === 3;
-
-    oscilador.type = ultima ? "triangle" : "sine";
-    oscilador.frequency.value = frequencia;
-    ganho.gain.setValueAtTime(0.001, agora + atraso);
-    ganho.gain.exponentialRampToValueAtTime(ultima ? 0.09 : 0.18, agora + atraso + 0.03);
-    ganho.gain.exponentialRampToValueAtTime(0.001, agora + atraso + (ultima ? 0.42 : 0.16));
-
-    oscilador.connect(ganho);
-    ganho.connect(som.contexto.destination);
-    oscilador.start(agora + atraso);
-    oscilador.stop(agora + atraso + (ultima ? 0.46 : 0.18));
-  });
+  tocarSino(agora, 0, 1318.5, 0.22);     // E6 — primeiro toque
+  tocarSino(agora, 0.32, 1318.5, 0.2);   // segundo toque, ding-ding
 }
 
 // ------------------------------------------------------------------ desenho ---

@@ -606,41 +606,95 @@ function ligarEventos() {
   });
 }
 
+/* Tela cheia, independente de qualquer elemento existir ou nao no resto da
+ * pagina — se algo no boot falhar ANTES do primeiro desenho de verdade, o
+ * cliente via de regra so via o fundo escuro do body sem nada em cima
+ * ("tela preta"), sem entender se o site caiu, se o pedido dele sumiu ou se
+ * era so pra esperar. Isso aconteceu de verdade num soluco de rede do host
+ * (ver postgres.js/podeTentarDeNovo) — o problema de fundo e de fora, mas a
+ * tela em branco em cima dele e nossa de resolver. */
+function mostrarTelaDeFalha() {
+  if ($("#erro-inicial")) return;
+  /* Estilo INLINE de proposito, sem depender de nenhuma classe do CSS
+   * principal: esta tela e o ultimo recurso quando o boot falhou, e o
+   * proprio motivo do boot ter falhado (rede ruim) pode ser o mesmo que
+   * atrapalhou o carregamento da folha de estilo. Sem cor/fundo explicitos
+   * aqui, o texto ficaria escuro sobre o fundo escuro do body — legivel em
+   * lugar nenhum. */
+  document.body.append(
+    el("div", {
+      id: "erro-inicial",
+      style: {
+        position: "fixed", inset: "0", zIndex: "99999",
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+        gap: "14px", padding: "28px", textAlign: "center",
+        background: "#17120e", color: "#f7eadb",
+        fontFamily: "Arial, Helvetica, sans-serif"
+      }
+    },
+      el("strong", { style: { fontSize: "1.1rem" } }, "Não foi possível abrir o cardápio agora"),
+      el("p", { style: { margin: "0", maxWidth: "320px", color: "#d8c7b7", fontSize: ".92rem", lineHeight: "1.4" } },
+        "Pode ser uma instabilidade passageira na internet. Tente de novo em alguns segundos."),
+      el("button", {
+        type: "button",
+        onclick: () => location.reload(),
+        style: {
+          marginTop: "6px", padding: "12px 22px", border: "0", borderRadius: "999px",
+          background: "#e0a66d", color: "#1b120c", fontWeight: "800", fontSize: ".95rem", cursor: "pointer"
+        }
+      }, "Tentar de novo")
+    )
+  );
+}
+
 // ------------------------------------------------------------------ inicio ---
 async function iniciar() {
-  const numeroMesa = mesaDaUrl();
-  if (numeroMesa) iniciarModoMesa(numeroMesa);
+  try {
+    const numeroMesa = mesaDaUrl();
+    if (numeroMesa) iniciarModoMesa(numeroMesa);
 
-  ligarEventos();
-  atualizarCampoTroco();
-  await carregarCardapio();
-  redesenhar();
+    ligarEventos();
+    atualizarCampoTroco();
+    await carregarCardapio();
+    redesenhar();
 
-  if (numeroMesa) await atualizarMesa();
-  else {
-    estado.modalidade = "retirada";
-    $("#mode-retirada")?.classList.add("active");
-    $("#mode-entrega")?.classList.remove("active");
-    if ($("#pickup-banner")) $("#pickup-banner").textContent = "RETIRADA";
-    mostrar($("#place-label"), false);
-  }
-
-  /* Canal publico: o cliente so e avisado de mudanca no cardapio e nas mesas.
-   * Nada da fila da cozinha chega aqui. */
-  conectarEventos({
-    canal: "publico",
-    aoMudar: async assunto => {
-      if (["produtos", "promocoes", "entrega", "caixa", "retomada", "desconhecido"].includes(assunto)) {
-        await carregarCardapio();
-        redesenhar();
-      }
-      if (["mesas", "pedidos", "retomada", "desconhecido"].includes(assunto) && sessaoMesa.n) {
-        await atualizarMesa();
-      }
+    if (numeroMesa) await atualizarMesa();
+    else {
+      estado.modalidade = "retirada";
+      $("#mode-retirada")?.classList.add("active");
+      $("#mode-entrega")?.classList.remove("active");
+      if ($("#pickup-banner")) $("#pickup-banner").textContent = "RETIRADA";
+      mostrar($("#place-label"), false);
     }
-  });
 
-  registrarPwa();
+    /* Canal publico: o cliente so e avisado de mudanca no cardapio e nas
+     * mesas. Nada da fila da cozinha chega aqui. */
+    conectarEventos({
+      canal: "publico",
+      aoMudar: async assunto => {
+        try {
+          if (["produtos", "promocoes", "entrega", "caixa", "retomada", "desconhecido"].includes(assunto)) {
+            await carregarCardapio();
+            redesenhar();
+          }
+          if (["mesas", "pedidos", "retomada", "desconhecido"].includes(assunto) && sessaoMesa.n) {
+            await atualizarMesa();
+          }
+        } catch (erro) {
+          /* A pagina ja estava de pe quando isto rodou (nao e o boot inicial)
+           * — nao vale apagar tudo que a pessoa ja via so por causa de uma
+           * atualizacao que falhou. So avisa e segue com o que ja estava na
+           * tela. */
+          toastFalha(erro, "Atualização");
+        }
+      }
+    });
+
+    registrarPwa();
+  } catch (erro) {
+    mostrarTelaDeFalha();
+    toastFalha(erro, "Cardápio");
+  }
 }
 
 /* O store avisa por evento no window para o resto da pagina nao precisar

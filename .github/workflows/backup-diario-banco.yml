@@ -1,0 +1,104 @@
+name: Backup diario do banco
+
+# So funciona a partir da branch padrao do GitHub (hoje "main") -- e uma regra
+# do proprio GitHub para "schedule", nao coisa deste arquivo. Se um dia
+# trocarem a branch padrao pra "prod", mover este arquivo pra la tambem.
+on:
+  schedule:
+    # 06:00 UTC = 03:00 em Brasilia (sem horario de verao desde 2019).
+    - cron: "0 6 * * *"
+  # Permite rodar manualmente em Actions > Backup diario do banco > Run workflow,
+  # sem esperar o horario agendado -- util pra testar se o secret esta certo.
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Preparar
+        run: sudo apt-get update -y && sudo apt-get install -y postgresql-client
+
+      # pg_dump so LE o banco -- nunca apaga, altera ou trava nada em producao.
+      # Formato "custom" (-Fc): compacto e restaura com pg_restore, inclusive
+      # so uma tabela por vez se precisar um dia.
+      #
+      # BACKUP_DATABASE_CLIENT_CERT_BASE64 e OPCIONAL -- so existe se o banco
+      # de producao for o Postgres da propria Square Cloud (mTLS obrigatorio,
+      # ver backend/src/db/postgres.js). Se o banco for Supabase "de verdade"
+      # (Session pooler), TLS comum basta e esse secret fica sem configurar.
+      # O valor e o MESMO PEM combinado (certificado + chave num arquivo so)
+      # que ja existe como DATABASE_CLIENT_CERT_BASE64 no ambiente de producao
+      # -- libpq (usado pelo pg_dump), ao contrario do TLS do Node, exige
+      # certificado e chave em ARQUIVOS SEPARADOS, entao o bloco abaixo separa
+      # os dois antes de chamar pg_dump.
+      - name: Gerar o dump
+        env:
+          DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          CERT_BASE64: ${{ secrets.BACKUP_DATABASE_CLIENT_CERT_BASE64 }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::Falta configurar o secret BACKUP_DATABASE_URL (Settings > Secrets and variables > Actions) antes deste workflow funcionar."
+            exit 1
+          fi
+
+          # sslmode/sslcert/sslkey na propria URL atrapalham as variaveis
+          # PGSSL* abaixo (mesmo motivo do trecho equivalente em postgres.js) --
+          # tira esses parametros da URL antes de usar.
+          url_limpa="$(node -e '
+            const u = new URL(process.argv[1]);
+            for (const p of ["ssl", "sslmode", "sslcert", "sslkey", "sslrootcert"]) u.searchParams.delete(p);
+            process.stdout.write(u.toString());
+          ' "$DATABASE_URL")"
+
+          if [ -n "$CERT_BASE64" ]; then
+            echo "$CERT_BASE64" | base64 -d > combined.pem
+            awk '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/' combined.pem > client.crt
+            awk '/-----BEGIN([A-Z ]*)?PRIVATE KEY-----/,/-----END([A-Z ]*)?PRIVATE KEY-----/' combined.pem > client.key
+            if [ ! -s client.crt ] || [ ! -s client.key ]; then
+              echo "::error::BACKUP_DATABASE_CLIENT_CERT_BASE64 nao contem um certificado e uma chave privada PEM validos."
+              exit 1
+            fi
+            chmod 600 client.key
+            export PGSSLMODE="require"
+            export PGSSLCERT="$(pwd)/client.crt"
+            export PGSSLKEY="$(pwd)/client.key"
+          fi
+
+          data="$(date -u +%Y-%m-%d)"
+          echo "DATA_DUMP=$data" >> "$GITHUB_ENV"
+          pg_dump "$url_limpa" --format=custom --no-owner --no-privileges --file="baixok-${data}.dump"
+
+          rm -f combined.pem client.crt client.key
+
+      - name: Publicar na branch "backups"
+        run: |
+          git config user.name "backup-bot"
+          git config user.email "backup-bot@users.noreply.github.com"
+
+          git fetch origin backups 2>/dev/null || true
+          if git show-ref --verify --quiet refs/remotes/origin/backups; then
+            git checkout -b backups origin/backups
+          else
+            git checkout --orphan backups
+            git reset --hard
+          fi
+
+          mkdir -p backups
+          mv "baixok-${DATA_DUMP}.dump" "backups/"
+
+          # Mantem so os ultimos 180 dias de dump (~6 meses de janela pra
+          # recuperar um erro percebido tarde) -- sem isso a branch cresce pra
+          # sempre. So apaga ARQUIVO DE BACKUP ANTIGO aqui, nunca dado de
+          # producao (pg_dump acima nem tem permissao de escrita no banco).
+          find backups -name "baixok-*.dump" -mtime +180 -delete
+
+          git add backups
+          if git diff --cached --quiet; then
+            echo "Nada novo para commitar (dump identico ao de ontem?)."
+          else
+            git commit -m "backup: ${DATA_DUMP}"
+            git push origin backups
+          fi

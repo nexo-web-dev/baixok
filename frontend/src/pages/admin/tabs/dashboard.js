@@ -209,12 +209,48 @@ function filtrosAtivosTexto() {
  * frase e entender o dia, sem precisar juntar os cartões de metrica um a um.
  * So entra o que teve movimento: sem cancelado/prejuizo/cortesia no periodo,
  * a frase de alerta nem aparece, pra nao poluir com "nenhum" toda hora. */
-function montarResumoTextual({ resumo, periodo, pagamentoTop, plataformaTop, modalidades, maisVendidos }) {
+/* So os 3 mais criticos (mais perto de acabar), nao a lista inteira — o
+ * resumo e pra dar um empurrao rapido de "vai la e resolve isso", nao
+ * duplicar o grafico de estoque que ja fica logo abaixo. */
+function itensEstoqueCriticoTexto(estoqueBaixo) {
+  if (!estoqueBaixo?.length) return "";
+  const ordenados = [...estoqueBaixo].sort((a, b) => a.estoque - b.estoque);
+  const nomes = ordenados.slice(0, 3).map(item => `${item.nome} (${item.estoque} un.)`);
+  const resto = ordenados.length - nomes.length;
+  const listaTexto = resto > 0 ? `${nomes.join(", ")} e mais ${resto}` : nomes.join(", ");
+  return ` Estoque no mínimo: ${listaTexto} — vale repor antes que falte.`;
+}
+
+/* combosVendidos ja vem do servidor so com itens de combo (pedidosRepo.
+ * combosVendidos) — aqui e so somar e destacar o mais pedido, pra quem le
+ * saber se vale a pena manter o combo ou trocar por outro. */
+function combosVendidosTexto(combosVendidos) {
+  if (!combosVendidos?.length) return "";
+  const totalQtd = combosVendidos.reduce((soma, item) => soma + Number(item.quantidade || 0), 0);
+  const totalFat = combosVendidos.reduce((soma, item) => soma + Number(item.faturamento || 0), 0);
+  const top = combosVendidos[0];
+  return ` Saíram ${totalQtd} combo${totalQtd === 1 ? "" : "s"} (${reais(totalFat)}), o mais pedido foi ${top.rotulo} (${top.quantidade}x).`;
+}
+
+/* Nao e do periodo filtrado — e o que esta valendo no cardapio AGORA (ver
+ * promocoesRepo.contarAtivas). Fica no resumo pra lembrar que aquela
+ * promocao configurada semana passada ainda esta rodando (ou ja venceu). */
+function promocoesAtivasTexto(promocoesAtivas) {
+  const total = Number(promocoesAtivas?.precos || 0) + Number(promocoesAtivas?.brindes || 0);
+  if (!total) return "";
+  const partes = [];
+  if (promocoesAtivas.precos) partes.push(`${promocoesAtivas.precos} com preço promocional`);
+  if (promocoesAtivas.brindes) partes.push(`${promocoesAtivas.brindes} compre-e-ganhe`);
+  return ` Hoje valem ${total} promoç${total === 1 ? "ão" : "ões"} no cardápio (${partes.join(" e ")}).`;
+}
+
+function montarResumoTextual({ resumo, periodo, pagamentoTop, plataformaTop, modalidades, maisVendidos, estoqueBaixo, combosVendidos, promocoesAtivas }) {
   const filtrosTexto = filtrosAtivosTexto();
   const sufixoFiltro = filtrosTexto.length ? `, considerando o filtro de ${filtrosTexto.join(" e ")},` : "";
 
   if (!resumo.pedidos) {
-    return `${periodoPreposicional(periodo)}${sufixoFiltro} não houve nenhum pedido registrado.`;
+    return `${periodoPreposicional(periodo)}${sufixoFiltro} não houve nenhum pedido registrado.` +
+      `${promocoesAtivasTexto(promocoesAtivas)}${itensEstoqueCriticoTexto(estoqueBaixo)}`;
   }
 
   const frases = [];
@@ -259,7 +295,10 @@ function montarResumoTextual({ resumo, periodo, pagamentoTop, plataformaTop, mod
     frases.push(`Fora do faturamento, ficaram ${alertas.join(", ")}.`);
   }
 
-  return frases.join(" ");
+  return frases.join(" ") +
+    combosVendidosTexto(combosVendidos) +
+    promocoesAtivasTexto(promocoesAtivas) +
+    itensEstoqueCriticoTexto(estoqueBaixo);
 }
 
 function horaCurta(data) {
@@ -390,7 +429,8 @@ export async function desenharDashboard() {
   const {
     resumo, porHora, porDia = [], agrupadoPorMes = false, porCanal, porPagamento, porModalidade = [],
     porCategoria = [], porMotoboy = [], maisVendidos, menosVendidos = [], estoqueBaixo, periodo, vendas = [],
-    taxaServico = { total: 0, contasFechadas: 0, contasSemCobranca: 0 }
+    taxaServico = { total: 0, contasFechadas: 0, contasSemCobranca: 0 },
+    combosVendidos = [], promocoesAtivas = { precos: 0, brindes: 0 }
   } = ultimoRelatorio;
   preencherFiltroSelect("filter-payment", PAGAMENTOS_CONHECIDOS, "Pagamento: todos");
   preencherFiltroSelect("filter-category", categoriasDoCatalogo(), "Categoria: todas", rotuloCategoria);
@@ -402,7 +442,7 @@ export async function desenharDashboard() {
 
   const resumoTexto = $("#dashboard-summary-text");
   if (resumoTexto) {
-    resumoTexto.textContent = montarResumoTextual({ resumo, periodo, pagamentoTop, plataformaTop, modalidades, maisVendidos });
+    resumoTexto.textContent = montarResumoTextual({ resumo, periodo, pagamentoTop, plataformaTop, modalidades, maisVendidos, estoqueBaixo, combosVendidos, promocoesAtivas });
   }
 
   const janelaTexto = $("#period-window");
@@ -515,6 +555,13 @@ export async function desenharDashboard() {
     "Quando houver mais vendas, os itens fracos aparecem aqui."
   ));
 
+  render($("#combo-chart"), barras(
+    combosVendidos.map(linha => ({ rotulo: linha.rotulo, valor: linha.quantidade, faturamento: linha.faturamento })),
+    unidadesEDinheiro,
+    "Nenhum combo vendido ainda.",
+    "Quando um combo sair, ele aparece aqui separado dos produtos avulsos."
+  ));
+
   render($("#motoboy-chart"), barras(
     porMotoboy.map(linha => ({ rotulo: linha.rotulo, valor: linha.pedidos })),
     valor => `${valor} entregas`,
@@ -558,6 +605,13 @@ async function exportarPlanilha() {
 }
 
 export function ligarDashboard() {
+  /* Reusa o mesmo caminho que um clique de verdade no menu lateral faria —
+   * mais simples e seguro do que importar abrirAba() de index.js (index.js
+   * ja importa dashboard.js; importar de volta criaria dependencia circular). */
+  $("#ir-para-estoque")?.addEventListener("click", () => {
+    document.querySelector("[data-tab='estoque']")?.click();
+  });
+
   /* Minimizar/expandir cada painel de vendas — com muitos pedidos no
    * periodo, a lista inteira nao cabe na tela e a pessoa nao conseguia
    * descer ate os graficos/paineis seguintes sem rolar por centenas de

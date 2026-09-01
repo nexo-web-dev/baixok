@@ -8,6 +8,7 @@
  * acesso a base de pedidos, que carrega nome, telefone e endereco de clientes. */
 import { pedidosRepo } from "../repositories/pedidos.repo.js";
 import { produtosRepo } from "../repositories/produtos.repo.js";
+import { promocoesRepo } from "../repositories/promocoes.repo.js";
 import { mesasFechamentosRepo } from "../repositories/mesas-fechamentos.repo.js";
 import { HORA_VIRADA } from "../config/constants.js";
 import { controlaEstoqueCategoria } from "../lib/estoque.js";
@@ -108,7 +109,7 @@ export const relatoriosService = {
 
     const [
       resumo, canceladosResumo, naoPagoResumo, cortesiaResumo, emFalta, porHora, porDia, porCanal, porPagamento, porModalidade, porCategoria,
-      porMotoboy, maisVendidos, menosVendidos, vendas, cancelados, taxaServico, naoPagos, cortesias
+      porMotoboy, maisVendidos, menosVendidos, vendas, cancelados, taxaServico, naoPagos, cortesias, combosVendidos, promocoesAtivas
     ] = await Promise.all([
       pedidosRepo.resumoPeriodo(filtro),
       pedidosRepo.resumoCancelados(filtro),
@@ -128,7 +129,9 @@ export const relatoriosService = {
       pedidosRepo.listar({ desde: filtro.desde, ate: filtro.ate, canal: filtro.canal, pagamento: filtro.pagamento, status: "cancelado", limite: 100 }),
       mesasFechamentosRepo.resumoPeriodo(filtro),
       pedidosRepo.listarNaoPagosCompleto({ desde: filtro.desde, ate: filtro.ate, canal: filtro.canal, pagamento: filtro.pagamento }),
-      pedidosRepo.listarCortesiasCompleto({ desde: filtro.desde, ate: filtro.ate, canal: filtro.canal, pagamento: filtro.pagamento })
+      pedidosRepo.listarCortesiasCompleto({ desde: filtro.desde, ate: filtro.ate, canal: filtro.canal, pagamento: filtro.pagamento }),
+      pedidosRepo.combosVendidos({ desde: filtro.desde, ate: filtro.ate, canal: filtro.canal, pagamento: filtro.pagamento, limite: 10 }),
+      promocoesRepo.contarAtivas()
     ]);
 
     return {
@@ -173,6 +176,17 @@ export const relatoriosService = {
        * mostrar menos nao-pagos/cortesias do que o cartao de resumo conta. */
       naoPagosLista: naoPagos,
       cortesiaLista: cortesias,
+      combosVendidos: combosVendidos.map(linha => ({
+        rotulo: linha.rotulo,
+        quantidade: linha.quantidade,
+        faturamento: Math.round(Number(linha.faturamento || 0) * 100) / 100
+      })),
+      /* Nao e recorte de periodo — e o catalogo AGORA, ver comentario em
+       * promocoesRepo.contarAtivas. */
+      promocoesAtivas: {
+        precos: promocoesAtivas.precos,
+        brindes: promocoesAtivas.brindes
+      },
       estoqueBaixo: emFalta
         .filter(produto => controlaEstoqueCategoria(produto.category))
         .map(produto => ({
@@ -185,12 +199,15 @@ export const relatoriosService = {
    * a casa usa a planilha para conferencia operacional e repasse de motoboy. */
   async exportacao({ periodo, desde, ate, canal, pagamento }) {
     const intervalo = resolverPeriodo({ periodo, desde, ate });
-    const pedidos = await pedidosRepo.listar({ desde: intervalo.desde, ate: intervalo.ate, status: "entregue", limite: 1000 });
+    /* canal/pagamento direto no SQL (ver comentario em pedidosRepo.listar) —
+     * do contrario, um periodo grande ("Tudo") com mais de 1000 pedidos
+     * entregues podia deixar de fora, da planilha exportada, pedido antigo
+     * que batia o filtro mas ficou fora da amostra truncada. */
+    const pedidos = await pedidosRepo.listar({ desde: intervalo.desde, ate: intervalo.ate, canal, pagamento, status: "entregue", limite: 1000 });
 
     return {
       periodo: intervalo,
       linhas: pedidos
-        .filter(pedido => (!canal || pedido.channel === canal) && (!pagamento || pedido.payment === pagamento))
         .map(pedido => ({
           id: pedido.id,
           data: pedido.createdAt,

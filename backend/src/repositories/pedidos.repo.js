@@ -742,6 +742,28 @@ export const pedidosRepo = {
     `, [desde, ate, canal, canal, pagamento, pagamento, categoria, categoria, limite]);
   },
 
+  /* Mesma ideia de maisVendidos, mas so os itens que sao combo (i.combo_id
+   * preenchido) — pro resumo do dashboard conseguir dizer quantos combos
+   * saíram no periodo, sem precisar que quem le va catar isso na lista geral
+   * de mais vendidos, onde combo e produto avulso aparecem misturados. */
+  async combosVendidos({ desde, ate, canal = null, pagamento = null, limite = 10 }) {
+    return await todos(`
+      SELECT i.nome AS rotulo,
+             SUM(i.quantidade)::int AS quantidade,
+             SUM(CASE WHEN i.cortesia = 1 THEN 0 ELSE i.quantidade * i.preco_unit END) AS faturamento
+        FROM pedido_itens i
+        JOIN pedidos p ON p.id = i.pedido_id
+       WHERE p.criado_em >= ?::timestamptz AND p.criado_em <= ?::timestamptz AND p.status = 'entregue'
+         AND p.pagamento IS DISTINCT FROM 'Não pago'
+         AND i.combo_id IS NOT NULL
+         AND (?::text IS NULL OR p.canal = ?::text)
+         AND (?::text IS NULL OR p.pagamento = ?::text)
+       GROUP BY i.nome
+       ORDER BY quantidade DESC
+       LIMIT ?
+    `, [desde, ate, canal, canal, pagamento, pagamento, limite]);
+  },
+
   async menosVendidos({ desde, ate, canal = null, pagamento = null, categoria = null, limite = 10 }) {
     return await todos(`
       SELECT i.nome AS rotulo,

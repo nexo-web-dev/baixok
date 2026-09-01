@@ -89,13 +89,15 @@ const AFETADAS = {
 };
 
 const DEPENDENCIAS_ABA = {
-  /* produtos e combos entram aqui pra "Adicionar item ao pedido" (no detalhe
-   * do pedido) conseguir buscar os dois — sem isso, quem abre o painel e vai
-   * direto pra um pedido (Pedidos e a aba inicial) via um catalogo vazio ate
-   * visitar Produtos ou Combos por acaso. */
-  pedidos: ["pedidos", "caixa", "ajustes", "produtos", "combos"],
+  /* So o que a fila PRECISA pra desenhar o primeiro quadro. produtos/combos/
+   * ajustes saem daqui e vao para DEPENDENCIAS_ABA_SEGUNDO_PLANO — ver
+   * comentario la embaixo. */
+  pedidos: ["pedidos", "caixa"],
   motoboy: [],
-  mesas: ["mesas", "produtos", "ajustes"],
+  /* produtos NAO entra aqui: a grade de mesas em si nunca le estado.produtos
+   * (so o modal "Lancar pedido", que ja se auto-carrega em venda-manual.js
+   * se o catalogo ainda nao chegou) — ver DEPENDENCIAS_ABA_SEGUNDO_PLANO. */
+  mesas: ["mesas", "ajustes"],
   /* insumos entra aqui (e nao so em estoque) porque a ficha tecnica do
    * produto — de onde sai o CMV — escolhe insumo num select nesta tela. */
   produtos: ["produtos", "promocoes"],
@@ -108,6 +110,20 @@ const DEPENDENCIAS_ABA = {
   fechamentos: ["fechamentos"],
   plano: ["ajustes"],
   usuarios: []
+};
+
+/* produtos/combos/ajustes nao bloqueiam o primeiro desenho da fila — so fazem
+ * falta quando a pessoa abre o detalhe de um pedido pra "Adicionar item" ou
+ * lanca cortesia/pizza 2 sabores, o que nunca acontece no instante seguinte
+ * ao F5. Antes esses tres entravam junto de pedidos/caixa em
+ * DEPENDENCIAS_ABA.pedidos, e o catalogo inteiro (de longe a consulta mais
+ * pesada das cinco, com foto de cada produto) segurava a fila+caixa — bem
+ * mais leves e ja prontas — atras de uma tela vazia ate ele terminar. Carrega
+ * em paralelo, sem `await`, pra estar pronto quando o detalhe do pedido for
+ * aberto de verdade, sem atrasar o que a pessoa ve primeiro. */
+const DEPENDENCIAS_ABA_SEGUNDO_PLANO = {
+  pedidos: ["ajustes", "produtos", "combos"],
+  mesas: ["produtos"]
 };
 
 function areasIniciais(usuario) {
@@ -174,6 +190,19 @@ async function abrirAba(chave) {
   const dependencias = DEPENDENCIAS_ABA[chave] || [];
   if (dependencias.length) await carregar(...dependencias);
   await DESENHO[chave]?.();
+
+  /* So busca o que ainda FALTA: sem este filtro, entrar e sair de Pedidos/
+   * Mesas repetidas vezes (comum num turno corrido) refazia a busca do
+   * catalogo inteiro a cada troca de aba, mesmo com o dado ja em memoria —
+   * trafego repetido a toa, justamente o tipo de coisa que se quer evitar
+   * com muita gente usando o painel ao mesmo tempo. */
+  const emSegundoPlano = (DEPENDENCIAS_ABA_SEGUNDO_PLANO[chave] || []).filter(area => !areaJaCarregada(area));
+  if (emSegundoPlano.length) carregar(...emSegundoPlano);
+}
+
+function areaJaCarregada(area) {
+  const valor = estado[area];
+  return Array.isArray(valor) ? valor.length > 0 : Boolean(valor && Object.keys(valor).length > 0);
 }
 
 // ------------------------------------------------------------------ metricas ---
@@ -257,7 +286,14 @@ async function iniciar() {
   montarMenu(sessao.usuario);
   ligarShell();
 
-  await abrirAba(abaInicial(sessao.usuario));
+  /* abrirAba grava a aba atual no hash da URL (history.replaceState), mas
+   * ninguem lia esse hash de volta no F5 — a pagina sempre reabria em
+   * abaInicial() (Pedidos), mesmo pra quem tinha acabado de dar F5 estando
+   * em Mesas ou Dashboard. Se o hash aponta pra uma aba de verdade que essa
+   * pessoa pode ver, respeita ele; senao cai no padrao de sempre. */
+  const abaDoHash = location.hash.slice(1);
+  const abaAoAbrir = abaDoHash && podeVer(abaDoHash, sessao.usuario) ? abaDoHash : abaInicial(sessao.usuario);
+  await abrirAba(abaAoAbrir);
   armarMonitorPedidos();
 
   carregar(...areasIniciais(sessao.usuario)).then(async () => {

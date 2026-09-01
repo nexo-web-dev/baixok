@@ -12,11 +12,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/admin-BKkDNG0H.js"></script>
+  <script type="module" crossorigin src="/assets/admin-BtJBNmLh.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/api-DxJU_VOi.js">
   <link rel="modulepreload" crossorigin href="/assets/estoque-CqZFOTJI.js">
   <link rel="modulepreload" crossorigin href="/assets/categorias-DMcvoUfT.js">
-  <link rel="stylesheet" crossorigin href="/assets/admin-BC7gkmMx.css">
+  <link rel="stylesheet" crossorigin href="/assets/admin-BWZ-6Okg.css">
 </head>
 <body data-page="admin">
   <div class="aviso-offline" role="alert">Sem conexão com o servidor. As alterações não estão sendo salvas.</div>
@@ -453,11 +453,18 @@
           <div id="worst-items"></div>
         </div>
         <div class="chart-card">
+          <h2>Combos vendidos</h2>
+          <div id="combo-chart"></div>
+        </div>
+        <div class="chart-card">
           <h2>Entregas por motoboy</h2>
           <div id="motoboy-chart"></div>
         </div>
         <div class="chart-card">
-          <h2>Alerta de estoque</h2>
+          <div class="chart-card-head">
+            <h2>Alerta de estoque</h2>
+            <button class="secondary small" type="button" id="ir-para-estoque">Ver estoque</button>
+          </div>
           <div id="stock-alert-chart"></div>
         </div>
       </div>

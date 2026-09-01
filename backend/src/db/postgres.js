@@ -117,14 +117,57 @@ const numerarParametros = sql => {
   return sql.replace(/\?/g, () => `$${++n}`);
 };
 
+/* Codigos de erro de REDE do Node (dns/tcp), nunca de SQL — nao inclui nada
+ * tipo "23505" (violacao de UNIQUE) ou erro de sintaxe, que repetir so faria
+ * acontecer de novo. Vistos de verdade em producao: EAI_AGAIN e o DNS interno
+ * do host nao resolvendo o proprio banco por alguns segundos (ver incidente
+ * de 2026-09-01, madrugada — Square Cloud reiniciou algo do lado deles e o
+ * dominio do Postgres ficou irresolvivel por ~90s).
+ *
+ * So o `.code` estruturado, sem regex na mensagem de texto: "timeout" no
+ * `message` tambem aparece no erro 57014 do proprio Postgres (statement
+ * cancelado por ser lento demais) — cair num regex assim faria o sistema
+ * insistir numa consulta que o banco JA rejeitou de proposito por ser cara,
+ * o oposto do que se quer. O `.code` de erro de rede do Node nunca colide com
+ * codigo de erro do Postgres (que sao numericos, tipo "57014"). */
+const CODIGOS_ERRO_TRANSITORIO = new Set([
+  "EAI_AGAIN", "ECONNREFUSED", "ETIMEDOUT", "ECONNRESET", "ENOTFOUND", "ECONNABORTED", "EPIPE"
+]);
+const TENTATIVAS_EXTRAS = 2;
+const ESPERA_BASE_MS = 300;
+
+/* Exportado so pra teste: decide se vale tentar de novo, sem precisar de uma
+ * conexao de banco de verdade pra exercitar a regra. */
+export function podeTentarDeNovo(erro, tentativa) {
+  return tentativa < TENTATIVAS_EXTRAS && CODIGOS_ERRO_TRANSITORIO.has(erro?.code);
+}
+
+const espera = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 /* Ponto unico de acesso. Dentro de emTransacao() usa o cliente da transacao;
- * fora dela, pega e devolve uma conexao do pool. */
+ * fora dela, pega e devolve uma conexao do pool.
+ *
+ * A nova tentativa SO se aplica fora de transacao: dentro de emTransacao() o
+ * cliente e uma conexao dedicada e ja aberta (BEGIN feito) — se ela morreu no
+ * meio, repetir so essa query não salva a transacao, e o catch/ROLLBACK de
+ * emTransacao() ja cuida de desfazer e propagar o erro direito. */
 async function executar(sql, params = []) {
   const clienteDaTransacao = contextoTransacao.getStore();
   const texto = numerarParametros(sql);
 
   if (clienteDaTransacao) return clienteDaTransacao.query(texto, params);
-  return getPool().query(texto, params);
+
+  let tentativa = 0;
+  for (;;) {
+    try {
+      return await getPool().query(texto, params);
+    } catch (erro) {
+      if (!podeTentarDeNovo(erro, tentativa)) throw erro;
+      logger.error("Erro transitorio de conexao — tentando de novo", { erro: erro.message, codigo: erro.code, tentativa: tentativa + 1 });
+      await espera(ESPERA_BASE_MS * (tentativa + 1));
+      tentativa += 1;
+    }
+  }
 }
 
 export const todos = async (sql, params) => (await executar(sql, params)).rows;

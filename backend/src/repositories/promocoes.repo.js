@@ -45,6 +45,22 @@ export const promocoesRepo = {
     `)).map(paraApiBrinde);
   },
 
+  /* Pro resumo do dashboard: quantas promoções (preço) e brindes (compre X
+   * leve Y) estão valendo AGORA — nao e recorte de periodo, e uma foto do
+   * catalogo no instante. `ate = ''` e o sentinela de "sem validade" (ver
+   * migracao 001); comparar como texto ISO (YYYY-MM-DD) funciona porque a
+   * ordem lexicografica bate com a cronologica, sem risco do cast ::date
+   * falhar num valor antigo fora do formato esperado. */
+  async contarAtivas() {
+    return await um(`
+      SELECT
+        (SELECT COUNT(*)::int FROM promocoes
+          WHERE ate = '' OR ate >= to_char(now(), 'YYYY-MM-DD')) AS precos,
+        (SELECT COUNT(*)::int FROM promocoes_brindes
+          WHERE ativo = 1 AND (ate = '' OR ate >= to_char(now(), 'YYYY-MM-DD'))) AS brindes
+    `);
+  },
+
   async buscarPorProduto(produtoId) {
     return paraApi(await um("SELECT * FROM promocoes WHERE produto_id = ?", [produtoId]));
   },
