@@ -191,11 +191,10 @@ function botaoDetalhe(pedido) {
   return el("button.secondary.small", { type: "button", dataset: { acao: "detalhe", id: pedido.id } }, "Ver pedido");
 }
 
-/* Marcar como entregue e o momento em que o dinheiro deveria ter entrado
- * (nesta casa nao ha pagamento online — Dinheiro/Cartao/Pix acontecem na
- * entrega ou retirada). Perguntar aqui, na hora, evita depender de alguem
- * lembrar de corrigir depois pelo dashboard. Cancelar na pergunta NAO cancela
- * a entrega — so avisa que o dinheiro nao veio; a entrega segue normal. */
+/* Pagamento nao e mais perguntado aqui: virou botao dedicado no card
+ * ("Não pago" / "Cortesia", ver atalhosPagamento) pra nao interromper quem
+ * so quer mover o pedido. Motoboy continua obrigatorio pra fechar entrega,
+ * porque sem isso nao da pra saber quem levou o pedido. */
 function dadosParaStatus(pedido, status) {
   if (status !== "entregue") return {};
 
@@ -213,33 +212,52 @@ function dadosParaStatus(pedido, status) {
     }
   }
 
-  if (pedido?.payment !== "Não pago" && !confirm(
-    "O pagamento foi recebido normalmente?\n\nClique em Cancelar se o dinheiro NÃO chegou (cliente saiu sem pagar, cartão recusado, etc.)."
-  )) {
-    /* Mesma distincao do formulario "Pedido não pago" no detalhe: prejuizo
-     * (calote) entra no pagamento como "Não pago"; cortesia (a casa que
-     * decidiu nao cobrar) e uma chamada a parte, depois do status mudar —
-     * ver mudarStatus(). Arrastar pro kanban so cobre "pedido todo": pra
-     * cortesia de so alguns itens, o formulario completo fica no detalhe. */
-    const ehCortesia = !confirm(
-      "Foi PREJUÍZO — o cliente não pagou (calote, cartão recusado)?\n\nClique em Cancelar se foi CORTESIA — a própria casa decidiu não cobrar."
-    );
-    const motivo = (prompt(
-      ehCortesia ? "Motivo da cortesia (obrigatório e fica registrado):" : "O que aconteceu? (obrigatório e fica registrado):",
-      ""
-    ) || "").trim();
-    if (!motivo) {
-      toastFalha(new Error("Informe o motivo."), "Pagamento");
-      return null;
-    }
-    if (ehCortesia) extras.cortesiaMotivo = motivo;
-    else {
-      extras.pagamentoNaoRecebido = true;
-      extras.motivoNaoPago = motivo;
-    }
-  }
-
   return extras;
+}
+
+function podeMarcarPagamento(pedido, papel) {
+  return (papel === "admin" || papel === "caixa") && pedido.payment !== "Não pago" && !(pedido.cortesiaValue > 0);
+}
+
+/* Atalho rapido pra marcar o pedido todo — igual ao antigo fluxo automatico
+ * ao arrastar pra "Entregue". Item a item, ou so parte do pedido, continua no
+ * formulario completo do detalhe ("Editar não pago / cortesia"). */
+function atalhosPagamento(pedido, papel) {
+  if (!podeMarcarPagamento(pedido, papel)) return null;
+
+  return el("div.status-shortcuts", {},
+    el("span", {}, "Pagamento"),
+    el("button.danger.small", { type: "button", dataset: { acao: "marcar-nao-pago", id: pedido.id } }, "Não pago"),
+    el("button.ghost.small", { type: "button", dataset: { acao: "marcar-cortesia", id: pedido.id } }, "Cortesia")
+  );
+}
+
+async function marcarNaoPago(id) {
+  const motivo = (prompt("O que aconteceu? (obrigatório e fica registrado):", "") || "").trim();
+  if (!motivo) return toastFalha(new Error("Informe o motivo."), "Pagamento");
+
+  try {
+    await apiPedidos.definirPagamento(id, "Não pago", motivo);
+    await carregar("pedidos");
+    desenharPedidos();
+    toast("Pedido marcado como não pago.", { tipo: "alerta", duracao: 6000 });
+  } catch (erro) {
+    toastFalha(erro, "Pagamento");
+  }
+}
+
+async function marcarCortesia(id) {
+  const motivo = (prompt("Motivo da cortesia (obrigatório e fica registrado):", "") || "").trim();
+  if (!motivo) return toastFalha(new Error("Informe o motivo."), "Cortesia");
+
+  try {
+    await apiPedidos.definirCortesia(id, { todoPedido: true, itemIds: [], motivo });
+    await carregar("pedidos");
+    desenharPedidos();
+    toast("Cortesia registrada.", { tipo: "alerta", duracao: 6000 });
+  } catch (erro) {
+    toastFalha(erro, "Cortesia");
+  }
 }
 
 /* A cozinha ve a fila e avanca o preparo, mas nao recusa nem reimprime nota do
@@ -370,7 +388,8 @@ function cartao(pedido, papel, ordemNaColuna = null) {
       ? el("div.order-flags", {}, el("span.flag.done", {}, "🖨 Cozinha ✓"), el("span.flag.done", {}, "🖨 Balcão ✓"))
       : null,
     el("div.order-actions", {}, ...acoes(pedido, papel)),
-    atalhosStatus(pedido, papel)
+    atalhosStatus(pedido, papel),
+    atalhosPagamento(pedido, papel)
   );
 }
 
@@ -781,12 +800,6 @@ async function mudarStatus(id, status) {
   const extras = dadosParaStatus(atual, status);
   if (extras === null) return;
 
-  /* Cortesia nao e campo do endpoint de status (mexe em pedido_itens, nao em
-   * pagamento) — sai do corpo antes de mandar e vira uma segunda chamada
-   * depois que o status mudar de verdade. */
-  const cortesiaMotivo = extras.cortesiaMotivo;
-  delete extras.cortesiaMotivo;
-
   try {
     const { pedido } = await apiPedidos.mudarStatus(id, status, extras);
     /* Aprovar imprime as duas vias, como antes: cozinha monta, balcao entrega. */
@@ -794,21 +807,12 @@ async function mudarStatus(id, status) {
       imprimirAmbas(pedido);
       await apiPedidos.marcarImpresso(id).catch(() => {});
     }
-    if (cortesiaMotivo) {
-      await apiPedidos.definirCortesia(id, { todoPedido: true, itemIds: [], motivo: cortesiaMotivo })
-        .catch(erro => toastFalha(erro, "Cortesia"));
-    }
     await carregar("pedidos", "produtos");
     desenharPedidos();
     if (status === "entregue") {
       const nomeMotoboy = pedido.motoboy || extras?.motoboy || atual?.motoboy || "";
       if (nomeMotoboy) registrarMotoboyLocal(nomeMotoboy);
-      toast(extras?.pagamentoNaoRecebido
-        ? `Pedido ${senha(pedido)} entregue — marcado como NÃO PAGO.`
-        : cortesiaMotivo
-          ? `Pedido ${senha(pedido)} entregue — marcado como CORTESIA.`
-          : `Pedido ${senha(pedido)} entregue${nomeMotoboy ? ` por ${nomeMotoboy}` : ""}.`,
-        (extras?.pagamentoNaoRecebido || cortesiaMotivo) ? { tipo: "alerta", duracao: 6000 } : undefined);
+      toast(`Pedido ${senha(pedido)} entregue${nomeMotoboy ? ` por ${nomeMotoboy}` : ""}.`);
     } else if (status === "preparo") {
       toast(`Pedido ${senha(pedido)} aprovado e impresso.`);
     } else if (status === "pronto") {
