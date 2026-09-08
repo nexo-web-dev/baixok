@@ -1,0 +1,1 @@
+-- Referencia SQLite: em producao a migration executada e a versao Postgres.

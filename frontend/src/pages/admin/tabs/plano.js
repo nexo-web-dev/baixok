@@ -58,13 +58,27 @@ function fecharAlertaVencimento() {
 function mostrarAlertaVencimento(dias, restante) {
   fecharAlertaVencimento();
 
+  /* dias vem de diasAteVencimentoProjeto() e fica NEGATIVO depois da data —
+   * "Vence hoje" pra qualquer valor <= 0 escondia um pagamento ja atrasado
+   * ha dias atras do dono, mostrando a mesma urgencia de "vence hoje" pra
+   * "venceu ha uma semana". A aba Plano do sistema (desenharPlano) ja fazia
+   * essa distincao corretamente; so faltava aqui no popup. */
+  const atrasado = dias < 0;
+  const diasAtraso = Math.abs(dias);
+  const badge = atrasado
+    ? `Atrasado há ${diasAtraso} dia${diasAtraso === 1 ? "" : "s"}`
+    : dias === 0 ? "Vence hoje" : `Vence em ${dias} dia${dias === 1 ? "" : "s"}`;
+  const texto = atrasado
+    ? `O pagamento de ${formatarMoeda(restante)} do desenvolvimento do sistema está ATRASADO há ${diasAtraso} `
+      + `dia${diasAtraso === 1 ? "" : "s"} (venceu dia ${formatarData(VENCIMENTO_PROJETO)}). Regularize o quanto antes.`
+    : `Falta pagar ${formatarMoeda(restante)} do desenvolvimento do sistema, com vencimento dia ${formatarData(VENCIMENTO_PROJETO)}. `
+      + "Combine o pagamento pra manter tudo em dia.";
+
   const modal = el("div.modal#plano-alerta-modal", { role: "dialog", "aria-modal": "true" },
     el("div.modal-card", { style: { maxWidth: "420px" } },
-      el("span.plan-badge.plan-badge-alert", {}, dias <= 0 ? "Vence hoje" : `Vence em ${dias} dia${dias === 1 ? "" : "s"}`),
+      el("span.plan-badge.plan-badge-alert", { class: atrasado ? "plan-badge-atrasado" : "" }, badge),
       el("h2", {}, "Pagamento do desenvolvimento"),
-      el("p", {},
-        `Falta pagar ${formatarMoeda(restante)} do desenvolvimento do sistema, com vencimento dia ${formatarData(VENCIMENTO_PROJETO)}. `
-        + "Combine o pagamento pra manter tudo em dia."),
+      el("p", {}, texto),
       el("div", { style: { display: "flex", justifyContent: "flex-end", marginTop: "6px" } },
         el("button.primary", { type: "button", id: "plano-alerta-entendi" }, "Entendi")
       )
