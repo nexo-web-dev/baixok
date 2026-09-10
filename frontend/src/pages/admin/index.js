@@ -176,14 +176,6 @@ async function abrirAba(chave) {
   const usuario = estado.usuario;
   if (!podeVer(chave, usuario)) return;
 
-  /* So quem tem a aba "Plano do sistema" (admin, ver abas.js) precisa saber
-   * que o pagamento esta vencendo. Antes so disparava uma vez no login; como
-   * o dono nao pagou, pediram pra aparecer de novo a cada troca de aba, pra
-   * nao passar batido. */
-  if (usuario.papel === "admin") {
-    import("./tabs/plano.js").then(mod => mod.verificarAlertaVencimento()).catch(() => {});
-  }
-
   abaAtual = chave;
   for (const secao of $$(".admin-tab")) mostrar(secao, secao.id === `tab-${chave}`);
   for (const botao of $$("[data-tab]")) botao.classList.toggle("active", botao.dataset.tab === chave);
@@ -284,6 +276,12 @@ async function iniciar() {
   $("#usuario-papel").textContent = { admin: "Administrador", caixa: "Caixa", cozinha: "Cozinha", entregador: "Entregador" }[sessao.usuario.papel];
   garantirNomeMotoboy();
   iniciarRastreamentoMotoboy();
+  /* So quem tem a aba "Plano do sistema" (admin, ver abas.js) precisa saber
+   * que a mensalidade esta vencendo — importa o modulo so nesse caso, sem
+   * puxar pro pacote principal o codigo de quem nunca ve essa aba. */
+  if (sessao.usuario.papel === "admin") {
+    import("./tabs/plano.js").then(mod => mod.verificarAlertaVencimento()).catch(() => {});
+  }
 
   montarMenu(sessao.usuario);
   ligarShell();

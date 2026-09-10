@@ -17,9 +17,9 @@ const VALOR_PROJETO_PAGO = 1000;
 const VENCIMENTO_PROJETO = new Date(2026, 8, 5);
 
 /* A partir de quantos dias antes do vencimento do desenvolvimento o alerta
- * aparece sozinho a cada troca de aba (ver verificarAlertaVencimento,
- * chamado em admin/index.js). Nao tem alerta pra mensalidade — so pro
- * pagamento do desenvolvimento, que foi o que pediram. */
+ * aparece sozinho ao logar (ver verificarAlertaVencimento, chamado em
+ * admin/index.js). Nao tem alerta pra mensalidade — so pro pagamento do
+ * desenvolvimento, que foi o que pediram. */
 const DIAS_ANTES_DO_ALERTA = 2;
 
 function calcularProximoVencimento(agora = new Date()) {
@@ -91,11 +91,10 @@ function mostrarAlertaVencimento(dias, restante) {
   });
 }
 
-/* Chamado a cada troca de aba (ver abrirAba em admin/index.js), pra nao
- * deixar passar batido enquanto o pagamento nao regulariza. So dispara pra
- * quem realmente tem a aba (admin, ver abas.js), so se ainda falta pagar, e
- * so nos ultimos dias antes do vencimento do desenvolvimento — a
- * mensalidade nao tem esse alerta. */
+/* Chamado uma vez no login (ver admin/index.js) — nao depende de a pessoa
+ * abrir esta aba. So dispara pra quem realmente tem a aba (admin, ver
+ * abas.js), so se ainda falta pagar, e so nos ultimos dias antes do
+ * vencimento do desenvolvimento — a mensalidade nao tem esse alerta. */
 export function verificarAlertaVencimento() {
   const restante = Math.max(0, VALOR_PROJETO_TOTAL - VALOR_PROJETO_PAGO);
   if (restante <= 0) return;
