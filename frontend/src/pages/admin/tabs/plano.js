@@ -114,7 +114,6 @@ export function desenharPlano() {
 
   const restante = Math.max(0, VALOR_PROJETO_TOTAL - VALOR_PROJETO_PAGO);
   const quitado = restante <= 0;
-  const diasProjeto = diasAteVencimentoProjeto();
 
   render(alvo,
     el("div.plan-card", {},
@@ -161,15 +160,6 @@ export function desenharPlano() {
           el("span", {}, "Falta pagar"),
           el("strong", { class: quitado ? "" : "danger-text" }, formatarMoeda(restante))
         )
-      ),
-      quitado ? null : el("div.plan-foot", {},
-        el("span.small.faint", {}, `Vencimento: ${formatarData(VENCIMENTO_PROJETO)}`),
-        el("span.small.faint", { class: diasProjeto <= DIAS_ANTES_DO_ALERTA ? "danger-text" : "" },
-          diasProjeto < 0
-            ? `Venceu há ${Math.abs(diasProjeto)} dia${Math.abs(diasProjeto) === 1 ? "" : "s"}`
-            : diasProjeto === 0
-              ? "Vence hoje"
-              : `Vence em ${diasProjeto} dia${diasProjeto === 1 ? "" : "s"}`)
       )
     )
   );
