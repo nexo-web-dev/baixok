@@ -13,7 +13,7 @@ const PRIMEIRO_VENCIMENTO = new Date(2026, 8, 15);
  * acima, que e a manutencao mensal. Ajuste os numeros aqui conforme os
  * pagamentos forem acontecendo. */
 const VALOR_PROJETO_TOTAL = 2500;
-const VALOR_PROJETO_PAGO = 1000;
+const VALOR_PROJETO_PAGO = 1500;
 const VENCIMENTO_PROJETO = new Date(2026, 8, 5);
 
 /* A partir de quantos dias antes do vencimento do desenvolvimento o alerta
@@ -65,18 +65,21 @@ function mostrarAlertaVencimento(dias, restante) {
    * essa distincao corretamente; so faltava aqui no popup. */
   const atrasado = dias < 0;
   const diasAtraso = Math.abs(dias);
+  /* "Atrasado" soava como cobranca agressiva pra quem ja pagou parte do
+   * valor e so falta o restante — "Pendente" mantem a informacao real
+   * (quantos dias passaram do vencimento) sem soar como cobranca dura. */
   const badge = atrasado
-    ? `Atrasado há ${diasAtraso} dia${diasAtraso === 1 ? "" : "s"}`
+    ? "Pagamento pendente"
     : dias === 0 ? "Vence hoje" : `Vence em ${dias} dia${dias === 1 ? "" : "s"}`;
   const texto = atrasado
-    ? `O pagamento de ${formatarMoeda(restante)} do desenvolvimento do sistema está ATRASADO há ${diasAtraso} `
-      + `dia${diasAtraso === 1 ? "" : "s"} (venceu dia ${formatarData(VENCIMENTO_PROJETO)}). Regularize o quanto antes.`
+    ? `Ainda falta pagar ${formatarMoeda(restante)} do desenvolvimento do sistema — venceu há ${diasAtraso} `
+      + `dia${diasAtraso === 1 ? "" : "s"} (dia ${formatarData(VENCIMENTO_PROJETO)}). Combine o pagamento do restante quando puder.`
     : `Falta pagar ${formatarMoeda(restante)} do desenvolvimento do sistema, com vencimento dia ${formatarData(VENCIMENTO_PROJETO)}. `
       + "Combine o pagamento pra manter tudo em dia.";
 
   const modal = el("div.modal#plano-alerta-modal", { role: "dialog", "aria-modal": "true" },
     el("div.modal-card", { style: { maxWidth: "420px" } },
-      el("span.plan-badge.plan-badge-alert", { class: atrasado ? "plan-badge-atrasado" : "" }, badge),
+      el("span.plan-badge.plan-badge-alert", {}, badge),
       el("h2", {}, "Pagamento do desenvolvimento"),
       el("p", {}, texto),
       el("div", { style: { display: "flex", justifyContent: "flex-end", marginTop: "6px" } },
