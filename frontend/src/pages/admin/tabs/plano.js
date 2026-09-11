@@ -18,7 +18,7 @@ const VENCIMENTO_PROJETO = new Date(2026, 8, 5);
 /* A partir de quantos dias antes do vencimento cada popup aparece sozinho ao
  * logar (ver verificarAlertaVencimento, chamado em admin/index.js). */
 const DIAS_ANTES_DO_ALERTA = 2;
-const DIAS_ANTES_DO_ALERTA_MENSALIDADE = 3;
+const DIAS_ANTES_DO_ALERTA_MENSALIDADE = 5;
 
 function calcularProximoVencimento(agora = new Date()) {
   const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
