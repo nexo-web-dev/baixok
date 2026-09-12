@@ -18,7 +18,7 @@ const VENCIMENTO_PROJETO = new Date(2026, 8, 5);
 /* A partir de quantos dias antes do vencimento cada popup aparece sozinho ao
  * logar (ver verificarAlertaVencimento, chamado em admin/index.js). */
 const DIAS_ANTES_DO_ALERTA = 2;
-const DIAS_ANTES_DO_ALERTA_MENSALIDADE = 5;
+const DIAS_ANTES_DO_ALERTA_MENSALIDADE = 3;
 
 function calcularProximoVencimento(agora = new Date()) {
   const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
@@ -49,27 +49,31 @@ function fecharModalPlano() {
   $("#plano-alerta-modal")?.remove();
 }
 
-/* Um modal generico pros dois avisos (mensalidade e desenvolvimento) — so
- * muda titulo/badge/texto. `aoFechar` encadeia o segundo popup depois que a
- * pessoa fecha o primeiro, em vez de empilhar os dois um em cima do outro. */
-function mostrarModalPlano({ titulo, badge, texto, aoFechar }) {
+/* Um modal so pros avisos que valerem no login (mensalidade e/ou
+ * desenvolvimento) — cada aviso vira uma coluna lado a lado, em vez de
+ * empilhar um popup atras do outro. Um unico botao "Entendi" fecha tudo. */
+function mostrarModalPlano(avisos) {
   fecharModalPlano();
+  if (!avisos.length) return;
 
   const modal = el("div.modal#plano-alerta-modal", { role: "dialog", "aria-modal": "true" },
-    el("div.modal-card", { style: { maxWidth: "420px" } },
-      el("span.plan-badge.plan-badge-alert", {}, badge),
-      el("h2", {}, titulo),
-      el("p", {}, texto),
+    el("div.modal-card", { style: { width: avisos.length > 1 ? "min(680px, calc(100vw - 24px))" : "min(420px, calc(100vw - 24px))" } },
+      el("div.plan-alert-row", {},
+        ...avisos.map(({ titulo, badge, texto }) =>
+          el("div.plan-alert-item", {},
+            el("span.plan-badge.plan-badge-alert", {}, badge),
+            el("h2", {}, titulo),
+            el("p", {}, texto)
+          )
+        )
+      ),
       el("div", { style: { display: "flex", justifyContent: "flex-end", marginTop: "6px" } },
         el("button.primary", { type: "button", id: "plano-alerta-entendi" }, "Entendi")
       )
     )
   );
 
-  const fechar = () => {
-    fecharModalPlano();
-    aoFechar?.();
-  };
+  const fechar = () => fecharModalPlano();
   document.body.append(modal);
   modal.querySelector("#plano-alerta-entendi").addEventListener("click", fechar);
   modal.addEventListener("click", evento => {
@@ -77,7 +81,7 @@ function mostrarModalPlano({ titulo, badge, texto, aoFechar }) {
   });
 }
 
-function mostrarAlertaVencimento(dias, restante, aoFechar) {
+function avisoVencimento(dias, restante) {
   /* dias vem de diasAteVencimentoProjeto() e fica NEGATIVO depois da data —
    * "Vence hoje" pra qualquer valor <= 0 escondia um pagamento ja atrasado
    * ha dias atras do dono, mostrando a mesma urgencia de "vence hoje" pra
@@ -97,15 +101,15 @@ function mostrarAlertaVencimento(dias, restante, aoFechar) {
     : `Falta pagar ${formatarMoeda(restante)} do desenvolvimento do sistema, com vencimento dia ${formatarData(VENCIMENTO_PROJETO)}. `
       + "Combine o pagamento pra manter tudo em dia.";
 
-  mostrarModalPlano({ titulo: "Pagamento do desenvolvimento", badge, texto, aoFechar });
+  return { titulo: "Pagamento do desenvolvimento", badge, texto };
 }
 
-function mostrarAlertaMensalidade(dias, vencimento, aoFechar) {
+function avisoMensalidade(dias, vencimento) {
   const badge = dias === 0 ? "Vence hoje" : `Vence em ${dias} dia${dias === 1 ? "" : "s"}`;
   const texto = `A mensalidade de ${formatarMoeda(VALOR_MENSALIDADE)} vence dia ${formatarData(vencimento)}. `
     + "Combine o pagamento pra manter tudo em dia.";
 
-  mostrarModalPlano({ titulo: "Mensalidade do sistema", badge, texto, aoFechar });
+  return { titulo: "Mensalidade do sistema", badge, texto };
 }
 
 /* Chamado uma vez no login (ver admin/index.js) — nao depende de a pessoa
@@ -113,25 +117,26 @@ function mostrarAlertaMensalidade(dias, vencimento, aoFechar) {
  * abas.js). A mensalidade nao tem controle de "ja pago" (e um lembrete fixo,
  * recalculado a cada login) — por isso so aparece nos ultimos dias antes do
  * dia 15, todo mes, em vez de sempre. O desenvolvimento so aparece se ainda
- * tiver saldo e estiver perto do proprio vencimento. Quando os dois valem, um
- * encadeia o outro (mensalidade primeiro) em vez de empilhar dois modais na
- * tela ao mesmo tempo. */
+ * tiver saldo e estiver perto do proprio vencimento. Quando os dois valem,
+ * aparecem lado a lado no mesmo popup em vez de um atras do outro. */
 export function verificarAlertaVencimento() {
+  const avisos = [];
+
   const restanteProjeto = Math.max(0, VALOR_PROJETO_TOTAL - VALOR_PROJETO_PAGO);
   const { dias: diasMensalidade, vencimento: vencimentoMensalidade } = calcularProximoVencimento();
 
-  const mostrarProjeto = () => {
-    if (restanteProjeto <= 0) return;
-    const diasProjeto = diasAteVencimentoProjeto();
-    if (diasProjeto > DIAS_ANTES_DO_ALERTA) return;
-    mostrarAlertaVencimento(diasProjeto, restanteProjeto);
-  };
-
   if (diasMensalidade <= DIAS_ANTES_DO_ALERTA_MENSALIDADE) {
-    mostrarAlertaMensalidade(diasMensalidade, vencimentoMensalidade, mostrarProjeto);
-    return;
+    avisos.push(avisoMensalidade(diasMensalidade, vencimentoMensalidade));
   }
-  mostrarProjeto();
+
+  if (restanteProjeto > 0) {
+    const diasProjeto = diasAteVencimentoProjeto();
+    if (diasProjeto <= DIAS_ANTES_DO_ALERTA) {
+      avisos.push(avisoVencimento(diasProjeto, restanteProjeto));
+    }
+  }
+
+  mostrarModalPlano(avisos);
 }
 
 export function desenharPlano() {

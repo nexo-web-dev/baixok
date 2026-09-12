@@ -130,6 +130,11 @@ function listaPermitida(usuario, tipo) {
 
 export function abaInicial(usuario) {
   const permitidas = listaPermitida(usuario, "ver");
+  /* Admin precisa ver o vencimento (mensalidade/desenvolvimento) assim que
+   * loga, entao a aba inicial dele e "Plano do sistema" em vez de Pedidos.
+   * So vale pra login de verdade (sem hash na URL) — o F5 dentro de outra
+   * aba continua respeitando o hash, ver admin/index.js. */
+  if (usuario?.papel === "admin" && permitidas.includes("plano")) return "plano";
   if (permitidas.includes("pedidos")) return "pedidos";
   return permitidas[0] || "pedidos";
 }

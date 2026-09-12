@@ -158,6 +158,15 @@
 .plan-foot { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-top: 4px; }
 .plan-foot .small { font-size: .76rem; }
 
+/* â€” popup de vencimento (login) â€” mensalidade e desenvolvimento lado a lado
+   quando os dois avisos valem ao mesmo tempo, em vez de um popup atras do
+   outro. */
+.plan-alert-row { display: flex; gap: 18px; flex-wrap: wrap; }
+.plan-alert-item { flex: 1 1 220px; display: grid; gap: 8px; align-content: start; }
+.plan-alert-item + .plan-alert-item { padding-left: 18px; border-left: 1px solid var(--line-soft); }
+.plan-alert-item h2 { font-size: 1.05rem; }
+.plan-alert-item p { color: var(--muted); font-size: .8rem; line-height: 1.45; }
+
 /* â€” kanban / cards de pedido â€” */
 /* Legenda do fluxo: mesmos titulos das colunas (colunasDoPapel), so pra
  * reforcar visualmente a ordem do processo — sem duplicar a lista em outro
