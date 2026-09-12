@@ -418,6 +418,12 @@
   body[data-page="admin"] .plan-metric {
     padding: 14px;
   }
+  body[data-page="admin"] .plan-alert-item + .plan-alert-item {
+    padding-left: 0;
+    border-left: none;
+    padding-top: 14px;
+    border-top: 1px solid var(--line-soft);
+  }
   .section-head { flex-direction: column; }
   .section-head input { max-width: none; }
   .admin-app { padding: 18px 14px 32px; }

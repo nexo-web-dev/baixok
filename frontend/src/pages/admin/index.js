@@ -106,7 +106,13 @@ const DEPENDENCIAS_ABA = {
   promos: ["produtos", "promocoes", "cupons"],
   entrega: ["entrega"],
   estoque: ["produtos", "insumos"],
-  dashboard: ["produtos"],
+  /* produtos NAO bloqueia aqui: so serve pra popular o filtro de categoria
+   * (categoriasDoCatalogo, em dashboard.js) — os numeros/graficos do periodo
+   * vem de uma consulta propria (apiRelatorios.dashboard) que nao depende
+   * disso. Bloquear o catalogo inteiro so pra um <select> deixava a aba
+   * inteira esperando de tela vazia toda vez que era aberta, mesmo com o
+   * catalogo ja carregado ha segundos por outra aba. */
+  dashboard: [],
   fechamentos: ["fechamentos"],
   plano: ["ajustes"],
   usuarios: []
@@ -123,7 +129,8 @@ const DEPENDENCIAS_ABA = {
  * aberto de verdade, sem atrasar o que a pessoa ve primeiro. */
 const DEPENDENCIAS_ABA_SEGUNDO_PLANO = {
   pedidos: ["ajustes", "produtos", "combos"],
-  mesas: ["produtos"]
+  mesas: ["produtos"],
+  dashboard: ["produtos"]
 };
 
 function areasIniciais(usuario) {
