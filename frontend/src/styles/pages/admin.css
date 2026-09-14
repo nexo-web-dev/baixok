@@ -146,6 +146,24 @@
   letter-spacing: .04em; text-transform: uppercase;
 }
 .plan-badge-alert { background: var(--danger-bg); color: var(--danger); }
+
+/* Feixe de luz passando no badge de pagamento pendente do desenvolvimento —
+ * chama mais atencao na aba Plano do sistema sem piscar (evita o efeito
+ * cansativo/estroboscopico de blink). Respeita quem pediu menos animacao. */
+.plan-badge-atencao { position: relative; overflow: hidden; }
+.plan-badge-atencao::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.65) 50%, transparent 70%);
+  transform: translateX(-120%);
+  animation: plan-badge-shine 2.6s ease-in-out infinite;
+}
+@keyframes plan-badge-shine {
+  0%, 45% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .plan-badge-atencao::after { animation: none; }
+}
 .plan-card h2 { font-size: 1.45rem; }
 .plan-card p { color: var(--muted-2); line-height: 1.55; }
 .plan-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }

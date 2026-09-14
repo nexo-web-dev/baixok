@@ -476,7 +476,7 @@ function htmlRelatorio(caixa) {
 
     <footer>
       <span>Aberto por ${escapar(caixa.abertoPorNome || "-")} | Fechado por ${escapar(caixa.fechadoPorNome || "-")}</span>
-      <span>Desenvolvido pela <a href="https://portfolio-nexo.netlify.app/">Nexo Developer</a></span>
+      <span>Desenvolvido pela <a href="http://nexodeveloper.com/">Nexo Developer</a></span>
     </footer>
   </div>
 </body>

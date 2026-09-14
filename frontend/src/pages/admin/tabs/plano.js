@@ -172,7 +172,7 @@ export function desenharPlano() {
       )
     ),
     el("div.plan-card", {},
-      el("div.plan-badge", { class: quitado ? "" : "plan-badge-alert" }, quitado ? "Projeto quitado" : "Pagamento pendente"),
+      el("div.plan-badge", { class: quitado ? "" : "plan-badge-alert plan-badge-atencao" }, quitado ? "Projeto quitado" : "Pagamento pendente"),
       el("h2", {}, "Desenvolvimento do sistema"),
       el("p", {}, quitado
         ? "O valor fechado do projeto já foi pago integralmente."
