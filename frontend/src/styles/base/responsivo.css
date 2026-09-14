@@ -30,7 +30,7 @@
   body[data-page="menu"] .closed-banner span { font-size: .78rem; line-height: 1.25; }
   body[data-page="menu"] .hero {
     grid-template-columns: 1fr; min-height: 190px; margin: 10px 20px 10px; padding: 18px; border-radius: var(--radius-lg);
-    background: linear-gradient(180deg, rgba(16,14,12,0) 20%, rgba(16,14,12,.94) 100%), url("/images/loja-baixo-k-hero.png") center/cover;
+    background: linear-gradient(180deg, rgba(16,14,12,0) 20%, rgba(16,14,12,.94) 100%), url("/images/loja-baixo-k-hero.webp") center/cover;
   }
   body[data-page="menu"] .hero-mark, body[data-page="menu"] .venue-card, body[data-page="menu"] .hero-actions { display: none; }
   body[data-page="menu"] .hero-copy { align-self: end; max-width: none; gap: 5px; padding: 0; }

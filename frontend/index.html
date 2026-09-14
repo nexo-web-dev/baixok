@@ -6,6 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Baixo K - Cardápio</title>
   <meta name="description" content="Cardápio digital do Baixo K: pizzas, burguers, massas e drinks.">
+  <!-- Fundo do hero vem de background-image no CSS, entao o navegador so
+       descobre esse arquivo depois de baixar e aplicar o CSS — o preload
+       adianta o download pra fora dessa fila, direto do HTML. -->
+  <link rel="preload" as="image" href="/images/loja-baixo-k-hero.webp" fetchpriority="high">
   <meta property="og:title" content="Baixo K - Cardápio">
   <meta property="og:description" content="Peça pelo cardápio digital do Baixo K. Pizza, burguers, massas e drinks.">
   <meta property="og:type" content="website">

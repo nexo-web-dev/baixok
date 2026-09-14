@@ -8,7 +8,7 @@
   background:
     linear-gradient(90deg, rgba(16,14,12,.94), rgba(16,14,12,.6) 48%, rgba(16,14,12,.22)),
     linear-gradient(180deg, rgba(16,14,12,.08), var(--bg) 96%),
-    url("/images/loja-baixo-k-hero.png") center/cover;
+    url("/images/loja-baixo-k-hero.webp") center/cover;
 }
 .hero::after { content: ""; position: absolute; inset: auto 0 0; height: 30%; background: linear-gradient(180deg, transparent, var(--bg)); pointer-events: none; }
 .hero-copy { position: relative; z-index: 1; max-width: 640px; display: grid; gap: 12px; padding-bottom: clamp(10px, 3vh, 32px); animation: heroIn .62s ease both; }
