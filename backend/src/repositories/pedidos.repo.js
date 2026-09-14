@@ -637,6 +637,22 @@ export const pedidosRepo = {
     `, f.params);
   },
 
+  /* isodow: 1 = segunda ... 7 = domingo — numero em vez de nome pronto porque
+   * to_char(..., 'TMDay') sai no idioma do locale configurado no Postgres, que
+   * nao e garantido ser pt-BR no host. O rotulo em portugues e montado no
+   * service, que so preenche os 7 dias fixos (sem depender do que veio do banco). */
+  async porDiaSemana(filtro) {
+    const f = filtroRelatorio(filtro);
+    return await todos(`
+      SELECT extract(isodow FROM criado_em AT TIME ZONE 'America/Sao_Paulo')::int AS dia_semana,
+             COUNT(*)::int AS pedidos,
+             COALESCE(SUM(total - valor_cortesia), 0) AS faturamento
+        FROM pedidos
+       WHERE ${f.sql} AND status = 'entregue' AND pagamento IS DISTINCT FROM 'Não pago'
+       GROUP BY dia_semana ORDER BY dia_semana
+    `, f.params);
+  },
+
   async agruparPor(coluna, filtro) {
     /* Lista fechada: `coluna` vem do controller e nunca e concatenada sem passar
      * por aqui. Nome de coluna nao pode ser parametro em SQL, entao a unica

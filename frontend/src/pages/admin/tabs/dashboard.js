@@ -427,7 +427,7 @@ export async function desenharDashboard() {
   }
 
   const {
-    resumo, porHora, porDia = [], agrupadoPorMes = false, porCanal, porPagamento, porModalidade = [],
+    resumo, porHora, porDia = [], porDiaSemana = [], agrupadoPorMes = false, porCanal, porPagamento, porModalidade = [],
     porCategoria = [], porMotoboy = [], maisVendidos, menosVendidos = [], estoqueBaixo, periodo, vendas = [],
     taxaServico = { total: 0, contasFechadas: 0, contasSemCobranca: 0 },
     combosVendidos = [], promocoesAtivas = { precos: 0, brindes: 0 }
@@ -539,6 +539,20 @@ export async function desenharDashboard() {
     dinheiroEPedidos,
     "Sem movimento por hora.",
     "Quando o caixa rodar, este gráfico mostra os picos do dia."
+  ));
+
+  /* Vem sempre com os 7 dias (ver completarSemana no backend) — inclusive o
+   * dia com faturamento zero entra na barra, pra mostrar tambem qual dia da
+   * semana a loja menos vende (ou nao abre), nao so os que tiveram venda. */
+  render($("#weekday-chart"), barras(
+    porDiaSemana.map(linha => ({
+      rotulo: linha.rotulo,
+      valor: Number(linha.faturamento || 0),
+      pedidos: linha.pedidos
+    })),
+    dinheiroEPedidos,
+    "Sem vendas registradas ainda.",
+    "Assim que houver pedidos entregues, a comparação por dia da semana aparece aqui."
   ));
 
   render($("#best-items"), barras(

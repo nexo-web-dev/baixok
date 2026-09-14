@@ -92,6 +92,25 @@ export function resolverPeriodo({ periodo, desde, ate }) {
   };
 }
 
+const DIAS_SEMANA = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
+
+/* pedidosRepo.porDiaSemana so devolve os dias que tiveram pedido — aqui
+ * completa os 7 fixos (isodow 1..7), com zero nos que ficaram de fora. Um
+ * grafico so com os dias que venderam esconderia justamente o que mais
+ * importa comparar: por exemplo, a loja fechada as segundas viraria uma
+ * segunda ausente da lista, em vez de aparecer com faturamento zero. */
+function completarSemana(porDiaSemana) {
+  /* Sem nenhum pedido no periodo, nao ha o que comparar entre dias — mantem
+   * vazio pra cair no mesmo estado "sem dados" dos outros graficos, em vez de
+   * uma semana inteira de barras zeradas. */
+  if (!porDiaSemana.length) return [];
+  const porIsodow = new Map(porDiaSemana.map(linha => [linha.dia_semana, linha]));
+  return DIAS_SEMANA.map((rotulo, indice) => {
+    const linha = porIsodow.get(indice + 1);
+    return { rotulo, pedidos: linha?.pedidos || 0, faturamento: linha?.faturamento || 0 };
+  });
+}
+
 export const relatoriosService = {
   async dashboard({ periodo, desde, ate, canal, pagamento, categoria }) {
     const intervalo = resolverPeriodo({ periodo, desde, ate });
@@ -108,7 +127,7 @@ export const relatoriosService = {
     const agrupadoPorMes = periodo === "tudo";
 
     const [
-      resumo, canceladosResumo, naoPagoResumo, cortesiaResumo, emFalta, porHora, porDia, porCanal, porPagamento, porModalidade, porCategoria,
+      resumo, canceladosResumo, naoPagoResumo, cortesiaResumo, emFalta, porHora, porDia, porDiaSemanaBruto, porCanal, porPagamento, porModalidade, porCategoria,
       porMotoboy, maisVendidos, menosVendidos, vendas, cancelados, taxaServico, naoPagos, cortesias, combosVendidos, promocoesAtivas
     ] = await Promise.all([
       pedidosRepo.resumoPeriodo(filtro),
@@ -118,6 +137,7 @@ export const relatoriosService = {
       produtosRepo.emFalta(),
       pedidosRepo.porHora(filtro),
       agrupadoPorMes ? pedidosRepo.porMes(filtro) : pedidosRepo.porDia(filtro),
+      pedidosRepo.porDiaSemana(filtro),
       pedidosRepo.agruparPor("canal", filtro),
       pedidosRepo.agruparPor("pagamento", filtro),
       pedidosRepo.agruparPor("modalidade", filtro),
@@ -156,6 +176,7 @@ export const relatoriosService = {
       },
       porHora,
       porDia,
+      porDiaSemana: completarSemana(porDiaSemanaBruto),
       agrupadoPorMes,
       porCanal,
       porPagamento,

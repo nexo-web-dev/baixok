@@ -891,13 +891,20 @@
 .metric-card strong { color: var(--gold-light); font-family: var(--font-head); font-size: clamp(1.05rem, 1.4vw, 1.35rem); line-height: 1.12; overflow-wrap: anywhere; }
 .metric-card span { color: var(--muted); font-size: .76rem; }
 .metric-card.alert-danger { border-color: rgba(212,127,110,.45); background: linear-gradient(180deg, rgba(212,127,110,.08), rgba(255,255,255,0)), var(--panel); }
-.dashboard-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 14px; align-items: start; }
+/* Colunas CSS em vez de grid: com grid, um card curto (ex.: "Vendas por dia",
+ * so 2 linhas) ficava esticado ate a altura do vizinho mais cheio da mesma
+ * fileira ("Faturamento por canal", com 3 graficos empilhados), sobrando um
+ * bloco de espaco vazio embaixo. Coluna deixa cada card com a propria altura
+ * e reflui pra proxima coluna sozinho — mais parecido com o "encaixa o que
+ * couber" de um mural do que com a grade fixa fileira-a-fileira. */
+.dashboard-columns { column-count: 2; column-gap: 14px; margin-top: 14px; }
 .chart-card {
-  display: grid; align-content: start; gap: 12px; min-height: 245px; padding: 18px 22px; border-radius: var(--radius-md);
+  display: grid; align-content: start; gap: 12px; padding: 18px 22px; border-radius: var(--radius-md);
   background:
     radial-gradient(circle at top right, rgba(217,154,104,.08), transparent 35%),
     var(--sidebar);
   border: 1px solid var(--line-soft);
+  break-inside: avoid; margin-bottom: 14px;
 }
 .chart-card h2 { font-size: .9rem; }
 .chart-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -1020,7 +1027,7 @@
   .user-row { grid-template-columns: minmax(0, 1fr) minmax(110px, auto); }
   .user-row > span.small { grid-column: 1 / -1; }
   .user-row .row-actions { grid-column: 1 / -1; justify-content: flex-start; }
-  .dashboard-columns { grid-template-columns: 1fr; }
+  .dashboard-columns { column-count: 1; }
   .dashboard-grid { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
 }
 
