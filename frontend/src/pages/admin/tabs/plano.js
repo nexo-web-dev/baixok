@@ -7,6 +7,15 @@ import { el, render, $ } from "../../../utils/dom.js";
 
 const VALOR_MENSALIDADE = 300;
 const DIA_VENCIMENTO = 15;
+const DIA_MS = 24 * 60 * 60 * 1000;
+
+/* Ate quando a mensalidade esta confirmada como paga. Antes o vencimento so
+ * girava pro mes seguinte pela data do calendario (dia 16 em diante ja
+ * mostrava "proximo vencimento mes que vem"), sem checar se o pagamento
+ * anterior realmente caiu — uma mensalidade atrasada ficava invisivel,
+ * mostrando dias restantes normais pro mes seguinte. Atualize esta data
+ * pra o vencimento (dia 15) mais recente ja recebido, a cada pagamento. */
+const MENSALIDADE_PAGA_ATE = new Date(2026, 7, 15);
 
 /* Valor fechado do desenvolvimento do sistema — separado da mensalidade
  * acima, que e a manutencao mensal. Ajuste os numeros aqui conforme os
@@ -20,14 +29,17 @@ const VENCIMENTO_PROJETO = new Date(2026, 8, 5);
 const DIAS_ANTES_DO_ALERTA = 2;
 const DIAS_ANTES_DO_ALERTA_MENSALIDADE = 3;
 
-function calcularProximoVencimento(agora = new Date()) {
+/* Vencimento = um mes depois do ultimo pago (MENSALIDADE_PAGA_ATE), nao "o
+ * proximo dia 15 do calendario" — assim uma mensalidade que passou do dia 15
+ * sem pagamento continua aparecendo em atraso (dias negativos), em vez de
+ * pular pro mes seguinte como se tivesse sido paga. */
+function calcularVencimentoMensalidade(agora = new Date()) {
   const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
-  let vencimento = new Date(agora.getFullYear(), agora.getMonth(), DIA_VENCIMENTO);
-  if (hoje > vencimento) {
-    vencimento = new Date(agora.getFullYear(), agora.getMonth() + 1, DIA_VENCIMENTO);
-  }
-  const dias = Math.max(0, Math.ceil((vencimento - hoje) / (24 * 60 * 60 * 1000)));
-  return { vencimento, dias };
+  const vencimento = new Date(MENSALIDADE_PAGA_ATE.getFullYear(), MENSALIDADE_PAGA_ATE.getMonth() + 1, DIA_VENCIMENTO);
+  const diferenca = Math.ceil((vencimento - hoje) / DIA_MS);
+  return diferenca < 0
+    ? { atrasado: true, dias: Math.abs(diferenca), vencimento }
+    : { atrasado: false, dias: diferenca, vencimento };
 }
 
 /* Diferente da mensalidade: o pagamento do desenvolvimento nao se repete todo
@@ -104,10 +116,15 @@ function avisoVencimento(dias, restante) {
   return { titulo: "Pagamento do desenvolvimento", badge, texto };
 }
 
-function avisoMensalidade(dias, vencimento) {
-  const badge = dias === 0 ? "Vence hoje" : `Vence em ${dias} dia${dias === 1 ? "" : "s"}`;
-  const texto = `A mensalidade de ${formatarMoeda(VALOR_MENSALIDADE)} vence dia ${formatarData(vencimento)}. `
-    + "Combine o pagamento pra manter tudo em dia.";
+function avisoMensalidade({ atrasado, dias, vencimento }) {
+  const badge = atrasado
+    ? "Pagamento pendente"
+    : dias === 0 ? "Vence hoje" : `Vence em ${dias} dia${dias === 1 ? "" : "s"}`;
+  const texto = atrasado
+    ? `A mensalidade de ${formatarMoeda(VALOR_MENSALIDADE)} venceu há ${dias} dia${dias === 1 ? "" : "s"} `
+      + `(dia ${formatarData(vencimento)}) e ainda não foi confirmada como paga. Combine o pagamento assim que possível.`
+    : `A mensalidade de ${formatarMoeda(VALOR_MENSALIDADE)} vence dia ${formatarData(vencimento)}. `
+      + "Combine o pagamento pra manter tudo em dia.";
 
   return { titulo: "Mensalidade do sistema", badge, texto };
 }
@@ -123,10 +140,10 @@ export function verificarAlertaVencimento() {
   const avisos = [];
 
   const restanteProjeto = Math.max(0, VALOR_PROJETO_TOTAL - VALOR_PROJETO_PAGO);
-  const { dias: diasMensalidade, vencimento: vencimentoMensalidade } = calcularProximoVencimento();
+  const statusMensalidade = calcularVencimentoMensalidade();
 
-  if (diasMensalidade <= DIAS_ANTES_DO_ALERTA_MENSALIDADE) {
-    avisos.push(avisoMensalidade(diasMensalidade, vencimentoMensalidade));
+  if (statusMensalidade.atrasado || statusMensalidade.dias <= DIAS_ANTES_DO_ALERTA_MENSALIDADE) {
+    avisos.push(avisoMensalidade(statusMensalidade));
   }
 
   if (restanteProjeto > 0) {
@@ -140,7 +157,7 @@ export function verificarAlertaVencimento() {
 }
 
 export function desenharPlano() {
-  const { vencimento, dias } = calcularProximoVencimento();
+  const { atrasado, dias, vencimento } = calcularVencimentoMensalidade();
   const alvo = $("#plano-sistema");
   if (!alvo) return;
 
@@ -149,7 +166,7 @@ export function desenharPlano() {
 
   render(alvo,
     el("div.plan-card", {},
-      el("div.plan-badge", {}, "Plano ativo"),
+      el("div.plan-badge", { class: atrasado ? "plan-badge-alert plan-badge-atencao" : "" }, atrasado ? "Pagamento pendente" : "Plano ativo"),
       el("h2", {}, "Plano do sistema"),
       el("p", {}, "A mensalidade vence todo dia 15 de cada mês."),
       el("div.plan-grid", {},
@@ -162,12 +179,12 @@ export function desenharPlano() {
           el("strong", {}, "Dia 15")
         ),
         el("div.plan-metric", {},
-          el("span", {}, "Dias restantes"),
-          el("strong", {}, `${dias} dia${dias === 1 ? "" : "s"}`)
+          el("span", {}, atrasado ? "Dias em atraso" : "Dias restantes"),
+          el("strong", { class: atrasado ? "danger-text" : "" }, `${dias} dia${dias === 1 ? "" : "s"}`)
         )
       ),
       el("div.plan-foot", {},
-        el("span.small.faint", {}, `Próximo vencimento: ${formatarData(vencimento)}`),
+        el("span.small.faint", {}, atrasado ? `Venceu em: ${formatarData(vencimento)}` : `Próximo vencimento: ${formatarData(vencimento)}`),
         el("span.small.faint", {}, "Se o dia 15 cair hoje, o plano vence hoje.")
       )
     ),
