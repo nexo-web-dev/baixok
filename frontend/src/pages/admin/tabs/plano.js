@@ -15,13 +15,13 @@ const DIA_MS = 24 * 60 * 60 * 1000;
  * anterior realmente caiu — uma mensalidade atrasada ficava invisivel,
  * mostrando dias restantes normais pro mes seguinte. Atualize esta data
  * pra o vencimento (dia 15) mais recente ja recebido, a cada pagamento. */
-const MENSALIDADE_PAGA_ATE = new Date(2026, 7, 15);
+const MENSALIDADE_PAGA_ATE = new Date(2026, 8, 15);
 
 /* Valor fechado do desenvolvimento do sistema — separado da mensalidade
  * acima, que e a manutencao mensal. Ajuste os numeros aqui conforme os
  * pagamentos forem acontecendo. */
 const VALOR_PROJETO_TOTAL = 2500;
-const VALOR_PROJETO_PAGO = 1500;
+const VALOR_PROJETO_PAGO = 1200;
 const VENCIMENTO_PROJETO = new Date(2026, 8, 5);
 
 /* A partir de quantos dias antes do vencimento cada popup aparece sozinho ao
