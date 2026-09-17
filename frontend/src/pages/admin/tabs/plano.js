@@ -136,6 +136,44 @@ function avisoMensalidade({ atrasado, dias, vencimento }) {
  * dia 15, todo mes, em vez de sempre. O desenvolvimento so aparece se ainda
  * tiver saldo e estiver perto do proprio vencimento. Quando os dois valem,
  * aparecem lado a lado no mesmo popup em vez de um atras do outro. */
+/* Selo fixo no canto, visivel em qualquer aba do admin — diferente do popup
+ * de login (verificarAlertaVencimento), que so aparece uma vez e some. Uma
+ * mensalidade ou o saldo do sistema vencidos ficavam sem nenhum lembrete
+ * persistente enquanto a pessoa trabalhava nas outras abas o dia inteiro. So
+ * aparece pra quem ja esta EM ATRASO (nao pro "vence em 3 dias" — esse
+ * continua so no popup de login, pra nao virar um aviso fixo o tempo todo
+ * mesmo quando ainda esta tudo em dia). */
+function seloPendencia(texto) {
+  return el("button.plano-selo", {
+    type: "button",
+    title: "Ir para Plano do sistema",
+    onclick: () => document.querySelector("[data-tab='plano']")?.click()
+  }, texto);
+}
+
+export function atualizarSeloVencimento() {
+  document.getElementById("plano-selos")?.remove();
+
+  const pendencias = [];
+
+  const statusMensalidade = calcularVencimentoMensalidade();
+  if (statusMensalidade.atrasado) {
+    pendencias.push(`Mensalidade atrasada há ${statusMensalidade.dias} dia${statusMensalidade.dias === 1 ? "" : "s"}`);
+  }
+
+  const restanteProjeto = Math.max(0, VALOR_PROJETO_TOTAL - VALOR_PROJETO_PAGO);
+  if (restanteProjeto > 0) {
+    const diasProjeto = diasAteVencimentoProjeto();
+    if (diasProjeto < 0) {
+      const diasAtraso = Math.abs(diasProjeto);
+      pendencias.push(`Sistema: falta ${formatarMoeda(restanteProjeto)}, venceu há ${diasAtraso} dia${diasAtraso === 1 ? "" : "s"}`);
+    }
+  }
+
+  if (!pendencias.length) return;
+  document.body.append(el("div#plano-selos.plano-selos", {}, ...pendencias.map(seloPendencia)));
+}
+
 export function verificarAlertaVencimento() {
   const avisos = [];
 

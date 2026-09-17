@@ -147,6 +147,22 @@
 }
 .plan-badge-alert { background: var(--danger-bg); color: var(--danger); }
 
+/* Selo fixo de pendencia (mensalidade/sistema atrasados) — ver
+ * atualizarSeloVencimento em plano.js. Fica acima do canto do toast (que usa
+ * bottom:18px) pra um toast passageiro nao empilhar em cima. */
+.plano-selos { position: fixed; right: 18px; bottom: 84px; z-index: 39; display: grid; gap: 8px; max-width: min(320px, calc(100vw - 36px)); }
+.plano-selo {
+  display: block; width: 100%; text-align: left; font: inherit; font-size: .78rem; font-weight: 700;
+  padding: 10px 14px; border-radius: var(--radius-sm); cursor: pointer;
+  color: var(--danger); background: var(--danger-bg); border: 1px solid rgba(212,127,110,.45);
+  box-shadow: var(--shadow-lg);
+}
+.plano-selo:hover { filter: brightness(1.1); }
+
+@media (max-width: 720px) {
+  .plano-selos { left: 14px; right: 14px; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); max-width: none; }
+}
+
 /* Feixe de luz passando no badge de pagamento pendente do desenvolvimento —
  * chama mais atencao na aba Plano do sistema sem piscar (evita o efeito
  * cansativo/estroboscopico de blink). Respeita quem pediu menos animacao. */
@@ -215,13 +231,21 @@
 .status-zone-entregue h2 { color: var(--muted); }
 
 .order-card {
-  display: grid; gap: 8px; padding: 13px 14px; cursor: grab; border-radius: 16px;
+  position: relative; display: grid; gap: 8px; padding: 13px 14px; cursor: grab; border-radius: 16px;
   background: var(--panel); border: 1.5px solid var(--line-soft); border-left-width: 4px;
   transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease, background .16s ease;
 }
 .order-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 .order-card:active { cursor: grabbing; }
-.order-card.status-novo { border-color: rgba(201,116,67,.65); animation: bkpulse 1.6s infinite; }
+.order-card.status-novo { border-color: rgba(201,116,67,.65); }
+/* Anel pulsando via ::after (transform/opacity) em vez de animar box-shadow
+ * direto no card — ver comentario da keyframe order-pulse-ring. Com varios
+ * pedidos novos ao mesmo tempo, cada um so custa composicao, nao repintura. */
+.order-card.status-novo::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  box-shadow: 0 0 0 3px rgba(201,116,67,.5);
+  animation: order-pulse-ring 1.6s infinite;
+}
 /* Atraso precisa pular aos olhos pra quem esta correndo no balcao — nao so a
  * tag pequena de tempo, o card inteiro ganha borda grossa e um fundo com leve
  * tingimento, crescente conforme o atraso (attention -> urgent). */

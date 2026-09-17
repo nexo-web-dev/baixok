@@ -287,7 +287,10 @@ async function iniciar() {
    * que a mensalidade esta vencendo — importa o modulo so nesse caso, sem
    * puxar pro pacote principal o codigo de quem nunca ve essa aba. */
   if (sessao.usuario.papel === "admin") {
-    import("./tabs/plano.js").then(mod => mod.verificarAlertaVencimento()).catch(() => {});
+    import("./tabs/plano.js").then(mod => {
+      mod.verificarAlertaVencimento();
+      mod.atualizarSeloVencimento();
+    }).catch(() => {});
   }
 
   montarMenu(sessao.usuario);
