@@ -163,38 +163,6 @@
   .plano-selos { left: 14px; right: 14px; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); max-width: none; }
 }
 
-/* Alerta gigante do prazo final do desenvolvimento — ver
- * mostrarAlertaUrgenteProjeto em plano.js. Bem maior e mais serio que o
- * modal.modal-card padrao (mostrarModalPlano), de proposito: e o aviso mais
- * importante que a pessoa pode ver ao logar enquanto o saldo nao for pago.
- * z-index acima do .modal comum pra ficar por cima se os dois coincidirem. */
-.plano-urgente-modal { z-index: 60; background: rgba(10,4,3,.9); }
-.plano-urgente-card {
-  display: grid; gap: 16px; justify-items: start; width: min(620px, calc(100vw - 24px)); max-width: 100%;
-  max-height: calc(100dvh - 28px); overflow-y: auto; padding: clamp(24px, 4vw, 40px);
-  border-radius: var(--radius-lg); text-align: left;
-  background: linear-gradient(165deg, rgba(212,127,110,.14), rgba(16,14,12,.98) 55%), var(--panel);
-  border: 2px solid var(--danger); box-shadow: 0 30px 90px rgba(0,0,0,.55), 0 0 0 6px rgba(212,127,110,.12);
-}
-.plano-urgente-badge {
-  display: inline-flex; padding: 6px 16px; border-radius: var(--radius-pill);
-  background: var(--danger); color: #1b0d0a; font-size: .78rem; font-weight: 900;
-  letter-spacing: .06em; text-transform: uppercase;
-}
-.plano-urgente-titulo { margin: 0; color: var(--ink); font-size: clamp(1.5rem, 3.6vw, 2.1rem); line-height: 1.15; }
-.plano-urgente-texto { margin: 0; color: var(--muted-2); font-size: 1rem; line-height: 1.55; }
-.plano-urgente-prazo {
-  margin: 0; padding: 10px 18px; border-radius: var(--radius-sm); width: 100%; box-sizing: border-box;
-  background: var(--danger-bg); border: 1.5px solid rgba(212,127,110,.55);
-  color: var(--danger); font-size: 1.15rem; font-weight: 900; text-align: center;
-}
-.plano-urgente-botao { justify-self: end; margin-top: 4px; }
-
-@media (max-width: 560px) {
-  .plano-urgente-card { justify-items: stretch; text-align: center; }
-  .plano-urgente-botao { justify-self: stretch; }
-}
-
 /* Feixe de luz passando no badge de pagamento pendente do desenvolvimento —
  * chama mais atencao na aba Plano do sistema sem piscar (evita o efeito
  * cansativo/estroboscopico de blink). Respeita quem pediu menos animacao. */
