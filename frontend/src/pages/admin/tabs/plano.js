@@ -34,7 +34,7 @@ const PRAZO_FINAL_PROJETO = new Date(2026, 9, 5);
  * aparece sozinho ao logar (ver verificarAlertaVencimento, chamado em
  * admin/index.js). */
 const DIAS_ANTES_DO_ALERTA_MENSALIDADE = 3;
-const DIAS_ANTES_DO_ALERTA_PROJETO = 7;
+const DIAS_ANTES_DO_ALERTA_PROJETO = 3;
 
 /* Vencimento = um mes depois do ultimo pago (MENSALIDADE_PAGA_ATE), nao "o
  * proximo dia 15 do calendario" — assim uma mensalidade que passou do dia 15
@@ -109,17 +109,14 @@ function mostrarModalPlano(avisos) {
   });
 }
 
-function avisoVencimentoProjeto(restante, { atrasado, dias }) {
-  const badge = atrasado
-    ? "Prazo final vencido"
-    : dias === 0 ? "Prazo final hoje" : `Prazo final em ${dias} dia${dias === 1 ? "" : "s"}`;
+function avisoVencimentoProjeto(restante, { atrasado }) {
   const texto = atrasado
-    ? `Ainda falta pagar ${formatarMoeda(restante)} do desenvolvimento do sistema — o prazo final combinado `
-      + `(${formatarData(PRAZO_FINAL_PROJETO)}) já passou. Combine o pagamento o quanto antes.`
-    : `Falta pagar ${formatarMoeda(restante)} do desenvolvimento do sistema. O prazo final combinado pra pagar `
-      + `pelo menos parte é ${formatarData(PRAZO_FINAL_PROJETO)}.`;
+    ? `O pagamento do desenvolvimento do sistema está pendente — ainda falta pagar ${formatarMoeda(restante)}. `
+      + `O prazo final combinado (${formatarData(PRAZO_FINAL_PROJETO)}) já passou. Acerte o pagamento o quanto antes.`
+    : `O pagamento do desenvolvimento do sistema está pendente — ainda falta pagar ${formatarMoeda(restante)}. `
+      + `Acerte o pagamento até o prazo final combinado, dia ${formatarData(PRAZO_FINAL_PROJETO)}.`;
 
-  return { titulo: "Pagamento do desenvolvimento", badge, texto };
+  return { titulo: "Pagamento do desenvolvimento", badge: "Pagamento pendente", texto };
 }
 
 function avisoMensalidade({ atrasado, dias, vencimento }) {
