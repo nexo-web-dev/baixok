@@ -24,10 +24,17 @@ const VALOR_PROJETO_TOTAL = 2500;
 const VALOR_PROJETO_PAGO = 1200;
 const VENCIMENTO_PROJETO = new Date(2026, 8, 5);
 
-/* A partir de quantos dias antes do vencimento o popup da mensalidade
+/* Prazo final combinado pra pagar pelo menos parte do saldo — depois do
+ * vencimento original (VENCIMENTO_PROJETO) ja ter passado sem pagamento.
+ * O popup de login (verificarAlertaVencimento) e o selo fixo passam a
+ * contar os dias ate ESTA data, nao mais ate a original. */
+const PRAZO_FINAL_PROJETO = new Date(2026, 9, 5);
+
+/* A partir de quantos dias antes de cada vencimento o popup correspondente
  * aparece sozinho ao logar (ver verificarAlertaVencimento, chamado em
  * admin/index.js). */
 const DIAS_ANTES_DO_ALERTA_MENSALIDADE = 3;
+const DIAS_ANTES_DO_ALERTA_PROJETO = 7;
 
 /* Vencimento = um mes depois do ultimo pago (MENSALIDADE_PAGA_ATE), nao "o
  * proximo dia 15 do calendario" — assim uma mensalidade que passou do dia 15
@@ -47,6 +54,15 @@ function calcularVencimentoMensalidade(agora = new Date()) {
 function diasAteVencimentoProjeto(agora = new Date()) {
   const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
   return Math.ceil((VENCIMENTO_PROJETO - hoje) / (24 * 60 * 60 * 1000));
+}
+
+/* Mesmo formato de calcularVencimentoMensalidade (atrasado/dias), mas contra
+ * o PRAZO_FINAL_PROJETO — e o que decide quando o popup de login aparece,
+ * nao mais o vencimento original (que ja passou ha muito tempo). */
+function statusPrazoFinalProjeto(agora = new Date()) {
+  const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+  const diferenca = Math.ceil((PRAZO_FINAL_PROJETO - hoje) / DIA_MS);
+  return diferenca < 0 ? { atrasado: true, dias: Math.abs(diferenca) } : { atrasado: false, dias: diferenca };
 }
 
 function formatarMoeda(valor) {
@@ -91,6 +107,19 @@ function mostrarModalPlano(avisos) {
   modal.addEventListener("click", evento => {
     if (evento.target === modal) fechar();
   });
+}
+
+function avisoVencimentoProjeto(restante, { atrasado, dias }) {
+  const badge = atrasado
+    ? "Prazo final vencido"
+    : dias === 0 ? "Prazo final hoje" : `Prazo final em ${dias} dia${dias === 1 ? "" : "s"}`;
+  const texto = atrasado
+    ? `Ainda falta pagar ${formatarMoeda(restante)} do desenvolvimento do sistema — o prazo final combinado `
+      + `(${formatarData(PRAZO_FINAL_PROJETO)}) já passou. Combine o pagamento o quanto antes.`
+    : `Falta pagar ${formatarMoeda(restante)} do desenvolvimento do sistema. O prazo final combinado pra pagar `
+      + `pelo menos parte é ${formatarData(PRAZO_FINAL_PROJETO)}.`;
+
+  return { titulo: "Pagamento do desenvolvimento", badge, texto };
 }
 
 function avisoMensalidade({ atrasado, dias, vencimento }) {
@@ -148,13 +177,18 @@ export function verificarAlertaVencimento() {
   const avisos = [];
 
   const statusMensalidade = calcularVencimentoMensalidade();
-
   if (statusMensalidade.atrasado || statusMensalidade.dias <= DIAS_ANTES_DO_ALERTA_MENSALIDADE) {
     avisos.push(avisoMensalidade(statusMensalidade));
   }
 
-  /* Pagamento do desenvolvimento nao tem mais popup de login — so o selo
-   * fixo (atualizarSeloVencimento) enquanto estiver em atraso. */
+  const restanteProjeto = Math.max(0, VALOR_PROJETO_TOTAL - VALOR_PROJETO_PAGO);
+  if (restanteProjeto > 0) {
+    const statusProjeto = statusPrazoFinalProjeto();
+    if (statusProjeto.atrasado || statusProjeto.dias <= DIAS_ANTES_DO_ALERTA_PROJETO) {
+      avisos.push(avisoVencimentoProjeto(restanteProjeto, statusProjeto));
+    }
+  }
+
   mostrarModalPlano(avisos);
 }
 
