@@ -8,7 +8,7 @@ import { Router } from "express";
 import {
   pedidosController, produtosController, promocoesController, cuponsController,
   mesasController, entregaController, relatoriosController, usuariosController, ajustesController,
-  insumosController, caixaController, motoboysController, combosController, combinacoesSaboresController
+  insumosController, caixaController, motoboysController, combosController, combinacoesSaboresController, planoController
 } from "../controllers/painel.controller.js";
 import { exigirLogin, exigirPapel, exigirAba } from "../middlewares/auth.js";
 import { validarCorpo, validarQuery, validarParams } from "../middlewares/validate.js";
@@ -148,5 +148,6 @@ rotasPainel.delete("/usuarios/:id", ADMIN, validarParams(paramsId), usuariosCont
 rotasPainel.get("/auditoria", ADMIN, validarQuery(auditoriaQuerySchema), usuariosController.auditoria);
 
 // ----------------------------------------------------------------- ajustes ---
+rotasPainel.get("/plano", ADMIN, planoController.status);
 rotasPainel.get("/ajustes", ADMIN, ajustesController.ler);
 rotasPainel.put("/ajustes", ADMIN, validarCorpo(ajustesSchema), ajustesController.gravar);
