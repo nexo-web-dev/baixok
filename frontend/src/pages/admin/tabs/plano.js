@@ -84,19 +84,25 @@ function mostrarModalPlano(avisos) {
   fecharModalPlano();
   if (!avisos.length) return;
 
+  const grave = avisos.some(aviso => aviso.grave);
   const modal = el("div.modal#plano-alerta-modal", { role: "dialog", "aria-modal": "true" },
-    el("div.modal-card", { style: { width: avisos.length > 1 ? "min(680px, calc(100vw - 24px))" : "min(420px, calc(100vw - 24px))" } },
+    el("div.modal-card", {
+      class: grave ? "plan-alert-grave" : "",
+      style: { width: avisos.length > 1 ? "min(720px, calc(100vw - 24px))" : "min(500px, calc(100vw - 24px))" }
+    },
       el("div.plan-alert-row", {},
-        ...avisos.map(({ titulo, badge, texto }) =>
-          el("div.plan-alert-item", {},
-            el("span.plan-badge.plan-badge-alert", {}, badge),
+        ...avisos.map(({ titulo, badge, texto, destaque, grave: itemGrave }) =>
+          el("div.plan-alert-item", { class: itemGrave ? "plan-alert-item-grave" : "" },
+            el("span.plan-badge.plan-badge-alert", { class: itemGrave ? "plan-badge-atencao" : "" }, badge),
             el("h2", {}, titulo),
-            el("p", {}, texto)
+            el("p", {}, texto),
+            destaque ? el("p.plan-alert-destaque", {}, destaque) : null
           )
         )
       ),
       el("div", { style: { display: "flex", justifyContent: "flex-end", marginTop: "6px" } },
-        el("button.primary", { type: "button", id: "plano-alerta-entendi" }, "Entendi")
+        el("button.primary", { type: "button", id: "plano-alerta-entendi", class: grave ? "plan-alert-botao-grave" : "" },
+          grave ? "Entendi, vou regularizar" : "Entendi")
       )
     )
   );
@@ -109,14 +115,19 @@ function mostrarModalPlano(avisos) {
   });
 }
 
-function avisoVencimentoProjeto(restante, { atrasado }) {
-  const texto = atrasado
-    ? `O pagamento do desenvolvimento do sistema está pendente — ainda falta pagar ${formatarMoeda(restante)}. `
-      + `O prazo final combinado (${formatarData(PRAZO_FINAL_PROJETO)}) já passou. Acerte o pagamento o quanto antes.`
-    : `O pagamento do desenvolvimento do sistema está pendente — ainda falta pagar ${formatarMoeda(restante)}. `
-      + `Acerte o pagamento até o prazo final combinado, dia ${formatarData(PRAZO_FINAL_PROJETO)}.`;
+/* Aviso do desenvolvimento em atraso — de proposito mais pesado que o da
+ * mensalidade: destaque vermelho e o alerta de que o sistema pode ficar lento
+ * ou sair do ar. So avisa, nao trava nada. */
+function avisoVencimentoProjeto(restante) {
+  const diasAtraso = Math.max(0, -diasAteVencimentoProjeto());
+  const atraso = diasAtraso > 0 ? ` há ${diasAtraso} dia${diasAtraso === 1 ? "" : "s"}` : "";
+  const texto = `O pagamento do desenvolvimento do sistema está ATRASADO${atraso} — ainda faltam ${formatarMoeda(restante)}. `
+    + `O vencimento era ${formatarData(VENCIMENTO_PROJETO)} e o prazo final combinado, ${formatarData(PRAZO_FINAL_PROJETO)}.`;
+  const destaque = "Por falta de pagamento e descumprimento do acordo, o sistema pode apresentar lentidão, "
+    + "instabilidade e até sair do ar a qualquer momento. Regularize o pagamento o quanto antes "
+    + "para evitar a interrupção do serviço.";
 
-  return { titulo: "Pagamento do desenvolvimento", badge: "Pagamento pendente", texto };
+  return { titulo: "⚠ Pagamento do desenvolvimento em atraso", badge: "Pagamento em atraso", texto, destaque, grave: true };
 }
 
 function avisoMensalidade({ atrasado, dias, vencimento }) {
@@ -162,7 +173,7 @@ export function atualizarSeloVencimento() {
     const diasProjeto = diasAteVencimentoProjeto();
     if (diasProjeto < 0) {
       const diasAtraso = Math.abs(diasProjeto);
-      pendencias.push(`Sistema: falta ${formatarMoeda(restanteProjeto)}, venceu há ${diasAtraso} dia${diasAtraso === 1 ? "" : "s"}`);
+      pendencias.push(`⚠ Desenvolvimento ATRASADO há ${diasAtraso} dia${diasAtraso === 1 ? "" : "s"} (falta ${formatarMoeda(restanteProjeto)}): o sistema pode ficar lento ou sair do ar`);
     }
   }
 
@@ -181,8 +192,8 @@ export function verificarAlertaVencimento() {
   const restanteProjeto = Math.max(0, VALOR_PROJETO_TOTAL - VALOR_PROJETO_PAGO);
   if (restanteProjeto > 0) {
     const statusProjeto = statusPrazoFinalProjeto();
-    if (statusProjeto.atrasado || statusProjeto.dias <= DIAS_ANTES_DO_ALERTA_PROJETO) {
-      avisos.push(avisoVencimentoProjeto(restanteProjeto, statusProjeto));
+    if (diasAteVencimentoProjeto() < 0 || statusProjeto.atrasado || statusProjeto.dias <= DIAS_ANTES_DO_ALERTA_PROJETO) {
+      avisos.push(avisoVencimentoProjeto(restanteProjeto));
     }
   }
 
