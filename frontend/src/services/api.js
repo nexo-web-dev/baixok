@@ -138,10 +138,6 @@ export const apiUsuarios = {
   auditoria: filtros => http.get("/painel/auditoria", filtros)
 };
 
-export const apiPlano = {
-  status: () => http.get("/painel/plano")
-};
-
 export const apiAjustes = {
   ler: () => http.get("/painel/ajustes"),
   gravar: ajustes => http.put("/painel/ajustes", ajustes)

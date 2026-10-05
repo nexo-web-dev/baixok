@@ -17,7 +17,6 @@ import { motoboysService } from "../services/motoboys.service.js";
 import { combosService } from "../services/combos.service.js";
 import { combinacoesSaboresService } from "../services/combinacoes-sabores.service.js";
 import { ajustesRepo } from "../repositories/ajustes.repo.js";
-import { planoService } from "../services/plano.service.js";
 import { mapaEstatico } from "../lib/mapbox.js";
 import { contexto } from "./contexto.js";
 
@@ -329,12 +328,6 @@ export const usuariosController = {
   },
   async auditoria(req, res) {
     res.json({ registros: await usuariosService.auditoria(req.validado.query) });
-  }
-};
-
-export const planoController = {
-  async status(_req, res) {
-    res.json(await planoService.status());
   }
 };
 
