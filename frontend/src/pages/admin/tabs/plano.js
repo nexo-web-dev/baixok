@@ -121,8 +121,12 @@ function mostrarModalPlano(avisos) {
 function avisoVencimentoProjeto(restante) {
   const diasAtraso = Math.max(0, -diasAteVencimentoProjeto());
   const atraso = diasAtraso > 0 ? ` há ${diasAtraso} dia${diasAtraso === 1 ? "" : "s"}` : "";
+  const statusPrazo = statusPrazoFinalProjeto();
+  const prazoTambemVencido = statusPrazo.atrasado
+    ? ` O prazo final combinado de ${formatarData(PRAZO_FINAL_PROJETO)} também passou e nada foi recebido.`
+    : "";
   const texto = `O pagamento do desenvolvimento do sistema está ATRASADO${atraso} — ainda faltam ${formatarMoeda(restante)}. `
-    + `O vencimento era ${formatarData(VENCIMENTO_PROJETO)} e o prazo final combinado, ${formatarData(PRAZO_FINAL_PROJETO)}.`;
+    + `O vencimento era ${formatarData(VENCIMENTO_PROJETO)} e o prazo final combinado, ${formatarData(PRAZO_FINAL_PROJETO)}.${prazoTambemVencido}`;
   const destaque = "Por falta de pagamento e descumprimento do acordo, o sistema pode apresentar lentidão, "
     + "instabilidade e até sair do ar a qualquer momento. Regularize o pagamento o quanto antes "
     + "para evitar a interrupção do serviço.";
