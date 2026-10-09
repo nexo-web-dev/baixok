@@ -41,5 +41,11 @@ export const LIMITES = Object.freeze({
   OBSERVACAO: 400,
   PAGAMENTO: 60,
   BUSCA_ENDERECO: 256,
-  OUVINTES_SSE: 200
+  /* Teto global de seguranca — nenhum ouvinte, de canal nenhum, passa disso.
+   * Abaixo dele, OUVINTES_SSE_PUBLICO reserva uma fatia pequena so pro canal
+   * aberto (sem login), pra sobrar sempre espaco pros canais autenticados
+   * (cozinha, painel, telao) mesmo se alguem de fora tentar esgotar o
+   * publico. Ver lib/events.js. */
+  OUVINTES_SSE: 200,
+  OUVINTES_SSE_PUBLICO: 60
 });

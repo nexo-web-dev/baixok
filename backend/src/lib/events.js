@@ -20,8 +20,21 @@ export const CANAL = Object.freeze({
 let revisao = 0;
 const ouvintes = new Set();
 
+function contarCanal(canal) {
+  let n = 0;
+  for (const ouvinte of ouvintes) if (ouvinte.canais.has(canal)) n += 1;
+  return n;
+}
+
+/* /eventos/publico nao exige login (ver eventos.routes.js) — qualquer um na
+ * internet pode abrir essa conexao. Sem uma cota propria, bastava abrir
+ * conexoes ali ate encostar no teto global pra tambem travar os canais
+ * autenticados (cozinha, painel, telao), que dependem do mesmo contador.
+ * A cota do publico garante que, mesmo esgotada, sobra sempre espaco pros
+ * canais de dentro da casa. */
 export function inscrever(res, canais) {
   if (ouvintes.size >= LIMITES.OUVINTES_SSE) return false;
+  if (canais.includes(CANAL.PUBLICO) && contarCanal(CANAL.PUBLICO) >= LIMITES.OUVINTES_SSE_PUBLICO) return false;
   ouvintes.add({ res, canais: new Set(canais) });
   return true;
 }
