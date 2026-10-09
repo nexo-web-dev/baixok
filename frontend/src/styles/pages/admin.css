@@ -201,6 +201,31 @@
 .plan-alert-item h2 { font-size: 1.05rem; }
 .plan-alert-item p { color: var(--muted); font-size: .8rem; line-height: 1.45; }
 
+/* Popup do desenvolvimento em atraso — vermelho e com brilho pulsando pra
+ * nao passar batido. Ver avisoVencimentoProjeto em plano.js. */
+.modal-card.plan-alert-grave {
+  border: 2px solid var(--danger);
+  background: linear-gradient(180deg, rgba(212,127,110,.18), rgba(212,127,110,.04) 55%), var(--sidebar);
+  animation: plan-alert-pulso 1.8s ease-in-out infinite;
+}
+@keyframes plan-alert-pulso {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212,127,110,.55), 0 24px 60px rgba(0,0,0,.45); }
+  50% { box-shadow: 0 0 0 10px rgba(212,127,110,0), 0 0 46px rgba(212,127,110,.45), 0 24px 60px rgba(0,0,0,.45); }
+}
+.plan-alert-item-grave h2 { font-size: 1.3rem; color: var(--danger); }
+.plan-alert-item-grave p { color: var(--ink); font-size: .9rem; }
+.plan-alert-item-grave .plan-badge { font-size: .76rem; }
+.plan-alert-destaque {
+  padding: 12px 14px; border-radius: var(--radius-sm);
+  background: var(--danger-bg); border-left: 4px solid var(--danger);
+  color: var(--danger) !important; font-weight: 700;
+}
+.plan-alert-botao-grave { background: var(--danger) !important; border-color: var(--danger) !important; color: #fff !important; }
+.plano-selo { border-width: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  .modal-card.plan-alert-grave { animation: none; box-shadow: 0 0 40px rgba(212,127,110,.45); }
+}
+
 /* â€” kanban / cards de pedido â€” */
 /* Legenda do fluxo: mesmos titulos das colunas (colunasDoPapel), so pra
  * reforcar visualmente a ordem do processo — sem duplicar a lista em outro
