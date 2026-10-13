@@ -77,27 +77,27 @@ function fecharModalPlano() {
   $("#plano-alerta-modal")?.remove();
 }
 
-/* Um modal so pros avisos que valerem no login (mensalidade e/ou
- * desenvolvimento) — cada aviso vira uma coluna lado a lado, em vez de
- * empilhar um popup atras do outro. Um unico botao "Entendi" fecha tudo. */
-function mostrarModalPlano(avisos) {
+/* Um popup por aviso, em sequencia — mensalidade e desenvolvimento nao tem
+ * nada a ver um com o outro, e juntar os dois lado a lado no mesmo cartao
+ * ficava desproporcional (um discreto, o outro vermelho e cheio de texto).
+ * Ao fechar um (botao "Entendi" ou clique fora), o proximo da fila aparece
+ * sozinho, ate acabar. */
+function mostrarAviso(aviso, aoFechar) {
   fecharModalPlano();
-  if (!avisos.length) return;
+  if (!aviso) return;
 
-  const grave = avisos.some(aviso => aviso.grave);
+  const { titulo, badge, texto, destaque, grave } = aviso;
   const modal = el("div.modal#plano-alerta-modal", { role: "dialog", "aria-modal": "true" },
     el("div.modal-card", {
       class: grave ? "plan-alert-grave" : "",
-      style: { width: avisos.length > 1 ? "min(720px, calc(100vw - 24px))" : "min(500px, calc(100vw - 24px))" }
+      style: { width: "min(500px, calc(100vw - 24px))" }
     },
       el("div.plan-alert-row", {},
-        ...avisos.map(({ titulo, badge, texto, destaque, grave: itemGrave }) =>
-          el("div.plan-alert-item", { class: itemGrave ? "plan-alert-item-grave" : "" },
-            el("span.plan-badge.plan-badge-alert", { class: itemGrave ? "plan-badge-atencao" : "" }, badge),
-            el("h2", {}, titulo),
-            el("p", {}, texto),
-            destaque ? el("p.plan-alert-destaque", {}, destaque) : null
-          )
+        el("div.plan-alert-item", { class: grave ? "plan-alert-item-grave" : "" },
+          el("span.plan-badge.plan-badge-alert", { class: grave ? "plan-badge-atencao" : "" }, badge),
+          el("h2", {}, titulo),
+          el("p", {}, texto),
+          destaque ? el("p.plan-alert-destaque", {}, destaque) : null
         )
       ),
       el("div", { style: { display: "flex", justifyContent: "flex-end", marginTop: "6px" } },
@@ -107,12 +107,20 @@ function mostrarModalPlano(avisos) {
     )
   );
 
-  const fechar = () => fecharModalPlano();
+  const fechar = () => {
+    fecharModalPlano();
+    aoFechar?.();
+  };
   document.body.append(modal);
   modal.querySelector("#plano-alerta-entendi").addEventListener("click", fechar);
   modal.addEventListener("click", evento => {
     if (evento.target === modal) fechar();
   });
+}
+
+function mostrarModalPlano(avisos) {
+  const [atual, ...resto] = avisos;
+  mostrarAviso(atual, () => mostrarModalPlano(resto));
 }
 
 /* Aviso do desenvolvimento em atraso — de proposito mais pesado que o da
