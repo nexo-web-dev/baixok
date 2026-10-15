@@ -13,7 +13,7 @@
 import { el, render } from "../../utils/dom.js";
 import { diasAtrasoDesenvolvimento } from "./tabs/plano.js";
 
-export const SISTEMA_BLOQUEADO = false;
+export const SISTEMA_BLOQUEADO = true;
 
 export function renderizarBloqueioAcesso() {
   const dias = diasAtrasoDesenvolvimento();
