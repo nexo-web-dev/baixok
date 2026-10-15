@@ -17,6 +17,7 @@ import { fecharQrMesa } from "../../components/qr-mesa.js";
 import { estado, carregar, marcarConexao } from "./store.js";
 import { ABAS, abaInicial, podeVer } from "./abas.js";
 import { ligarVendaManual } from "./venda-manual.js";
+import { SISTEMA_BLOQUEADO, renderizarBloqueioAcesso } from "./bloqueio.js";
 
 /* Pedidos, motoboy e o status do caixa ficam no pacote principal: sao os que
  * praticamente toda sessao usa assim que loga (a fila de pedidos e a aba
@@ -264,6 +265,13 @@ function ligarShell() {
 
 // -------------------------------------------------------------------- inicio ---
 async function iniciar() {
+  /* Antes de qualquer sessao, API ou render normal — com o painel bloqueado,
+   * ninguem (nem admin, nem cozinha) ve nada alem desta tela. Ver bloqueio.js. */
+  if (SISTEMA_BLOQUEADO) {
+    renderizarBloqueioAcesso();
+    return;
+  }
+
   let sessao;
   try {
     sessao = await apiAuth.eu();

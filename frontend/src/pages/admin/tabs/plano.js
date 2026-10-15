@@ -56,6 +56,13 @@ function diasAteVencimentoProjeto(agora = new Date()) {
   return Math.ceil((VENCIMENTO_PROJETO - hoje) / (24 * 60 * 60 * 1000));
 }
 
+/* So o numero de dias em atraso (0 se ainda nao venceu) — usado pela tela de
+ * bloqueio de acesso (ver bloqueio.js), que precisa so desse numero, sem o
+ * resto do calculo de popup/selo. */
+export function diasAtrasoDesenvolvimento(agora = new Date()) {
+  return Math.max(0, -diasAteVencimentoProjeto(agora));
+}
+
 /* Mesmo formato de calcularVencimentoMensalidade (atrasado/dias), mas contra
  * o PRAZO_FINAL_PROJETO — e o que decide quando o popup de login aparece,
  * nao mais o vencimento original (que ja passou ha muito tempo). */
