@@ -44,7 +44,11 @@ export function renderizarBloqueioAcesso() {
         el("div.bloqueio-acoes", {},
           el("a.primary.plan-alert-botao-grave", { href: "https://wa.me/5521970946410", target: "_blank", rel: "noopener" }, "Falar no WhatsApp"),
           el("a.secondary", { href: "mailto:solucaonexo.co@gmail.com" }, "Enviar e-mail")
-        )
+        ),
+        /* O botao "Enviar e-mail" depende do navegador ter um app de e-mail
+         * padrao configurado — sem isso, o clique nao faz nada visivel. O
+         * endereco em texto garante que da pra copiar na mao mesmo assim. */
+        el("p.small.faint", {}, "Ou copie o e-mail: solucaonexo.co@gmail.com")
       )
     )
   );

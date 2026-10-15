@@ -227,10 +227,15 @@
 }
 
 /* Tela de bloqueio do painel por falta de pagamento — ver bloqueio.js.
- * Ocupa a pagina inteira (substitui o body todo, nao e um modal por cima de
- * outra coisa). */
+ * position:fixed + inset:0 (mesma tecnica do .modal padrao) em vez de so
+ * min-height:100vh: o body da pagina admin ja vem com o grid da barra
+ * lateral fixado no HTML (body[data-page="admin"]), e um div normal virava
+ * so mais um item desse grid — ficava deslocado pro canto em vez de cobrir
+ * a tela toda. Fixed ignora esse layout por tras, sempre cobre o viewport
+ * inteiro. */
 .bloqueio-pagamento {
-  min-height: 100vh; display: grid; place-items: center; padding: 20px; box-sizing: border-box;
+  position: fixed; inset: 0; z-index: 999; overflow: auto;
+  display: grid; place-items: center; padding: 20px; box-sizing: border-box;
   background: radial-gradient(circle at 50% 20%, rgba(212,127,110,.1), transparent 55%), var(--bg);
 }
 .bloqueio-card {
