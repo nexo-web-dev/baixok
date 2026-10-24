@@ -79,7 +79,10 @@ jobs:
 
           data="$(date -u +%Y-%m-%d)"
           echo "DATA_DUMP=$data" >> "$GITHUB_ENV"
-          pg_dump "$url_limpa" --format=custom --no-owner --no-privileges --file="baixok-${data}.dump"
+          # Caminho completo, nao so "pg_dump": a imagem do runner ja vem com
+          # um pg_dump 16 em /usr/bin, que ganha do 17 recem-instalado se
+          # chamado pelo nome sozinho (ver PATH/update-alternatives).
+          /usr/lib/postgresql/17/bin/pg_dump "$url_limpa" --format=custom --no-owner --no-privileges --file="baixok-${data}.dump"
 
           rm -f combined.pem client.crt client.key
 
