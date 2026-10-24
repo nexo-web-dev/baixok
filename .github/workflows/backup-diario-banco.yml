@@ -18,6 +18,13 @@ jobs:
   backup:
     runs-on: ubuntu-latest
     steps:
+      # Faltava este passo -- sem ele o diretorio de trabalho nem e um
+      # repositorio git, e o passo "Publicar na branch backups" (que roda
+      # git config/fetch/checkout/push) falha com "fatal: not in a git
+      # directory" antes mesmo de tentar publicar o dump.
+      - name: Clonar o repositorio
+        uses: actions/checkout@v4
+
       # O repositorio padrao do Ubuntu 24.04 instala pg_dump 16, mas o banco de
       # producao roda Postgres 17 -- pg_dump recusa (server version mismatch)
       # quando o cliente e mais antigo que o servidor. O repositorio oficial do
